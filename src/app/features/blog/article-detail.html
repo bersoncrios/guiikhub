@@ -26,7 +26,7 @@
       <!-- Minimal Header Navigation -->
       <header class="blog-header-nav">
         <div class="nav-content">
-          <a [routerLink]="['/b', user.username]" class="back-link">← Voltar para o Blog de {{ user.displayName }}</a>
+          <a [routerLink]="['/b', user.username]" class="back-link">← Voltar para {{ user.blogSettings.title }}</a>
           <a routerLink="/" class="back-link">Voltar para o GuiikHub</a>
         </div>
       </header>
