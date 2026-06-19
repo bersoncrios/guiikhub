@@ -75,11 +75,18 @@ export class ArticleDetailComponent {
     } as Record<string, string>;
   });
 
+  private viewRegisteredForUserId = '';
+
   constructor() {
     effect(() => {
       const art = this.article();
       const user = this.blogUser();
       
+      if (user && this.viewRegisteredForUserId !== user.id) {
+        this.db.registerBlogView(user.id);
+        this.viewRegisteredForUserId = user.id;
+      }
+
       if (art) {
         const blogTitle = user?.blogSettings.title || art.authorDisplayName;
         const fullTitle = `${art.title} — ${blogTitle}`;

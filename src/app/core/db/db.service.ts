@@ -468,6 +468,42 @@ export class DbService {
     return this.follows().some(f => f.followerId === user.id && f.followedId === followedId);
   }
 
+  // Blog Views tracking by IP
+  async registerBlogView(userId: string) {
+    if (typeof window === 'undefined') return;
+    try {
+      // 1. Fetch IP
+      const res = await fetch('https://api.ipify.org?format=json');
+      const data = await res.json();
+      const ip = data.ip;
+      if (!ip) return;
+
+      // Clean IP to use as doc ID piece
+      const safeIp = ip.replace(/\./g, '_').replace(/:/g, '_');
+      const viewId = `${userId}_${safeIp}`;
+
+      // 2. Check if this IP already viewed this blog
+      const viewRef = doc(this.firestore, `blog_views/${viewId}`);
+      const viewSnap = await getDoc(viewRef);
+
+      if (!viewSnap.exists()) {
+        // 3. Register the view
+        await setDoc(viewRef, { userId, ip, timestamp: new Date().toISOString() });
+        
+        // 4. Increment the user's viewsCount
+        const userRef = doc(this.firestore, `users/${userId}`);
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const userData = userSnap.data() as User;
+          const newCount = (userData.viewsCount || 0) + 1;
+          await updateDoc(userRef, { viewsCount: newCount });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to register blog view', err);
+    }
+  }
+
   async updateBlogSettings(settings: BlogSettings) {
     const user = this.currentUser();
     if (!user) return;

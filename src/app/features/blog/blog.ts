@@ -63,11 +63,18 @@ export class BlogComponent {
     } as Record<string, string>;
   });
 
+  private viewRegisteredForUserId = '';
+
   constructor() {
     // Update browser tab title and meta tags when blog user loads
     effect(() => {
       const user = this.blogUser();
       if (user) {
+        if (this.viewRegisteredForUserId !== user.id) {
+          this.db.registerBlogView(user.id);
+          this.viewRegisteredForUserId = user.id;
+        }
+
         const blogTitle = user.blogSettings?.title || user.displayName;
         const fullTitle = `${blogTitle} — GuiikHub`;
         const description = user.blogSettings?.tagline || user.bio || 'Confira o meu blog no GuiikHub!';

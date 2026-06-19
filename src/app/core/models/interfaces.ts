@@ -19,6 +19,7 @@ export interface User {
   bio: string;
   bannerUrl?: string;
   blogSettings: BlogSettings;
+  viewsCount?: number;
 }
 
 export interface Article {
