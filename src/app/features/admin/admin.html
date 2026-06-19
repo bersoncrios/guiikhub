@@ -227,14 +227,26 @@
               <div class="banner-picker-right">
                 <!-- URL Input -->
                 <div class="banner-url-input-group">
-                  <label class="banner-url-label">🔗 Cole a URL da imagem de capa</label>
-                  <input
-                    type="url"
-                    id="postCoverUrl"
-                    name="postCoverUrl"
-                    [(ngModel)]="newPostCoverUrl"
-                    class="form-control"
-                    placeholder="https://exemplo.com/imagem-da-materia.jpg">
+                  <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
+                  <div style="display: flex; gap: 0.5rem; width: 100%;">
+                    <input
+                      type="url"
+                      id="postCoverUrl"
+                      name="postCoverUrl"
+                      [(ngModel)]="newPostCoverUrl"
+                      class="form-control"
+                      placeholder="https://exemplo.com/imagem-da-materia.jpg"
+                      style="flex: 1;">
+                    
+                    <input type="file" id="coverFileInput" class="file-input-hidden" accept="image/*" (change)="onCoverFileSelected($event)" style="display: none;">
+                    <label for="coverFileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                      @if (isUploadingCover) {
+                        ⏳ Enviando...
+                      } @else {
+                        📁 Enviar Imagem
+                      }
+                    </label>
+                  </div>
                   <small class="form-help">JPG, PNG ou WebP. Recomendado: 16:9 ou 3:1.</small>
                 </div>
 
@@ -346,7 +358,17 @@
                 <!-- Insert group -->
                 <div class="toolbar-group">
                   <button type="button" class="tool-btn" title="Inserir Link" (click)="insertLink()">🔗</button>
-                  <button type="button" class="tool-btn" title="Inserir Imagem" (click)="insertImage()">🖼️</button>
+                  
+                  <!-- Inline Image Upload -->
+                  <input type="file" id="inlineImageInput" class="file-input-hidden" accept="image/*" (change)="onInlineImageSelected($event)" style="display: none;">
+                  <button type="button" class="tool-btn" title="Inserir Imagem do Dispositivo" (click)="triggerInlineImageUpload()" [disabled]="isUploadingInlineImage">
+                    @if (isUploadingInlineImage) {
+                      ⏳
+                    } @else {
+                      🖼️
+                    }
+                  </button>
+
                   <button type="button" class="tool-btn" title="Linha Divisória" (click)="insertDivider()">—</button>
                 </div>
 
@@ -470,14 +492,26 @@
 
               <!-- URL Input -->
               <div class="banner-url-input-group">
-                <label class="banner-url-label">🔗 Cole a URL da imagem do banner</label>
-                <input
-                  type="url"
-                  id="blogBannerUrl"
-                  name="blogBannerUrl"
-                  [(ngModel)]="blogBannerUrl"
-                  class="form-control"
-                  placeholder="https://exemplo.com/minha-imagem.jpg">
+                <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
+                <div style="display: flex; gap: 0.5rem; width: 100%;">
+                  <input
+                    type="url"
+                    id="blogBannerUrl"
+                    name="blogBannerUrl"
+                    [(ngModel)]="blogBannerUrl"
+                    class="form-control"
+                    placeholder="https://exemplo.com/minha-imagem.jpg"
+                    style="flex: 1;">
+                  
+                  <input type="file" id="blogBannerFileInput" class="file-input-hidden" accept="image/*" (change)="onBlogBannerSelected($event)" style="display: none;">
+                  <label for="blogBannerFileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                    @if (isUploadingBlogBanner) {
+                      ⏳ Enviando...
+                    } @else {
+                      📁 Enviar Imagem
+                    }
+                  </label>
+                </div>
                 <small class="form-help">Use imagens de alta resolução (mín. 1200px de largura). Formatos: JPG, PNG, WebP.</small>
               </div>
 
@@ -610,14 +644,27 @@
           </div>
 
           <div class="form-group">
-            <label for="profileAvatar">Link do Avatar (Imagem)</label>
-            <input 
-              type="text" 
-              id="profileAvatar" 
-              name="profileAvatar" 
-              [(ngModel)]="profileAvatar" 
-              class="form-control" 
-              required>
+            <label for="profileAvatar">Link do Avatar ou envie uma foto</label>
+            <div style="display: flex; gap: 0.5rem; width: 100%;">
+              <input 
+                type="url" 
+                id="profileAvatar" 
+                name="profileAvatar" 
+                [(ngModel)]="profileAvatar" 
+                class="form-control" 
+                placeholder="https://exemplo.com/meu-avatar.jpg"
+                style="flex: 1;">
+              
+              <input type="file" id="profileAvatarFileInput" class="file-input-hidden" accept="image/*" (change)="onAvatarSelected($event)" style="display: none;">
+              <label for="profileAvatarFileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                @if (isUploadingAvatar) {
+                  ⏳ Enviando...
+                } @else {
+                  📁 Enviar Imagem
+                }
+              </label>
+            </div>
+            <small class="form-help">Para melhor visualização, use imagens quadradas (1:1).</small>
           </div>
 
           <div class="form-group">

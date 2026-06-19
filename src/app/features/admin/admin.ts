@@ -1,5 +1,6 @@
 import { Component, signal, computed, effect, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -26,6 +27,7 @@ export class AdminComponent {
   newPostSummary = '';
   newPostContent = '';
   newPostCoverUrl = '/images/cyberpunk_cover.png';
+  isUploadingCover = false;
   newPostTags = 'Gamer, Geek, Tech';
 
   // Rich Text Editor
@@ -43,11 +45,13 @@ export class AdminComponent {
   blogFont: 'Outfit' | 'Space Grotesk' | 'Fira Code' | 'system-ui' = 'Outfit';
   blogLayout: 'grid' | 'list' | 'magazine' = 'grid';
   blogBannerUrl = '';
+  isUploadingBlogBanner = false;
 
   // Profile Form
   profileName = '';
   profileBio = '';
   profileAvatar = '';
+  isUploadingAvatar = false;
   profileUsername = '';
 
   // Filter user's own articles
@@ -152,12 +156,60 @@ export class AdminComponent {
     }
   }
 
-  insertImage() {
-    const url = prompt('URL da imagem:');
-    if (url) {
-      document.execCommand('insertImage', false, url);
+  isUploadingInlineImage = false;
+
+  triggerInlineImageUpload() {
+    const input = document.getElementById('inlineImageInput') as HTMLInputElement;
+    if (input) {
+      input.click();
+    }
+  }
+
+  async onInlineImageSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
+      return;
+    }
+
+    this.isUploadingInlineImage = true;
+    const filename = `inline_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    try {
+      const s3 = new S3Client({
+        endpoint: 'https://s3.tebi.io',
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: 'ztWbSlXugHK1EYjV',
+          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
+        }
+      });
+
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      const cmd = new PutObjectCommand({
+        Bucket: 'guiikhub',
+        Key: filename,
+        Body: fileBuffer,
+        ContentType: file.type,
+        ACL: 'public-read'
+      });
+
+      await s3.send(cmd);
+
+      document.execCommand('insertImage', false, uploadUrl);
       this.richEditorRef.nativeElement.focus();
       this.syncEditorContent();
+    } catch (err) {
+      console.error('Erro de rede ao enviar:', err);
+      Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
+    } finally {
+      this.isUploadingInlineImage = false;
+      input.value = ''; // Reset input
     }
   }
 
@@ -384,6 +436,62 @@ export class AdminComponent {
     this.setTab('posts');
   }
 
+  async onCoverFileSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    
+    // File size validation (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
+      return;
+    }
+
+    this.isUploadingCover = true;
+    const filename = `cover_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    
+    // Upload endpoint
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    try {
+      const s3 = new S3Client({
+        endpoint: 'https://s3.tebi.io',
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: 'ztWbSlXugHK1EYjV',
+          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
+        }
+      });
+
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      const cmd = new PutObjectCommand({
+        Bucket: 'guiikhub',
+        Key: filename,
+        Body: fileBuffer,
+        ContentType: file.type,
+        ACL: 'public-read'
+      });
+
+      await s3.send(cmd);
+
+      this.newPostCoverUrl = uploadUrl;
+      Swal.fire({
+        icon: 'success',
+        title: 'Imagem Enviada!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } catch (err) {
+      console.error('Erro de rede ao enviar:', err);
+      Swal.fire('Erro de Rede', 'Não foi possível conectar ao provedor de armazenamento.', 'error');
+    } finally {
+      this.isUploadingCover = false;
+    }
+  }
+
   deletePost(id: string) {
     Swal.fire({
       title: 'Excluir Matéria?',
@@ -421,6 +529,114 @@ export class AdminComponent {
         });
       }
     });
+  }
+
+  async onBlogBannerSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
+      return;
+    }
+
+    this.isUploadingBlogBanner = true;
+    const filename = `banner_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    try {
+      const s3 = new S3Client({
+        endpoint: 'https://s3.tebi.io',
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: 'ztWbSlXugHK1EYjV',
+          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
+        }
+      });
+
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      const cmd = new PutObjectCommand({
+        Bucket: 'guiikhub',
+        Key: filename,
+        Body: fileBuffer,
+        ContentType: file.type,
+        ACL: 'public-read'
+      });
+
+      await s3.send(cmd);
+
+      this.blogBannerUrl = uploadUrl;
+      Swal.fire({
+        icon: 'success',
+        title: 'Capa do Blog Enviada!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } catch (err) {
+      console.error('Erro ao enviar capa do blog:', err);
+      Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
+    } finally {
+      this.isUploadingBlogBanner = false;
+      input.value = '';
+    }
+  }
+
+  async onAvatarSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
+      return;
+    }
+
+    this.isUploadingAvatar = true;
+    const filename = `avatar_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    try {
+      const s3 = new S3Client({
+        endpoint: 'https://s3.tebi.io',
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: 'ztWbSlXugHK1EYjV',
+          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
+        }
+      });
+
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      const cmd = new PutObjectCommand({
+        Bucket: 'guiikhub',
+        Key: filename,
+        Body: fileBuffer,
+        ContentType: file.type,
+        ACL: 'public-read'
+      });
+
+      await s3.send(cmd);
+
+      this.profileAvatar = uploadUrl;
+      Swal.fire({
+        icon: 'success',
+        title: 'Avatar Enviado!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } catch (err) {
+      console.error('Erro ao enviar avatar:', err);
+      Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
+    } finally {
+      this.isUploadingAvatar = false;
+      input.value = '';
+    }
   }
 
 }
