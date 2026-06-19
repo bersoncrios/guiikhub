@@ -162,29 +162,81 @@
               required>
           </div>
 
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="postTags">Tags (Separadas por vírgula)</label>
-              <input 
-                type="text" 
-                id="postTags" 
-                name="postTags" 
-                [(ngModel)]="newPostTags" 
-                class="form-control" 
-                placeholder="Ex: RPG, Games, Xbox">
-            </div>
+          <div class="form-group">
+            <label for="postTags">Tags (Separadas por vírgula)</label>
+            <input 
+              type="text" 
+              id="postTags" 
+              name="postTags" 
+              [(ngModel)]="newPostTags" 
+              class="form-control" 
+              placeholder="Ex: RPG, Games, Xbox">
+          </div>
 
-            <div class="form-group">
-              <label for="postCover">Imagem de Capa</label>
-              <select 
-                id="postCover" 
-                name="postCover" 
-                [(ngModel)]="newPostCoverUrl" 
-                class="form-control">
-                <option value="/images/cyberpunk_cover.png">Capa Cyberpunk/Neon</option>
-                <option value="/images/retro_cover.png">Capa Retro Arcade</option>
-                <option value="/images/tabletop_cover.png">Capa Tabletop RPG</option>
-              </select>
+          <!-- Cover Image Picker -->
+          <div class="form-group">
+            <label>Imagem de Capa da Matéria</label>
+            <div class="banner-picker banner-picker--compact">
+
+              <!-- Live Preview -->
+              <div class="banner-preview banner-preview--sm" [style.background-image]="'url(' + newPostCoverUrl + ')'">
+                @if (!newPostCoverUrl) {
+                  <span class="banner-preview-placeholder">Prévia da Capa</span>
+                }
+                <div class="banner-preview-overlay">
+                  <span class="banner-preview-label">Capa</span>
+                </div>
+              </div>
+
+              <div class="banner-picker-right">
+                <!-- URL Input -->
+                <div class="banner-url-input-group">
+                  <label class="banner-url-label">🔗 Cole a URL da imagem de capa</label>
+                  <input
+                    type="url"
+                    id="postCoverUrl"
+                    name="postCoverUrl"
+                    [(ngModel)]="newPostCoverUrl"
+                    class="form-control"
+                    placeholder="https://exemplo.com/imagem-da-materia.jpg">
+                  <small class="form-help">JPG, PNG ou WebP. Recomendado: 16:9 ou 3:1.</small>
+                </div>
+
+                <!-- Quick-pick presets -->
+                <div class="banner-presets">
+                  <span class="banner-presets-label">Ou use uma capa padrão:</span>
+                  <div class="banner-presets-grid">
+                    <button
+                      type="button"
+                      class="banner-preset-thumb"
+                      [class.active]="newPostCoverUrl === '/images/cyberpunk_cover.png'"
+                      (click)="newPostCoverUrl = '/images/cyberpunk_cover.png'"
+                      title="Cyberpunk / Neon">
+                      <img src="/images/cyberpunk_cover.png" alt="Cyberpunk Neon">
+                      <span>Cyberpunk</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="banner-preset-thumb"
+                      [class.active]="newPostCoverUrl === '/images/retro_cover.png'"
+                      (click)="newPostCoverUrl = '/images/retro_cover.png'"
+                      title="Retro Arcade">
+                      <img src="/images/retro_cover.png" alt="Retro Arcade">
+                      <span>Retro</span>
+                    </button>
+                    <button
+                      type="button"
+                      class="banner-preset-thumb"
+                      [class.active]="newPostCoverUrl === '/images/tabletop_cover.png'"
+                      (click)="newPostCoverUrl = '/images/tabletop_cover.png'"
+                      title="Fantasy RPG">
+                      <img src="/images/tabletop_cover.png" alt="Fantasy RPG">
+                      <span>Fantasy</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
             </div>
           </div>
 
@@ -344,7 +396,7 @@
             </div>
           </div>
 
-          <div class="form-row-3">
+          <div class="form-row-2">
             <div class="form-group">
               <label for="blogFont">Fonte do Blog</label>
               <select id="blogFont" name="blogFont" [(ngModel)]="blogFont" class="form-control">
@@ -363,14 +415,70 @@
                 <option value="magazine">Revista (Banner Destacado)</option>
               </select>
             </div>
+          </div>
 
-            <div class="form-group">
-              <label for="blogBanner">Imagem de Fundo/Banner</label>
-              <select id="blogBanner" name="blogBanner" [(ngModel)]="blogBannerUrl" class="form-control">
-                <option value="/images/cyberpunk_cover.png">Capa Cyberpunk/Neon</option>
-                <option value="/images/retro_cover.png">Capa Retro Arcade</option>
-                <option value="/images/tabletop_cover.png">Capa Tabletop RPG</option>
-              </select>
+          <!-- Banner Customizer -->
+          <div class="form-group">
+            <label>Imagem de Banner / Capa do Blog</label>
+            <div class="banner-picker">
+
+              <!-- Live Preview -->
+              <div class="banner-preview" [style.background-image]="'url(' + blogBannerUrl + ')'">
+                @if (!blogBannerUrl) {
+                  <span class="banner-preview-placeholder">Prévia do Banner</span>
+                }
+                <div class="banner-preview-overlay">
+                  <span class="banner-preview-label">Prévia</span>
+                </div>
+              </div>
+
+              <!-- URL Input -->
+              <div class="banner-url-input-group">
+                <label class="banner-url-label">🔗 Cole a URL da imagem do banner</label>
+                <input
+                  type="url"
+                  id="blogBannerUrl"
+                  name="blogBannerUrl"
+                  [(ngModel)]="blogBannerUrl"
+                  class="form-control"
+                  placeholder="https://exemplo.com/minha-imagem.jpg">
+                <small class="form-help">Use imagens de alta resolução (mín. 1200px de largura). Formatos: JPG, PNG, WebP.</small>
+              </div>
+
+              <!-- Quick-pick presets -->
+              <div class="banner-presets">
+                <span class="banner-presets-label">Ou escolha um tema padrão:</span>
+                <div class="banner-presets-grid">
+                  <button
+                    type="button"
+                    class="banner-preset-thumb"
+                    [class.active]="blogBannerUrl === '/images/cyberpunk_cover.png'"
+                    (click)="blogBannerUrl = '/images/cyberpunk_cover.png'"
+                    title="Cyberpunk / Neon">
+                    <img src="/images/cyberpunk_cover.png" alt="Cyberpunk Neon">
+                    <span>Cyberpunk</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="banner-preset-thumb"
+                    [class.active]="blogBannerUrl === '/images/retro_cover.png'"
+                    (click)="blogBannerUrl = '/images/retro_cover.png'"
+                    title="Retro Arcade">
+                    <img src="/images/retro_cover.png" alt="Retro Arcade">
+                    <span>Retro</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="banner-preset-thumb"
+                    [class.active]="blogBannerUrl === '/images/tabletop_cover.png'"
+                    (click)="blogBannerUrl = '/images/tabletop_cover.png'"
+                    title="Fantasy RPG">
+                    <img src="/images/tabletop_cover.png" alt="Fantasy RPG">
+                    <span>Fantasy</span>
+                  </button>
+                </div>
+              </div>
+
             </div>
           </div>
 
