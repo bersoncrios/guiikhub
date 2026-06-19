@@ -23,7 +23,10 @@ export class BlogComponent {
   private readonly params = toSignal(this.route.params);
   
   // Extract username from params
-  readonly username = computed(() => this.params()?.['username'] || '');
+  readonly username = computed(() => {
+    const p = this.params();
+    return p ? p['username'] : this.route.snapshot.params['username'];
+  });
 
   // Find user by username
   readonly blogUser = computed(() => {

@@ -24,8 +24,14 @@ export class ArticleDetailComponent {
   private readonly params = toSignal(this.route.params);
 
   // Extract author username and article slug
-  readonly username = computed(() => this.params()?.['username'] || '');
-  readonly postSlug = computed(() => this.params()?.['slug'] || '');
+  readonly username = computed(() => {
+    const p = this.params();
+    return p ? p['username'] : this.route.snapshot.params['username'];
+  });
+  readonly postSlug = computed(() => {
+    const p = this.params();
+    return p ? p['slug'] : this.route.snapshot.params['slug'];
+  });
 
   // Find blog owner
   readonly blogUser = computed(() => {
