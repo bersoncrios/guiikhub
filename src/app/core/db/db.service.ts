@@ -39,6 +39,9 @@ export class DbService {
   readonly follows = signal<Array<{ followerId: string; followedId: string }>>([]);
   readonly likes = signal<Array<{ userId: string; articleId: string }>>([]);
 
+  readonly isUsersLoading = signal<boolean>(true);
+  readonly isArticlesLoading = signal<boolean>(true);
+
   // Active / Logged-in user signal (real authenticated user)
   readonly currentUser = signal<User | null>(null);
   readonly isAuthenticated = signal<boolean>(false);
@@ -59,6 +62,7 @@ export class DbService {
       if (data) {
         this.users.set(data as User[]);
       }
+      this.isUsersLoading.set(false);
     });
 
     // 2. Sync Auth State
@@ -93,6 +97,7 @@ export class DbService {
       if (data) {
         this.articles.set(data as Article[]);
       }
+      this.isArticlesLoading.set(false);
     });
 
     // 4. Sync Comments Collection

@@ -1,4 +1,25 @@
-@if (article(); as art) {
+@if (db.isArticlesLoading() || db.isUsersLoading()) {
+  <div class="loading-container">
+    <div class="spinner"></div>
+    <style>
+      .loading-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 60vh;
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.1);
+        border-top-color: var(--blog-primary, #00f0ff);
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin { 100% { transform: rotate(360deg); } }
+    </style>
+  </div>
+} @else if (article(); as art) {
   @if (blogUser(); as user) {
     <!-- Wrap in custom style container to apply theme variables -->
     <div class="blog-wrapper" [ngStyle]="customStyleVariables()">
