@@ -77,7 +77,7 @@
   <aside class="sidebar-left">
     @if (db.isAuthenticated() && db.currentUser(); as user) {
       <div class="glass-card profile-preview-card">
-        <div class="profile-banner" [style.background-image]="'url(' + (user.blogSettings?.bannerUrl || user.bannerUrl || '/images/cyberpunk_cover.png') + ')'"></div>
+        <div class="profile-banner" [style.background-image]="'url(' + (user.blogSettings.bannerUrl || user.bannerUrl || '/images/cyberpunk_cover.png') + ')'"></div>
         <div class="profile-avatar-wrapper">
           <img [src]="user.avatarUrl" [alt]="user.displayName" class="profile-avatar">
         </div>

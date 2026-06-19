@@ -1,8 +1,9 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
 
 @Component({
@@ -15,6 +16,8 @@ import { DbService } from '../../core/db/db.service';
 export class ArticleDetailComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly titleService = inject(Title);
+  private readonly metaService = inject(Meta);
   public readonly db = inject(DbService);
 
   // Convert route params to a Signal
@@ -71,6 +74,30 @@ export class ArticleDetailComponent {
       '--blog-glow': `0 0 20px ${s.accentColor}40`
     } as Record<string, string>;
   });
+
+  constructor() {
+    effect(() => {
+      const art = this.article();
+      const user = this.blogUser();
+      
+      if (art) {
+        const blogTitle = user?.blogSettings.title || art.authorDisplayName;
+        const fullTitle = `${art.title} — ${blogTitle}`;
+        
+        this.titleService.setTitle(fullTitle);
+        
+        this.metaService.updateTag({ property: 'og:title', content: fullTitle });
+        this.metaService.updateTag({ property: 'og:description', content: art.summary });
+        this.metaService.updateTag({ property: 'og:image', content: art.coverUrl || 'https://guiikhub.vercel.app/images/cyberpunk_cover.png' });
+        this.metaService.updateTag({ property: 'og:type', content: 'article' });
+        
+        this.metaService.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
+        this.metaService.updateTag({ name: 'twitter:title', content: fullTitle });
+        this.metaService.updateTag({ name: 'twitter:description', content: art.summary });
+        this.metaService.updateTag({ name: 'twitter:image', content: art.coverUrl || 'https://guiikhub.vercel.app/images/cyberpunk_cover.png' });
+      }
+    });
+  }
 
   toggleLike() {
     if (!this.db.isAuthenticated()) {
