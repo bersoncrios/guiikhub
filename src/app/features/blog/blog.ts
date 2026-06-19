@@ -1,7 +1,8 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Title } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
 
 @Component({
@@ -14,6 +15,7 @@ import { DbService } from '../../core/db/db.service';
 export class BlogComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly titleService = inject(Title);
   public readonly db = inject(DbService);
 
   // Convert route params to a Signal
@@ -59,6 +61,20 @@ export class BlogComponent {
       '--blog-glow': `0 0 20px ${s.accentColor}40`
     } as Record<string, string>;
   });
+
+  constructor() {
+    // Update browser tab title when blog user loads
+    effect(() => {
+      const user = this.blogUser();
+      if (user) {
+        const blogTitle = user.blogSettings?.title || user.displayName;
+        this.titleService.setTitle(`${blogTitle} — GuiikHub`);
+      } else if (this.username()) {
+        // Still loading or user not found — show username as fallback
+        this.titleService.setTitle(`@${this.username()} — GuiikHub`);
+      }
+    });
+  }
 
   toggleFollow(event: Event) {
     event.preventDefault();
