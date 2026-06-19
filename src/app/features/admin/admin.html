@@ -200,14 +200,92 @@
           </div>
 
           <div class="form-group">
-            <label for="postContent">Conteúdo da Matéria</label>
-            <textarea 
-              id="postContent" 
-              name="postContent" 
-              [(ngModel)]="newPostContent" 
-              class="form-control main-textarea" 
-              placeholder="Escreva sua matéria aqui... Suporta quebras de linha e subtítulos. Use tags HTML simples se quiser (ex: <h3>Subtitulo</h3>)."
-              required></textarea>
+            <label>Conteúdo da Matéria</label>
+            <div class="rich-editor-wrapper">
+
+              <!-- Toolbar -->
+              <div class="editor-toolbar">
+
+                <!-- Headings group -->
+                <div class="toolbar-group">
+                  <button type="button" class="tool-btn" title="Parágrafo" (click)="insertParagraph()">
+                    <span class="tool-icon">¶</span> P
+                  </button>
+                  <button type="button" class="tool-btn" title="Título H1" (click)="insertHeading(1)">H1</button>
+                  <button type="button" class="tool-btn" title="Título H2" (click)="insertHeading(2)">H2</button>
+                  <button type="button" class="tool-btn" title="Título H3" (click)="insertHeading(3)">H3</button>
+                  <button type="button" class="tool-btn" title="Título H4" (click)="insertHeading(4)">H4</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <!-- Formatting group -->
+                <div class="toolbar-group">
+                  <button type="button" class="tool-btn tool-bold" title="Negrito (Ctrl+B)" (click)="execFormat('bold')">
+                    <strong>B</strong>
+                  </button>
+                  <button type="button" class="tool-btn tool-italic" title="Itálico (Ctrl+I)" (click)="execFormat('italic')">
+                    <em>I</em>
+                  </button>
+                  <button type="button" class="tool-btn tool-underline" title="Sublinhado (Ctrl+U)" (click)="execFormat('underline')">
+                    <u>U</u>
+                  </button>
+                  <button type="button" class="tool-btn tool-strike" title="Tachado" (click)="execFormat('strikeThrough')">
+                    <s>S</s>
+                  </button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <!-- Alignment group -->
+                <div class="toolbar-group">
+                  <button type="button" class="tool-btn" title="Alinhar à Esquerda" (click)="execFormat('justifyLeft')">⬡</button>
+                  <button type="button" class="tool-btn" title="Centralizar" (click)="execFormat('justifyCenter')">☰</button>
+                  <button type="button" class="tool-btn" title="Alinhar à Direita" (click)="execFormat('justifyRight')">☷</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <!-- Lists group -->
+                <div class="toolbar-group">
+                  <button type="button" class="tool-btn" title="Lista com marcadores" (click)="execFormat('insertUnorderedList')">• —</button>
+                  <button type="button" class="tool-btn" title="Lista numerada" (click)="execFormat('insertOrderedList')">1. —</button>
+                  <button type="button" class="tool-btn" title="Citação" (click)="execFormat('formatBlock', 'blockquote')">" "</button>
+                </div>
+
+                <div class="toolbar-divider"></div>
+
+                <!-- Insert group -->
+                <div class="toolbar-group">
+                  <button type="button" class="tool-btn" title="Inserir Link" (click)="insertLink()">🔗</button>
+                  <button type="button" class="tool-btn" title="Inserir Imagem" (click)="insertImage()">🖼️</button>
+                  <button type="button" class="tool-btn" title="Linha Divisória" (click)="insertDivider()">—</button>
+                </div>
+
+                <div class="toolbar-spacer"></div>
+
+                <!-- Clear button -->
+                <div class="toolbar-group">
+                  <button type="button" class="tool-btn tool-danger" title="Limpar conteúdo" (click)="clearEditorContent()">🗑️ Limpar</button>
+                </div>
+              </div>
+
+              <!-- Editor area -->
+              <div
+                #richEditor
+                class="rich-editor-content"
+                contenteditable="true"
+                (input)="onEditorInput($event)"
+                data-placeholder="Escreva sua matéria aqui... Use a barra de ferramentas acima para formatar o texto.">
+              </div>
+
+              <!-- Word count / hint -->
+              @if (!editorHasContent()) {
+                <div class="editor-hint">
+                  💡 Dica: selecione o texto e use a barra de ferramentas para formatar. Suporta títulos, negrito, listas e muito mais!
+                </div>
+              }
+            </div>
           </div>
 
           <div class="form-actions">

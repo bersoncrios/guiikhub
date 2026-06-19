@@ -1,4 +1,4 @@
-import { Component, signal, computed, effect, inject } from '@angular/core';
+import { Component, signal, computed, effect, inject, ElementRef, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
@@ -24,6 +24,10 @@ export class AdminComponent {
   newPostContent = '';
   newPostCoverUrl = '/images/cyberpunk_cover.png';
   newPostTags = 'Gamer, Geek, Tech';
+
+  // Rich Text Editor
+  @ViewChild('richEditor') richEditorRef!: ElementRef<HTMLDivElement>;
+  readonly editorHasContent = signal(false);
 
   // Blog Customizer Form
   blogTitle = '';
@@ -93,6 +97,79 @@ export class AdminComponent {
 
   setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post') {
     this.activeTab.set(tab);
+    if (tab === 'new-post') {
+      // Clear editor when opening the new post tab
+      setTimeout(() => {
+        if (this.richEditorRef?.nativeElement) {
+          this.richEditorRef.nativeElement.innerHTML = '';
+          this.editorHasContent.set(false);
+        }
+      }, 0);
+    }
+  }
+
+  // ─── Rich Text Editor Methods ──────────────────────────────────────────────
+
+  onEditorInput(event: Event) {
+    const el = event.target as HTMLDivElement;
+    this.newPostContent = el.innerHTML;
+    this.editorHasContent.set(el.innerText.trim().length > 0);
+  }
+
+  execFormat(command: string, value?: string) {
+    document.execCommand(command, false, value ?? '');
+    this.richEditorRef.nativeElement.focus();
+    this.syncEditorContent();
+  }
+
+  insertHeading(level: 1 | 2 | 3 | 4) {
+    document.execCommand('formatBlock', false, `h${level}`);
+    this.richEditorRef.nativeElement.focus();
+    this.syncEditorContent();
+  }
+
+  insertParagraph() {
+    document.execCommand('formatBlock', false, 'p');
+    this.richEditorRef.nativeElement.focus();
+    this.syncEditorContent();
+  }
+
+  insertDivider() {
+    document.execCommand('insertHTML', false, '<hr><p>&#8203;</p>');
+    this.richEditorRef.nativeElement.focus();
+    this.syncEditorContent();
+  }
+
+  insertLink() {
+    const url = prompt('URL do link:');
+    if (url) {
+      document.execCommand('createLink', false, url);
+      this.richEditorRef.nativeElement.focus();
+      this.syncEditorContent();
+    }
+  }
+
+  insertImage() {
+    const url = prompt('URL da imagem:');
+    if (url) {
+      document.execCommand('insertImage', false, url);
+      this.richEditorRef.nativeElement.focus();
+      this.syncEditorContent();
+    }
+  }
+
+  clearEditorContent() {
+    if (this.richEditorRef?.nativeElement) {
+      this.richEditorRef.nativeElement.innerHTML = '';
+      this.newPostContent = '';
+      this.editorHasContent.set(false);
+    }
+  }
+
+  private syncEditorContent() {
+    if (this.richEditorRef?.nativeElement) {
+      this.newPostContent = this.richEditorRef.nativeElement.innerHTML;
+    }
   }
 
   async saveProfile() {
@@ -241,7 +318,12 @@ export class AdminComponent {
   }
 
   createPost() {
-    if (!this.newPostTitle || !this.newPostContent) {
+    // Sync content from editor
+    if (this.richEditorRef?.nativeElement) {
+      this.newPostContent = this.richEditorRef.nativeElement.innerHTML;
+    }
+
+    if (!this.newPostTitle || !this.newPostContent || this.newPostContent === '<br>') {
       Swal.fire({
         icon: 'warning',
         title: 'Campos Vazios',
@@ -294,6 +376,7 @@ export class AdminComponent {
     this.newPostContent = '';
     this.newPostCoverUrl = '/images/cyberpunk_cover.png';
     this.newPostTags = 'Gamer, Geek, Tech';
+    this.clearEditorContent();
     
     this.setTab('posts');
   }
