@@ -1,0 +1,131 @@
+<header class="app-header">
+  <div class="header-container">
+    <a routerLink="/" class="logo">
+      <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+    </a>
+    <nav class="main-nav">
+      <a routerLink="/" class="nav-item">Feed</a>
+    </nav>
+  </div>
+</header>
+
+<main class="auth-layout container">
+  <div class="glass-card auth-card">
+    <div class="auth-card-header">
+      <h2>{{ isLoginMode ? 'Acessar Studio' : 'Criar Conta Criador' }}</h2>
+      <p class="auth-subtitle">
+        {{ isLoginMode ? 'Entre para gerenciar seu blog e suas matérias' : 'Cadastre-se para ter seu próprio blog e página personalizada' }}
+      </p>
+    </div>
+
+    <!-- Mode Switcher Tabs -->
+    <div class="auth-tabs">
+      <button 
+        class="tab-btn" 
+        [class.active]="isLoginMode" 
+        (click)="isLoginMode = true">
+        Entrar
+      </button>
+      <button 
+        class="tab-btn" 
+        [class.active]="!isLoginMode" 
+        (click)="isLoginMode = false">
+        Cadastrar
+      </button>
+    </div>
+
+    <!-- Auth Form -->
+    <form (submit)="onSubmit()" class="studio-form">
+      <!-- Fields for Register Mode Only -->
+      @if (!isLoginMode) {
+        <div class="form-group">
+          <label for="displayName">Nome de Exibição</label>
+          <input 
+            type="text" 
+            id="displayName" 
+            name="displayName" 
+            [(ngModel)]="displayName" 
+            class="form-control" 
+            placeholder="Ex: Gandalf O Cinzento" 
+            [disabled]="isSubmitting()"
+            required>
+        </div>
+
+        <div class="form-group">
+          <label for="username">Apelido Único (Handle do seu Blog)</label>
+          <div class="username-input-wrapper">
+            <span class="handle-prefix">@</span>
+            <input 
+              type="text" 
+              id="username" 
+              name="username" 
+              [(ngModel)]="username" 
+              class="form-control username-control" 
+              placeholder="ex: dnd_wizard" 
+              [disabled]="isSubmitting()"
+              required>
+          </div>
+          <small class="form-help">Seu blog ficará disponível em: <strong>guiikhub.com/b/seunome</strong></small>
+        </div>
+      }
+
+      <!-- Fields for Both Modes -->
+      <div class="form-group">
+        <label for="email">E-mail</label>
+        <input 
+          type="email" 
+          id="email" 
+          name="email" 
+          [(ngModel)]="email" 
+          class="form-control" 
+          placeholder="exemplo@email.com" 
+          [disabled]="isSubmitting()"
+          required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Senha</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          [(ngModel)]="password" 
+          class="form-control" 
+          placeholder="Mínimo 6 caracteres" 
+          [disabled]="isSubmitting()"
+          required>
+      </div>
+
+      <button type="submit" class="btn btn-primary submit-btn" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span>Processando...</span>
+        } @else {
+          <span>{{ isLoginMode ? 'Entrar no Studio' : 'Criar meu Blog' }}</span>
+        }
+      </button>
+
+      <!-- Divider -->
+      <div class="auth-divider">
+        <span>ou</span>
+      </div>
+
+      <!-- Google Login -->
+      <button type="button" class="btn btn-secondary google-btn" (click)="loginWithGoogle()" [disabled]="isSubmitting()">
+        @if (isSubmitting()) {
+          <span>Processando...</span>
+        } @else {
+          <span class="google-icon">⚡</span> Acessar com Conta Google
+        }
+      </button>
+    </form>
+
+    <!-- Bottom Switch Link -->
+    <div class="auth-footer">
+      @if (isLoginMode) {
+        <span>Não tem uma conta criador? <a href="javascript:void(0)" (click)="toggleMode()">Cadastre-se aqui</a></span>
+      } @else {
+        <span>Já possui uma conta ativa? <a href="javascript:void(0)" (click)="toggleMode()">Faça login aqui</a></span>
+      }
+    </div>
+  </div>
+</main>

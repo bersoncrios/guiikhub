@@ -1,0 +1,179 @@
+@if (blogUser(); as user) {
+  <!-- Wrap in custom style container to apply theme variables -->
+  <div class="blog-wrapper" [ngStyle]="customStyleVariables()">
+    <!-- Minimal Header Navigation -->
+    <header class="blog-header-nav">
+      <div class="nav-content">
+        <a routerLink="/" class="back-link">← Voltar para o GuiikHub</a>
+        <div class="nav-actions">
+          @if (!db.isAuthenticated() || (db.currentUser() && db.currentUser()?.id !== user.id)) {
+            <button 
+              class="btn btn-sm"
+              [class.btn-primary]="!db.isFollowing(user.id)"
+              [class.btn-secondary]="db.isFollowing(user.id)"
+              (click)="toggleFollow($event)">
+              {{ db.isFollowing(user.id) ? 'Seguindo' : 'Seguir' }}
+            </button>
+          }
+          @if (db.isAuthenticated() && db.currentUser() && db.currentUser()?.id === user.id) {
+            <a routerLink="/admin" class="btn btn-secondary btn-sm">Estúdio de Design</a>
+          }
+        </div>
+      </div>
+    </header>
+
+    <!-- Custom Hero Banner -->
+    <section class="blog-hero" [style.background-image]="'url(' + (user.blogSettings.bannerUrl || '/images/cyberpunk_cover.png') + ')'">
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="creator-badge">
+          <img [src]="user.avatarUrl" [alt]="user.displayName" class="creator-avatar">
+          <div class="creator-text">
+            <h1>{{ user.blogSettings.title }}</h1>
+            <p class="tagline">{{ user.blogSettings.tagline }}</p>
+            <div class="creator-social-meta">
+              <span>Escrito por <strong>{{ user.displayName }}</strong></span>
+              <span class="divider">•</span>
+              <span>&#64;{{ user.username }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Creator Info Panel -->
+    <section class="creator-info-panel">
+      <div class="panel-container">
+        <div class="bio-section">
+          <h4>Sobre o Autor</h4>
+          <p>{{ user.bio }}</p>
+        </div>
+        <div class="stats-section">
+          <div class="stat-item">
+            <span class="stat-num">{{ blogArticles().length }}</span>
+            <span class="stat-label">Matérias</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Articles Feed Section -->
+    <main class="blog-articles-container">
+      <!-- Layout: Grid -->
+      @if (user.blogSettings.layoutType === 'grid') {
+        <div class="layout-grid">
+          @for (art of blogArticles(); track art.id) {
+            <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
+              <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+              <div class="card-body">
+                <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                <h3 class="card-title">{{ art.title }}</h3>
+                <p class="card-summary">{{ art.summary }}</p>
+                <div class="card-footer">
+                  <div class="card-tags">
+                    @for (tag of art.tags.slice(0, 2); track tag) {
+                      <span class="tag">#{{ tag }}</span>
+                    }
+                  </div>
+                  <span class="likes-count">⚡ {{ art.likesCount }}</span>
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+
+      <!-- Layout: List -->
+      @if (user.blogSettings.layoutType === 'list') {
+        <div class="layout-list">
+          @for (art of blogArticles(); track art.id) {
+            <article class="custom-card article-list-item" [routerLink]="['post', art.slug]">
+              <div class="list-item-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+              <div class="list-item-body">
+                <div class="list-item-meta">
+                  <span>{{ art.createdAt | date:'mediumDate' }}</span>
+                  <span class="likes-count">⚡ {{ art.likesCount }}</span>
+                </div>
+                <h3 class="card-title">{{ art.title }}</h3>
+                <p class="card-summary">{{ art.summary }}</p>
+                <div class="card-tags">
+                  @for (tag of art.tags; track tag) {
+                    <span class="tag">#{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            </article>
+          }
+        </div>
+      }
+
+      <!-- Layout: Magazine -->
+      @if (user.blogSettings.layoutType === 'magazine') {
+        <div class="layout-magazine">
+          @if (blogArticles()[0]; as heroArt) {
+            <!-- Hero Article -->
+            <article class="custom-card hero-magazine-article" [routerLink]="['post', heroArt.slug]">
+              <div class="magazine-hero-cover" [style.background-image]="'url(' + heroArt.coverUrl + ')'"></div>
+              <div class="magazine-hero-body">
+                <span class="card-date">{{ heroArt.createdAt | date:'longDate' }}</span>
+                <h2 class="hero-title">{{ heroArt.title }}</h2>
+                <p class="hero-summary">{{ heroArt.summary }}</p>
+                <div class="card-footer">
+                  <div class="card-tags">
+                    @for (tag of heroArt.tags; track tag) {
+                      <span class="tag">#{{ tag }}</span>
+                    }
+                  </div>
+                  <span class="likes-count">⚡ {{ heroArt.likesCount }} curtidas</span>
+                </div>
+              </div>
+            </article>
+          }
+
+          <!-- Grid of other articles -->
+          <div class="layout-grid">
+            @for (art of blogArticles().slice(1); track art.id) {
+              <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
+                <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+                <div class="card-body">
+                  <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                  <h3 class="card-title">{{ art.title }}</h3>
+                  <p class="card-summary">{{ art.summary }}</p>
+                  <div class="card-footer">
+                    <div class="card-tags">
+                      @for (tag of art.tags.slice(0, 2); track tag) {
+                        <span class="tag">#{{ tag }}</span>
+                      }
+                    </div>
+                    <span class="likes-count">⚡ {{ art.likesCount }}</span>
+                  </div>
+                </div>
+              </article>
+            }
+          </div>
+        </div>
+      }
+
+      @if (blogArticles().length === 0) {
+        <div class="custom-card empty-blog-state">
+          <h3>Nenhuma publicação encontrada</h3>
+          <p>Este criador ainda não publicou matérias no seu blog.</p>
+        </div>
+      }
+    </main>
+
+    <footer class="blog-footer">
+      <p>© {{ user.blogSettings.title }} - Criado com GuiikHub</p>
+    </footer>
+  </div>
+} @else {
+  <!-- Fallback: Creator not found -->
+  <div class="not-found-container">
+    <div class="not-found-card glass-card">
+      <div class="not-found-icon">🕵️‍♂️</div>
+      <h2>Criador não encontrado</h2>
+      <p>O blog do usuário <strong>&#64;{{ username() }}</strong> não existe ou foi removido.</p>
+      <a routerLink="/" class="btn btn-primary">Voltar para o Feed</a>
+    </div>
+  </div>
+}

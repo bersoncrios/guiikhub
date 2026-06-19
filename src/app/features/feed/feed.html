@@ -1,0 +1,196 @@
+<!-- Navigation Header -->
+<header class="app-header">
+  <div class="header-container">
+    <a routerLink="/" class="logo">
+      <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+    </a>
+    
+    <nav class="main-nav">
+      <a routerLink="/" class="nav-item active">Feed</a>
+      <a routerLink="/admin" class="nav-item">Studio Criador</a>
+    </nav>
+
+    <div class="user-action-area">
+      @if (db.isAuthenticated()) {
+        @if (db.currentUser(); as user) {
+          <div class="current-user-badge authenticated">
+            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+            <div class="user-info">
+              <span class="user-name">{{ user.displayName }}</span>
+              <span class="user-role">Conectado</span>
+            </div>
+            
+            <div class="switcher-dropdown">
+              <button class="btn btn-danger btn-xs logout-btn" (click)="db.logout()">Sair da Conta</button>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="auth-buttons-wrapper" style="display: flex; gap: 0.75rem; align-items: center;">
+          <a routerLink="/auth" class="btn btn-primary btn-sm login-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; height: 38px; display: inline-flex; align-items: center;">
+            ⚡ Entrar / Cadastrar
+          </a>
+        </div>
+      }
+    </div>
+  </div>
+</header>
+
+<main class="feed-layout container">
+  <!-- Left Sidebar (Current User Card & Tags) -->
+  <aside class="sidebar-left">
+    @if (db.isAuthenticated() && db.currentUser(); as user) {
+      <div class="glass-card profile-preview-card">
+        <div class="profile-banner" [style.background-image]="'url(' + (user.bannerUrl || '/images/cyberpunk_cover.png') + ')'"></div>
+        <div class="profile-avatar-wrapper">
+          <img [src]="user.avatarUrl" [alt]="user.displayName" class="profile-avatar">
+        </div>
+        <div class="profile-details">
+          <h3>{{ user.displayName }}</h3>
+          <p class="username">&#64;{{ user.username }}</p>
+          <p class="bio">{{ user.bio }}</p>
+          
+          <div class="profile-actions">
+            <a [routerLink]="['/b', user.username]" class="btn btn-primary btn-sm">Meu Blog</a>
+            <a routerLink="/admin" class="btn btn-secondary btn-sm">Editar</a>
+          </div>
+        </div>
+      </div>
+    } @else {
+      <div class="glass-card profile-preview-card welcome-cta-card" style="padding: 1.5rem; text-align: center;">
+        <div class="welcome-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">✨</div>
+        <h3 style="font-family: var(--font-display); color: var(--text-main); font-size: 1.2rem; margin-bottom: 0.5rem;">Seja bem-vindo!</h3>
+        <p style="font-size: 0.85rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1.25rem;">Crie seu próprio espaço, publique sobre suas paixões e customize seu blog. Toda paixão merece um espaço!</p>
+        <a routerLink="/auth" class="btn btn-primary btn-sm" style="width: 100%; justify-content: center; display: inline-flex;">⚡ Criar Meu Blog</a>
+      </div>
+    }
+
+    <!-- Tag Cloud -->
+    <div class="glass-card tag-cloud-card">
+      <h4 class="card-title">Tags Populares</h4>
+      <div class="tags-container">
+        <button 
+          class="tag-pill" 
+          [class.active]="selectedTag() === null" 
+          (click)="selectTag(null)">
+          # Tudo
+        </button>
+        @for (tag of allTags(); track tag) {
+          <button 
+            class="tag-pill" 
+            [class.active]="selectedTag() === tag" 
+            (click)="selectTag(tag)">
+            # {{ tag }}
+          </button>
+        }
+      </div>
+    </div>
+  </aside>
+
+  <!-- Central Feed Area -->
+  <section class="feed-content">
+    <!-- Search and Filters -->
+    <div class="feed-header">
+      <div class="search-wrapper">
+        <span class="search-icon">🔍</span>
+        <input 
+          type="text" 
+          placeholder="Pesquisar notícias, tags ou criadores..." 
+          [(ngModel)]="searchQuery" 
+          class="search-input">
+        @if (searchQuery()) {
+          <button class="clear-search" (click)="searchQuery.set('')">✕</button>
+        }
+      </div>
+
+      @if (selectedTag()) {
+        <div class="active-filter-badge">
+          <span>Filtrando por: <strong>#{{ selectedTag() }}</strong></span>
+          <button class="remove-filter" (click)="selectTag(null)">✕</button>
+        </div>
+      }
+    </div>
+
+    <!-- Articles List -->
+    <div class="articles-list">
+      @for (article of filteredArticles(); track article.id) {
+        <article class="glass-card article-card" [routerLink]="['/b', article.authorUsername, 'post', article.slug]">
+          <div class="article-cover" [style.background-image]="'url(' + article.coverUrl + ')'">
+            <div class="article-category-badge">
+              {{ article.tags[0] || 'Geek' }}
+            </div>
+          </div>
+          <div class="article-body">
+            <div class="article-meta">
+              <a [routerLink]="['/b', article.authorUsername]" (click)="$event.stopPropagation()" class="author-link">
+                <img [src]="article.authorAvatarUrl" [alt]="article.authorDisplayName" class="avatar-xs">
+                <span>{{ article.authorDisplayName }}</span>
+              </a>
+              <span class="dot">•</span>
+              <span class="date">{{ article.createdAt | date:'mediumDate' }}</span>
+            </div>
+            
+            <h2 class="article-title">{{ article.title }}</h2>
+            <p class="article-summary">{{ article.summary }}</p>
+
+            <div class="article-footer">
+              <div class="tags">
+                @for (tag of article.tags.slice(0, 3); track tag) {
+                  <span class="tag-label">#{{ tag }}</span>
+                }
+              </div>
+
+              <div class="article-interactions">
+                <button 
+                  class="action-btn" 
+                  [class.liked]="db.isLiked(article.id)"
+                  (click)="toggleLike($event, article.id)">
+                  <span class="icon">⚡</span>
+                  <span class="count">{{ article.likesCount }}</span>
+                </button>
+                <div class="action-btn">
+                  <span class="icon">💬</span>
+                  <span class="count">{{ article.commentsCount }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </article>
+      } @empty {
+        <div class="glass-card empty-state">
+          <div class="empty-icon">👾</div>
+          <h3>Nenhuma matéria encontrada</h3>
+          <p>Tente alterar sua busca ou tag para descobrir novos conteúdos geek.</p>
+          <button class="btn btn-primary" (click)="searchQuery.set(''); selectTag(null)">Limpar Filtros</button>
+        </div>
+      }
+    </div>
+  </section>
+
+  <!-- Right Sidebar (Recommended Creators) -->
+  <aside class="sidebar-right">
+    <div class="glass-card creators-card">
+      <h4 class="card-title">Blogs Recomendados</h4>
+      <div class="creators-list">
+        @for (creator of otherCreators(); track creator.id) {
+          <div class="creator-item">
+            <div class="creator-info-wrapper" [routerLink]="['/b', creator.username]">
+              <img [src]="creator.avatarUrl" [alt]="creator.displayName" class="avatar-md">
+              <div class="creator-details">
+                <span class="creator-name">{{ creator.displayName }}</span>
+                <span class="creator-handle">&#64;{{ creator.username }}</span>
+              </div>
+            </div>
+            <button 
+              class="btn btn-xs"
+              [class.btn-primary]="!db.isFollowing(creator.id)"
+              [class.btn-secondary]="db.isFollowing(creator.id)"
+              (click)="toggleFollow($event, creator.id)">
+              {{ db.isFollowing(creator.id) ? 'Seguindo' : 'Seguir' }}
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  </aside>
+</main>

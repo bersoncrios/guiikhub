@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <defs>
+    <linearGradient id="avatarGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="glowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8a2be2" />
+      <stop offset="100%" stop-color="#00f0ff" />
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="128" height="128" rx="64" fill="url(#avatarGrad)" />
+  <!-- Neon Circle border -->
+  <circle cx="64" cy="64" r="60" fill="none" stroke="url(#glowGrad)" stroke-width="3" opacity="0.8" />
+  <!-- Silhouette head -->
+  <circle cx="64" cy="50" r="22" fill="#475569" />
+  <!-- Silhouette body -->
+  <path d="M28 102 C28 85 40 78 64 78 C88 78 100 85 100 102 C100 106 96 112 90 114 C82 117 73 118 64 118 C55 118 46 117 38 114 C32 112 28 106 28 102 Z" fill="#475569" />
+</svg>

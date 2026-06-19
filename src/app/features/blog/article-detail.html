@@ -1,0 +1,131 @@
+@if (article(); as art) {
+  @if (blogUser(); as user) {
+    <!-- Wrap in custom style container to apply theme variables -->
+    <div class="blog-wrapper" [ngStyle]="customStyleVariables()">
+      <!-- Minimal Header Navigation -->
+      <header class="blog-header-nav">
+        <div class="nav-content">
+          <a [routerLink]="['/b', user.username]" class="back-link">← Voltar para o Blog de {{ user.displayName }}</a>
+          <a routerLink="/" class="back-link">Voltar para o GuiikHub</a>
+        </div>
+      </header>
+
+      <!-- Main Article Container -->
+      <main class="article-detail-container">
+        <article class="custom-card article-view">
+          <!-- Article Cover -->
+          <div class="article-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+
+          <div class="article-body">
+            <!-- Meta Details -->
+            <div class="article-meta">
+              <div class="author-info">
+                <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName" class="avatar-sm">
+                <div>
+                  <a [routerLink]="['/b', art.authorUsername]" class="author-name">{{ art.authorDisplayName }}</a>
+                  <span class="author-handle">&#64;{{ art.authorUsername }}</span>
+                </div>
+              </div>
+              
+              <div class="date-info">
+                <span>Publicado em {{ art.createdAt | date:'longDate' }}</span>
+              </div>
+            </div>
+
+            <!-- Title -->
+            <h1 class="article-title">{{ art.title }}</h1>
+
+            <!-- Tags -->
+            <div class="article-tags">
+              @for (tag of art.tags; track tag) {
+                <span class="tag">#{{ tag }}</span>
+              }
+            </div>
+
+            <!-- Divider -->
+            <hr class="section-divider">
+
+            <!-- Body Content -->
+            <div class="article-content" [innerHTML]="formatContent(art.content)"></div>
+
+            <!-- Footer Interaction Bar -->
+            <div class="article-interactions-bar">
+              <button 
+                class="btn like-button" 
+                [class.liked]="db.isLiked(art.id)"
+                (click)="toggleLike()">
+                <span class="icon">⚡</span> 
+                {{ db.isLiked(art.id) ? 'Curtido!' : 'Curtir Matéria' }}
+                <span class="badge">{{ art.likesCount }}</span>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Comments Section -->
+        <section class="comments-section custom-card">
+          <h3>Discussão ({{ articleComments().length }})</h3>
+
+          <!-- Add Comment Form -->
+          @if (db.isAuthenticated() && db.currentUser(); as currentUser) {
+            <form (submit)="submitComment()" class="comment-form">
+              <div class="form-group">
+                <label for="commentInput">Deixe seu comentário como <strong>{{ currentUser.displayName }}</strong></label>
+                <textarea 
+                  id="commentInput" 
+                  name="commentInput" 
+                  [(ngModel)]="newCommentText" 
+                  class="form-control comment-textarea" 
+                  placeholder="Escreva um comentário nerd ou compartilhe sua opinião gamer..." 
+                  required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-sm">Enviar Comentário</button>
+            </form>
+          } @else {
+            <div class="login-warning" style="text-align: center; padding: 2rem 1.5rem; border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.02);">
+              <p style="margin-bottom: 1rem; color: var(--blog-text-muted); font-size: 0.9rem;">Você precisa entrar na sua conta para comentar e participar do debate.</p>
+              <a routerLink="/auth" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+                ⚡ Entrar / Cadastrar
+              </a>
+            </div>
+          }
+
+          <!-- Comments List -->
+          <div class="comments-list">
+            @for (comment of articleComments(); track comment.id) {
+              <div class="comment-item">
+                <img [src]="comment.authorAvatarUrl" [alt]="comment.authorDisplayName" class="avatar-sm">
+                <div class="comment-bubble">
+                  <div class="comment-header">
+                    <span class="comment-author" [routerLink]="['/b', comment.authorUsername]">{{ comment.authorDisplayName }}</span>
+                    <span class="comment-handle">&#64;{{ comment.authorUsername }}</span>
+                    <span class="comment-date">{{ comment.createdAt | date:'shortTime' }}</span>
+                  </div>
+                  <p class="comment-text">{{ comment.content }}</p>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-comments">
+                <p>Ninguém comentou ainda. Seja o primeiro a iniciar o debate!</p>
+              </div>
+            }
+          </div>
+        </section>
+      </main>
+
+      <footer class="blog-footer">
+        <p>© {{ user.blogSettings.title }} - Criado com GuiikHub</p>
+      </footer>
+    </div>
+  }
+} @else {
+  <!-- Fallback: Article not found -->
+  <div class="not-found-container">
+    <div class="not-found-card glass-card">
+      <div class="not-found-icon">👾</div>
+      <h2>Matéria não encontrada</h2>
+      <p>A matéria que você está tentando acessar não existe ou foi removida pelo autor.</p>
+      <a routerLink="/" class="btn btn-primary">Voltar para o Feed</a>
+    </div>
+  </div>
+}

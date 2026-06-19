@@ -1,0 +1,420 @@
+<!-- Navigation Header -->
+<header class="app-header">
+  <div class="header-container">
+    <a routerLink="/" class="logo">
+      <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+    </a>
+    
+    <nav class="main-nav">
+      <a routerLink="/" class="nav-item">Feed</a>
+      <a routerLink="/admin" class="nav-item active">Studio Criador</a>
+    </nav>
+
+    <div class="user-action-area">
+      @if (db.isAuthenticated()) {
+        @if (db.currentUser(); as user) {
+          <div class="current-user-badge authenticated">
+            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+            <div class="user-info">
+              <span class="user-name">{{ user.displayName }}</span>
+              <span class="user-role">Conectado</span>
+            </div>
+            
+            <div class="switcher-dropdown">
+              <button class="btn btn-danger btn-xs logout-btn" (click)="db.logout()">Sair da Conta</button>
+            </div>
+          </div>
+        }
+      } @else {
+        <div class="auth-buttons-wrapper" style="display: flex; gap: 0.75rem; align-items: center;">
+          <a routerLink="/auth" class="btn btn-primary btn-sm login-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; height: 38px; display: inline-flex; align-items: center;">
+            ⚡ Entrar / Cadastrar
+          </a>
+        </div>
+      }
+    </div>
+  </div>
+</header>
+
+<main class="admin-layout container">
+  @if (db.isAuthLoading()) {
+    <!-- Cyberpunk Gamer Loader -->
+    <div class="glass-card loading-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; width: 100%; gap: 1.5rem;">
+      <svg width="60" height="60" viewBox="0 0 50 50" style="color: #00f0ff; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));">
+        <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="80" stroke-dashoffset="20">
+          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite" />
+        </circle>
+      </svg>
+      <div class="loading-text" style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #00f0ff; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); letter-spacing: 2px; font-size: 0.9rem;">
+        SINCRO_CONEXAO_NEURAL...
+      </div>
+    </div>
+  } @else {
+    <!-- Studio Menu Sidebar -->
+    <aside class="admin-sidebar glass-card">
+      <h3 class="studio-title">Creator Studio</h3>
+      <p class="studio-subtitle">Personalize seu espaço e gerencie seu conteúdo</p>
+      
+      <div class="admin-menu">
+        <button 
+          class="menu-btn" 
+          [class.active]="activeTab() === 'posts'" 
+          (click)="setTab('posts')">
+          <span class="icon">📰</span> Minhas Matérias
+        </button>
+        <button 
+          class="menu-btn" 
+          [class.active]="activeTab() === 'new-post'" 
+          (click)="setTab('new-post')">
+          <span class="icon">✍️</span> Nova Matéria
+        </button>
+        <button 
+          class="menu-btn" 
+          [class.active]="activeTab() === 'customize'" 
+          (click)="setTab('customize')">
+          <span class="icon">🎨</span> Personalizar Blog
+        </button>
+        <button 
+          class="menu-btn" 
+          [class.active]="activeTab() === 'profile'" 
+          (click)="setTab('profile')">
+          <span class="icon">👤</span> Editar Perfil
+        </button>
+      </div>
+    </aside>
+
+    <section class="admin-main">
+    
+    <!-- Active Tab: Posts list -->
+    @if (activeTab() === 'posts') {
+      <div class="glass-card work-card">
+        <div class="card-header">
+          <h2>Minhas Matérias</h2>
+          <button class="btn btn-primary btn-sm" (click)="setTab('new-post')">+ Nova Matéria</button>
+        </div>
+
+        <div class="posts-table-wrapper">
+          <table class="posts-table">
+            <thead>
+              <tr>
+                <th>Título</th>
+                <th>Data</th>
+                <th>Curtidas</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (art of myArticles(); track art.id) {
+                <tr>
+                  <td class="col-title">
+                    <div class="post-title-cell">
+                      <img [src]="art.coverUrl" [alt]="art.title" class="post-thumb">
+                      <div>
+                        <span class="title-text">{{ art.title }}</span>
+                        <div class="tags-row">
+                          @for (tag of art.tags; track tag) {
+                            <span class="tag-badge">#{{ tag }}</span>
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ art.createdAt | date:'shortDate' }}</td>
+                  <td>⚡ {{ art.likesCount }}</td>
+                  <td>
+                    <div class="table-actions">
+                      <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]" class="btn btn-secondary btn-xs">Ver</a>
+                      <button class="btn btn-danger btn-xs" (click)="deletePost(art.id)">Excluir</button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="4" class="empty-table-cell">
+                    <p>Você ainda não publicou nenhuma matéria. Escreva algo incrível para começar!</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- Active Tab: New Post Form -->
+    @if (activeTab() === 'new-post') {
+      <div class="glass-card work-card">
+        <div class="card-header">
+          <h2>Nova Matéria</h2>
+          <button class="btn btn-secondary btn-sm" (click)="setTab('posts')">Cancelar</button>
+        </div>
+
+        <form (submit)="createPost()" class="studio-form">
+          <div class="form-group">
+            <label for="postTitle">Título da Matéria</label>
+            <input 
+              type="text" 
+              id="postTitle" 
+              name="postTitle" 
+              [(ngModel)]="newPostTitle" 
+              class="form-control" 
+              placeholder="Ex: O novo RPG de Ação que promete redefinir a geração..."
+              required>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="postTags">Tags (Separadas por vírgula)</label>
+              <input 
+                type="text" 
+                id="postTags" 
+                name="postTags" 
+                [(ngModel)]="newPostTags" 
+                class="form-control" 
+                placeholder="Ex: RPG, Games, Xbox">
+            </div>
+
+            <div class="form-group">
+              <label for="postCover">Imagem de Capa</label>
+              <select 
+                id="postCover" 
+                name="postCover" 
+                [(ngModel)]="newPostCoverUrl" 
+                class="form-control">
+                <option value="/images/cyberpunk_cover.png">Capa Cyberpunk/Neon</option>
+                <option value="/images/retro_cover.png">Capa Retro Arcade</option>
+                <option value="/images/tabletop_cover.png">Capa Tabletop RPG</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="postSummary">Resumo Rápido</label>
+            <input 
+              type="text" 
+              id="postSummary" 
+              name="postSummary" 
+              [(ngModel)]="newPostSummary" 
+              class="form-control" 
+              placeholder="Uma curta frase que resume a notícia e aparece no feed principal.">
+          </div>
+
+          <div class="form-group">
+            <label for="postContent">Conteúdo da Matéria</label>
+            <textarea 
+              id="postContent" 
+              name="postContent" 
+              [(ngModel)]="newPostContent" 
+              class="form-control main-textarea" 
+              placeholder="Escreva sua matéria aqui... Suporta quebras de linha e subtítulos. Use tags HTML simples se quiser (ex: <h3>Subtitulo</h3>)."
+              required></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Publicar Notícia</button>
+            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Voltar</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Active Tab: Blog Customizer -->
+    @if (activeTab() === 'customize') {
+      <div class="glass-card work-card">
+        <div class="card-header">
+          <h2>Personalizar Blog & Site</h2>
+          <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
+        </div>
+
+        <!-- Presets Section -->
+        <div class="preset-section">
+          <h4>Estilos Temáticos Rápidos</h4>
+          <div class="preset-buttons">
+            <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('cyberpunk')">
+              <span class="preset-glow cp-dot"></span> Cyberpunk Neon
+            </button>
+            <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('retro')">
+              <span class="preset-glow retro-dot"></span> Retro 16-Bit
+            </button>
+            <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('tabletop')">
+              <span class="preset-glow tt-dot"></span> Fantasy RPG
+            </button>
+          </div>
+        </div>
+
+        <form (submit)="saveBlogSettings()" class="studio-form">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="blogTitle">Título do seu Blog</label>
+              <input 
+                type="text" 
+                id="blogTitle" 
+                name="blogTitle" 
+                [(ngModel)]="blogTitle" 
+                class="form-control" 
+                required>
+            </div>
+            
+            <div class="form-group">
+              <label for="blogTagline">Slogan / Descrição Curta</label>
+              <input 
+                type="text" 
+                id="blogTagline" 
+                name="blogTagline" 
+                [(ngModel)]="blogTagline" 
+                class="form-control">
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="blogFont">Fonte do Blog</label>
+              <select id="blogFont" name="blogFont" [(ngModel)]="blogFont" class="form-control">
+                <option value="Outfit">Outfit (Moderno / Elegante)</option>
+                <option value="Space Grotesk">Space Grotesk (Gamer / Futurista)</option>
+                <option value="Fira Code">Fira Code (Developer / Retro)</option>
+                <option value="system-ui">Padrão do Sistema</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="blogLayout">Layout das Matérias</label>
+              <select id="blogLayout" name="blogLayout" [(ngModel)]="blogLayout" class="form-control">
+                <option value="grid">Grid (Moderno / Mosaico)</option>
+                <option value="list">Lista (Blog Tradicional)</option>
+                <option value="magazine">Revista (Banner Destacado)</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="blogBanner">Imagem de Fundo/Banner</label>
+              <select id="blogBanner" name="blogBanner" [(ngModel)]="blogBannerUrl" class="form-control">
+                <option value="/images/cyberpunk_cover.png">Capa Cyberpunk/Neon</option>
+                <option value="/images/retro_cover.png">Capa Retro Arcade</option>
+                <option value="/images/tabletop_cover.png">Capa Tabletop RPG</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Color Customizer Grid -->
+          <div class="color-picker-grid">
+            <h4 class="grid-title">Esquema de Cores Customizado</h4>
+            <div class="color-inputs">
+              <div class="color-item">
+                <label>Fundo da Página</label>
+                <div class="color-control-wrapper">
+                  <input type="color" name="blogBg" [(ngModel)]="blogBg">
+                  <input type="text" name="blogBgText" [(ngModel)]="blogBg" class="color-hex">
+                </div>
+              </div>
+
+              <div class="color-item">
+                <label>Fundo dos Cards</label>
+                <div class="color-control-wrapper">
+                  <input type="color" name="blogCardBg" [(ngModel)]="blogCardBg">
+                  <input type="text" name="blogCardBgText" [(ngModel)]="blogCardBg" class="color-hex">
+                </div>
+              </div>
+
+              <div class="color-item">
+                <label>Cor Primária (Links)</label>
+                <div class="color-control-wrapper">
+                  <input type="color" name="blogPrimary" [(ngModel)]="blogPrimary">
+                  <input type="text" name="blogPrimaryText" [(ngModel)]="blogPrimary" class="color-hex">
+                </div>
+              </div>
+
+              <div class="color-item">
+                <label>Cor de Destaque / Glow</label>
+                <div class="color-control-wrapper">
+                  <input type="color" name="blogAccent" [(ngModel)]="blogAccent">
+                  <input type="text" name="blogAccentText" [(ngModel)]="blogAccent" class="color-hex">
+                </div>
+              </div>
+
+              <div class="color-item">
+                <label>Cor do Texto</label>
+                <div class="color-control-wrapper">
+                  <input type="color" name="blogText" [(ngModel)]="blogText">
+                  <input type="text" name="blogTextText" [(ngModel)]="blogText" class="color-hex">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salvar Customizações</button>
+            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    }
+
+    <!-- Active Tab: Profile Editor -->
+    @if (activeTab() === 'profile') {
+      <div class="glass-card work-card">
+        <div class="card-header">
+          <h2>Editar Perfil Social</h2>
+        </div>
+
+        <form (submit)="saveProfile()" class="studio-form">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="profileName">Nome de Exibição</label>
+              <input 
+                type="text" 
+                id="profileName" 
+                name="profileName" 
+                [(ngModel)]="profileName" 
+                class="form-control" 
+                required>
+            </div>
+            
+            <div class="form-group">
+              <label for="profileUsername">Apelido do Blog (Endereço do Site)</label>
+              <div class="username-input-wrapper">
+                <span class="handle-prefix">@</span>
+                <input 
+                  type="text" 
+                  id="profileUsername" 
+                  name="profileUsername" 
+                  [(ngModel)]="profileUsername" 
+                  class="form-control username-control" 
+                  placeholder="ex: dnd_wizard" 
+                  required>
+              </div>
+              <small class="form-help">Seu blog ficará em: <strong>guiikhub.com/b/{{ profileUsername }}</strong></small>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="profileAvatar">Link do Avatar (Imagem)</label>
+            <input 
+              type="text" 
+              id="profileAvatar" 
+              name="profileAvatar" 
+              [(ngModel)]="profileAvatar" 
+              class="form-control" 
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="profileBio">Bio Social</label>
+            <textarea 
+              id="profileBio" 
+              name="profileBio" 
+              [(ngModel)]="profileBio" 
+              class="form-control" 
+              placeholder="Escreva algo sobre você..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salvar Perfil</button>
+            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+          </div>
+        </form>
+      </div>
+    }
+  </section>
+  }
+</main>
