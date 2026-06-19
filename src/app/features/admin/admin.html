@@ -33,8 +33,44 @@
         </div>
       }
     </div>
+
+    <!-- Hamburger button (mobile only) -->
+    <button class="hamburger-btn" (click)="toggleMobileNav()" aria-label="Abrir menu">☰</button>
   </div>
 </header>
+
+<!-- Mobile Nav Overlay -->
+<div class="mobile-nav" [class.open]="mobileNavOpen()">
+  <div class="mobile-nav-backdrop" (click)="closeMobileNav()"></div>
+  <div class="mobile-nav-panel">
+    <div class="mobile-nav-header">
+      <a routerLink="/" class="logo" (click)="closeMobileNav()">
+        <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+      </a>
+      <button class="close-btn" (click)="closeMobileNav()">✕</button>
+    </div>
+
+    <a routerLink="/" class="mobile-nav-item" (click)="closeMobileNav()">🏠 Feed</a>
+    <a routerLink="/admin" class="mobile-nav-item active" (click)="closeMobileNav()">🎛️ Studio Criador</a>
+
+    <div class="mobile-nav-divider"></div>
+
+    @if (db.isAuthenticated()) {
+      @if (db.currentUser(); as user) {
+        <div class="mobile-user-section">
+          <div class="mobile-user-info">
+            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+            <span class="mobile-user-name">{{ user.displayName }}</span>
+          </div>
+          <button class="btn btn-danger btn-xs" (click)="db.logout(); closeMobileNav()">Sair</button>
+        </div>
+      }
+    } @else {
+      <a routerLink="/auth" class="mobile-nav-item" (click)="closeMobileNav()">⚡ Entrar / Cadastrar</a>
+    }
+  </div>
+</div>
+
 
 <main class="admin-layout container">
   @if (db.isAuthLoading()) {
@@ -106,7 +142,7 @@
             <tbody>
               @for (art of myArticles(); track art.id) {
                 <tr>
-                  <td class="col-title">
+                  <td class="col-title" data-label="Título">
                     <div class="post-title-cell">
                       <img [src]="art.coverUrl" [alt]="art.title" class="post-thumb">
                       <div>
@@ -119,9 +155,9 @@
                       </div>
                     </div>
                   </td>
-                  <td>{{ art.createdAt | date:'shortDate' }}</td>
-                  <td>⚡ {{ art.likesCount }}</td>
-                  <td>
+                  <td data-label="Data">{{ art.createdAt | date:'shortDate' }}</td>
+                  <td data-label="Curtidas">⚡ {{ art.likesCount }}</td>
+                  <td data-label="Ações">
                     <div class="table-actions">
                       <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]" class="btn btn-secondary btn-xs">Ver</a>
                       <button class="btn btn-danger btn-xs" (click)="deletePost(art.id)">Excluir</button>

@@ -17,6 +17,9 @@ export class AdminComponent {
   private readonly router = inject(Router);
   // Navigation
   readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post'>('posts');
+  readonly mobileNavOpen = signal(false);
+  toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
+  closeMobileNav()  { this.mobileNavOpen.set(false); }
 
   // New Post Form
   newPostTitle = '';

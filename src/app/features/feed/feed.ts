@@ -16,6 +16,10 @@ export class FeedComponent {
   private readonly router = inject(Router);
   readonly searchQuery = signal('');
   readonly selectedTag = signal<string | null>(null);
+  readonly mobileNavOpen = signal(false);
+
+  toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
+  closeMobileNav()  { this.mobileNavOpen.set(false); }
 
   // Filtered articles
   readonly filteredArticles = computed(() => {
