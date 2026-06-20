@@ -116,6 +116,12 @@
           (click)="setTab('profile')">
           <span class="icon">👤</span> Editar Perfil
         </button>
+        <button 
+          class="menu-btn" 
+          [class.active]="activeTab() === 'collabs'" 
+          (click)="setTab('collabs')">
+          <span class="icon">👥</span> Colaboradores
+        </button>
       </div>
     </aside>
 
@@ -146,7 +152,12 @@
                     <div class="post-title-cell">
                       <img [src]="art.coverUrl" [alt]="art.title" class="post-thumb">
                       <div>
-                        <span class="title-text">{{ art.title }}</span>
+                        <span class="title-text">
+                          {{ art.title }}
+                          @if (art.status === 'pending') {
+                            <span class="badge" style="background: #ffb703; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Pendente</span>
+                          }
+                        </span>
                         <div class="tags-row">
                           @for (tag of art.tags; track tag) {
                             <span class="tag-badge">#{{ tag }}</span>
@@ -160,6 +171,9 @@
                   <td data-label="Ações">
                     <div class="table-actions">
                       <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]" class="btn btn-secondary btn-xs">Ver</a>
+                      @if (art.status === 'pending' && art.blogId === db.currentUser()?.id) {
+                        <button class="btn btn-primary btn-xs" style="background: #39ff14; color: #000; border: none;" (click)="approvePost(art.id)">Aprovar</button>
+                      }
                       <button class="btn btn-danger btn-xs" (click)="deletePost(art.id)">Excluir</button>
                     </div>
                   </td>
@@ -186,6 +200,18 @@
         </div>
 
         <form (submit)="createPost()" class="studio-form">
+          @if (db.collaboratingBlogs().length > 0) {
+            <div class="form-group">
+              <label for="targetBlogId">Onde Postar?</label>
+              <select id="targetBlogId" name="targetBlogId" [(ngModel)]="targetBlogId" class="form-control">
+                <option value="">Meu Blog</option>
+                @for (blog of db.collaboratingBlogs(); track blog.id) {
+                  <option [value]="blog.id">Blog de {{ blog.displayName }} ({{ blog.username }})</option>
+                }
+              </select>
+            </div>
+          }
+
           <div class="form-group">
             <label for="postTitle">Título da Matéria</label>
             <input 
@@ -682,6 +708,66 @@
             <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
           </div>
         </form>
+      </div>
+    }
+
+    <!-- Active Tab: Collaborators -->
+    @if (activeTab() === 'collabs') {
+      <div class="glass-card work-card">
+        <div class="card-header">
+          <h2>Equipe de Colaboradores</h2>
+        </div>
+        
+        <div class="studio-form" style="margin-bottom: 2rem;">
+          <div class="form-group">
+            <label for="newCollabUsername">Adicionar novo colaborador (Apelido do usuário)</label>
+            <div style="display: flex; gap: 0.5rem; width: 100%;">
+              <input 
+                type="text" 
+                id="newCollabUsername" 
+                name="newCollabUsername" 
+                [(ngModel)]="newCollabUsername" 
+                class="form-control" 
+                placeholder="ex: dnd_wizard"
+                style="flex: 1;">
+              <button class="btn btn-primary" (click)="addCollaborator()">Adicionar</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="posts-table-wrapper">
+          <table class="posts-table">
+            <thead>
+              <tr>
+                <th>Colaborador</th>
+                <th>Apelido</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of currentCollaborators(); track user.id) {
+                <tr>
+                  <td class="col-title" data-label="Colaborador">
+                    <div class="post-title-cell">
+                      <img [src]="user.avatarUrl" [alt]="user.displayName" class="post-thumb" style="border-radius: 50%; aspect-ratio: 1; object-fit: cover;">
+                      <span class="title-text">{{ user.displayName }}</span>
+                    </div>
+                  </td>
+                  <td data-label="Apelido">{{ user.username }}</td>
+                  <td data-label="Ações">
+                    <button class="btn btn-danger btn-xs" (click)="removeCollaborator(user.id)">Remover</button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="3" class="empty-table-cell">
+                    <p>Você ainda não tem colaboradores no seu blog.</p>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </div>
     }
   </section>

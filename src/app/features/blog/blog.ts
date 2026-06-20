@@ -35,12 +35,13 @@ export class BlogComponent {
     return this.db.users().find(u => u.username === name) || null;
   });
 
-  // Get articles of the user
+  // Get articles of the user's blog
   readonly blogArticles = computed(() => {
     const user = this.blogUser();
     if (!user) return [];
-    return this.db.articles().filter(art => art.authorId === user.id);
+    return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && art.status !== 'pending');
   });
+
 
   // Build custom CSS variables map for the wrapper
   readonly customStyleVariables = computed(() => {

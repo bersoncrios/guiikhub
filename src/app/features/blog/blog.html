@@ -53,7 +53,11 @@
             <h1>{{ user.blogSettings.title }}</h1>
             <p class="tagline">{{ user.blogSettings.tagline }}</p>
             <div class="creator-social-meta">
-              <span>Escrito por <strong>{{ user.displayName }}</strong></span>
+              <span>Escrito por <strong>{{ user.displayName }}</strong>
+                @if (user.collaborators && user.collaborators.length > 0) {
+                   + colaboradores
+                }
+              </span>
               <span class="divider">•</span>
               <span>&#64;{{ user.username }}</span>
             </div>

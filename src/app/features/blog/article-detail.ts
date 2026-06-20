@@ -44,7 +44,17 @@ export class ArticleDetailComponent {
   readonly article = computed(() => {
     const slugStr = this.postSlug();
     if (!slugStr) return null;
-    return this.db.articles().find(art => art.slug === slugStr) || null;
+    const art = this.db.articles().find(art => art.slug === slugStr) || null;
+    if (!art) return null;
+    
+    if (art.status === 'pending') {
+      const user = this.db.currentUser();
+      if (!user) return null;
+      if (art.authorId !== user.id && (art.blogId || art.authorId) !== user.id) {
+        return null; // Hide pending article from public
+      }
+    }
+    return art;
   });
 
   // Get comments for this article

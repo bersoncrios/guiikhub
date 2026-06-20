@@ -20,6 +20,7 @@ export interface User {
   bannerUrl?: string;
   blogSettings: BlogSettings;
   viewsCount?: number;
+  collaborators?: string[];
 }
 
 export interface Article {
@@ -33,6 +34,8 @@ export interface Article {
   authorUsername: string;
   authorDisplayName: string;
   authorAvatarUrl: string;
+  blogId?: string;
+  status?: 'published' | 'pending';
   createdAt: string;
   tags: string[];
   likesCount: number;

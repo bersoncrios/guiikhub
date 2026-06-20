@@ -17,7 +17,7 @@ import { BlogSettings } from '../../core/models/interfaces';
 export class AdminComponent {
   private readonly router = inject(Router);
   // Navigation
-  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post'>('posts');
+  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs'>('posts');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
   closeMobileNav()  { this.mobileNavOpen.set(false); }
@@ -29,6 +29,7 @@ export class AdminComponent {
   newPostCoverUrl = '/images/cyberpunk_cover.png';
   isUploadingCover = false;
   newPostTags = 'Gamer, Geek, Tech';
+  targetBlogId = '';
 
   // Rich Text Editor
   @ViewChild('richEditor') richEditorRef!: ElementRef<HTMLDivElement>;
@@ -54,11 +55,20 @@ export class AdminComponent {
   isUploadingAvatar = false;
   profileUsername = '';
 
-  // Filter user's own articles
+  // Filter user's own articles and articles posted on their blog
   readonly myArticles = computed(() => {
     const user = this.db.currentUser();
     if (!user) return [];
-    return this.db.articles().filter(art => art.authorId === user.id);
+    return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id);
+  });
+
+  // Collaborators
+  newCollabUsername = '';
+
+  readonly currentCollaborators = computed(() => {
+    const user = this.db.currentUser();
+    if (!user || !user.collaborators) return [];
+    return this.db.users().filter(u => user.collaborators!.includes(u.id));
   });
 
   constructor(public db: DbService) {
@@ -102,7 +112,7 @@ export class AdminComponent {
     this.blogBannerUrl = s.bannerUrl || '';
   }
 
-  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post') {
+  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs') {
     this.activeTab.set(tab);
     if (tab === 'new-post') {
       // Clear editor when opening the new post tab
@@ -407,7 +417,8 @@ export class AdminComponent {
       this.newPostSummary || this.newPostContent.substring(0, 150) + '...',
       this.newPostContent,
       this.newPostCoverUrl,
-      tags
+      tags,
+      this.targetBlogId
     );
 
     Swal.fire({
@@ -431,6 +442,7 @@ export class AdminComponent {
     this.newPostContent = '';
     this.newPostCoverUrl = '/images/cyberpunk_cover.png';
     this.newPostTags = 'Gamer, Geek, Tech';
+    this.targetBlogId = '';
     this.clearEditorContent();
     
     this.setTab('posts');
@@ -527,6 +539,24 @@ export class AdminComponent {
             htmlContainer: 'guiik-swal-html'
           }
         });
+      }
+    });
+  }
+
+  approvePost(id: string) {
+    this.db.approveArticle(id);
+    Swal.fire({
+      icon: 'success',
+      title: 'Aprovada!',
+      text: 'A matéria foi aprovada e agora está pública no seu blog.',
+      timer: 1500,
+      showConfirmButton: false,
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        htmlContainer: 'guiik-swal-html'
       }
     });
   }
@@ -636,6 +666,38 @@ export class AdminComponent {
     } finally {
       this.isUploadingAvatar = false;
       input.value = '';
+    }
+  }
+
+  async addCollaborator() {
+    if (!this.newCollabUsername) return;
+    const res = await this.db.addCollaborator(this.newCollabUsername);
+    if (res === true) {
+      Swal.fire({ icon: 'success', title: 'Adicionado!', text: 'Colaborador adicionado.', background: '#121420', color: '#f1f5f9' });
+      this.newCollabUsername = '';
+    } else if (res === 'not_found') {
+      Swal.fire({ icon: 'error', title: 'Erro', text: 'Usuário não encontrado.', background: '#121420', color: '#f1f5f9' });
+    } else if (res === 'already_added') {
+      Swal.fire({ icon: 'error', title: 'Erro', text: 'Este usuário já é seu colaborador.', background: '#121420', color: '#f1f5f9' });
+    } else if (res === 'self') {
+      Swal.fire({ icon: 'error', title: 'Erro', text: 'Você não pode adicionar a si mesmo.', background: '#121420', color: '#f1f5f9' });
+    }
+  }
+
+  async removeCollaborator(collabId: string) {
+    const res = await Swal.fire({
+      title: 'Remover Colaborador?',
+      text: 'Ele não poderá mais postar no seu blog.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9'
+    });
+    if (res.isConfirmed) {
+      await this.db.removeCollaborator(collabId);
+      Swal.fire({ icon: 'success', title: 'Removido!', timer: 1200, showConfirmButton: false, background: '#121420', color: '#f1f5f9' });
     }
   }
 

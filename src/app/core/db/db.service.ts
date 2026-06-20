@@ -1,4 +1,4 @@
-import { Injectable, signal, inject } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import Swal from 'sweetalert2';
 import { User, Article, Comment, BlogSettings } from '../models/interfaces';
 import { 
@@ -41,6 +41,13 @@ export class DbService {
 
   readonly isUsersLoading = signal<boolean>(true);
   readonly isArticlesLoading = signal<boolean>(true);
+
+  // Blogs the current user is a collaborator on
+  readonly collaboratingBlogs = computed(() => {
+    const me = this.currentUser();
+    if (!me) return [];
+    return this.users().filter(u => u.collaborators?.includes(me.id));
+  });
 
   // Active / Logged-in user signal (real authenticated user)
   readonly currentUser = signal<User | null>(null);
@@ -356,12 +363,14 @@ export class DbService {
 
 
   // Mutator Actions linked to Firestore
-  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[]) {
+  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[], targetBlogId?: string) {
     const user = this.currentUser();
     if (!user) return null;
 
     const id = 'art_' + Date.now();
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+    const isCollaboratorPost = targetBlogId && targetBlogId !== user.id;
+
     const newArticle: Article = {
       id,
       title,
@@ -373,6 +382,8 @@ export class DbService {
       authorUsername: user.username,
       authorDisplayName: user.displayName,
       authorAvatarUrl: user.avatarUrl,
+      blogId: targetBlogId || user.id,
+      status: isCollaboratorPost ? 'pending' : 'published',
       createdAt: new Date().toISOString(),
       tags,
       likesCount: 0,
@@ -395,6 +406,12 @@ export class DbService {
     for (const l of relatedLikes) {
       await deleteDoc(doc(this.firestore, `likes/${l.userId}_${l.articleId}`));
     }
+  }
+
+  async approveArticle(articleId: string) {
+    await updateDoc(doc(this.firestore, `articles/${articleId}`), {
+      status: 'published'
+    });
   }
 
   async addComment(articleId: string, content: string) {
@@ -575,6 +592,42 @@ export class DbService {
     this.currentUser.update(curr => curr ? { ...curr, displayName, bio, avatarUrl, username: cleanUsername } : null);
     
     return true;
+  }
+
+  async addCollaborator(usernameToAdd: string): Promise<boolean | string> {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    const cleanUsername = usernameToAdd.toLowerCase().replace(/[^a-z0-9]+/g, '');
+    const userToAdd = this.users().find(u => u.username === cleanUsername);
+    if (!userToAdd) return 'not_found';
+    if (userToAdd.id === user.id) return 'self';
+
+    const currentCollabs = user.collaborators || [];
+    if (currentCollabs.includes(userToAdd.id)) return 'already_added';
+
+    const newCollabs = [...currentCollabs, userToAdd.id];
+    
+    await updateDoc(doc(this.firestore, `users/${user.id}`), {
+      collaborators: newCollabs
+    });
+
+    this.currentUser.update(curr => curr ? { ...curr, collaborators: newCollabs } : null);
+    return true;
+  }
+
+  async removeCollaborator(collaboratorId: string) {
+    const user = this.currentUser();
+    if (!user) return;
+
+    const currentCollabs = user.collaborators || [];
+    const newCollabs = currentCollabs.filter(id => id !== collaboratorId);
+    
+    await updateDoc(doc(this.firestore, `users/${user.id}`), {
+      collaborators: newCollabs
+    });
+
+    this.currentUser.update(curr => curr ? { ...curr, collaborators: newCollabs } : null);
   }
 
 }
