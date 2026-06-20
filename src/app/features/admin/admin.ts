@@ -382,7 +382,7 @@ export class AdminComponent {
     }
   }
 
-  createPost() {
+  async createPost() {
     // Sync content from editor
     if (this.richEditorRef?.nativeElement) {
       this.newPostContent = this.richEditorRef.nativeElement.innerHTML;
@@ -412,7 +412,7 @@ export class AdminComponent {
       .map(t => t.trim())
       .filter(t => t.length > 0);
 
-    this.db.addArticle(
+    const createdArticle = await this.db.addArticle(
       this.newPostTitle,
       this.newPostSummary || this.newPostContent.substring(0, 150) + '...',
       this.newPostContent,
@@ -421,20 +421,37 @@ export class AdminComponent {
       this.targetBlogId
     );
 
-    Swal.fire({
-      icon: 'success',
-      title: 'Publicado!',
-      text: 'Sua nova matéria foi publicada com sucesso!',
-      timer: 1500,
-      showConfirmButton: false,
-      background: '#121420',
-      color: '#f1f5f9',
-      customClass: {
-        popup: 'guiik-swal-popup',
-        title: 'guiik-swal-title',
-        htmlContainer: 'guiik-swal-html'
-      }
-    });
+    if (createdArticle && createdArticle.status === 'pending') {
+      Swal.fire({
+        icon: 'info',
+        title: 'Enviada para Aprovação!',
+        text: 'A matéria foi salva com sucesso, mas ficará com o status Pendente até que o dono do blog a aprove.',
+        timer: 3500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          htmlContainer: 'guiik-swal-html'
+        }
+      });
+    } else {
+      Swal.fire({
+        icon: 'success',
+        title: 'Publicado!',
+        text: 'Sua nova matéria foi publicada com sucesso!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          htmlContainer: 'guiik-swal-html'
+        }
+      });
+    }
     
     // Clear post form
     this.newPostTitle = '';
