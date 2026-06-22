@@ -905,6 +905,7 @@ export class AdminComponent {
 
     try {
       const response = await fetch(targetUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('CORS fetch failed with status ' + response.status);
       const blob = await response.blob();
       return await new Promise((resolve) => {
         const reader = new FileReader();
@@ -912,10 +913,11 @@ export class AdminComponent {
         reader.readAsDataURL(blob);
       });
     } catch (e) {
-      console.warn('CORS falhou para a imagem, tentando proxy genérico:', targetUrl);
+      console.warn('CORS falhou para a imagem, tentando proxy:', targetUrl);
       try {
-        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
+        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
         const response = await fetch(proxyUrl);
+        if (!response.ok) throw new Error('Proxy fetch failed');
         const blob = await response.blob();
         return await new Promise((resolve) => {
           const reader = new FileReader();
