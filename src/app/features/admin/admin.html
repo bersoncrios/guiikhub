@@ -207,6 +207,7 @@
                   <td data-label="Ações">
                     <div class="table-actions">
                       <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]" class="btn btn-secondary btn-xs">Ver</a>
+                      <button class="btn btn-primary btn-xs" style="background: rgba(138,43,226,0.2); color: #c4b5fd; border: 1px solid rgba(138,43,226,0.5);" (click)="generateSocialImage(art)" title="Gerar Imagem para Redes Sociais">📸 Arte</button>
                       <button class="btn btn-primary btn-xs" style="background: #00f0ff; color: #000; border: none;" (click)="editPost(art)">Editar</button>
                       @if (art.status === 'pending' && art.blogId === db.currentUser()?.id) {
                         <button class="btn btn-primary btn-xs" style="background: #39ff14; color: #000; border: none;" (click)="approvePost(art.id)">Aprovar</button>
@@ -902,3 +903,66 @@
   </section>
   }
 </main>
+
+<!-- Off-screen Story Template for html2canvas -->
+@if (storyPreviewArticle()) {
+  <div class="story-generator-wrapper" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px;">
+    <div id="story-template" class="story-template">
+      <div class="story-bg" [style.background-image]="'url(' + storyPreviewArticle()?.coverUrl + ')'"></div>
+      <div class="story-overlay"></div>
+      
+      <div class="story-header">
+        <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+      </div>
+
+      <div class="story-content">
+        <div class="story-blog-badge">
+          <img [src]="db.currentUser()?.avatarUrl" class="story-blog-avatar" crossorigin="anonymous">
+          <span class="story-blog-name">{{ db.currentUser()?.blogSettings?.title || db.currentUser()?.displayName }}</span>
+        </div>
+
+        <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
+        <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
+        
+        <div class="story-author-small">
+          <img [src]="storyPreviewArticle()?.authorAvatarUrl" class="story-author-avatar-sm" crossorigin="anonymous">
+          <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
+        </div>
+      </div>
+
+      <div class="story-footer">
+        <div class="story-link-sticker-placeholder">
+        </div>
+        
+        <div class="watermark">
+          Powered by <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Feed Template (1080x1080) -->
+    <div id="feed-template" class="feed-template">
+      <div class="story-bg" [style.background-image]="'url(' + storyPreviewArticle()?.coverUrl + ')'"></div>
+      <div class="story-overlay"></div>
+      
+      <div class="feed-content">
+        <div class="story-blog-badge">
+          <img [src]="db.currentUser()?.avatarUrl" class="story-blog-avatar" crossorigin="anonymous">
+          <span class="story-blog-name">{{ db.currentUser()?.blogSettings?.title || db.currentUser()?.displayName }}</span>
+        </div>
+
+        <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
+        <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
+        
+        <div class="story-author-small">
+          <img [src]="storyPreviewArticle()?.authorAvatarUrl" class="story-author-avatar-sm" crossorigin="anonymous">
+          <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
+        </div>
+      </div>
+
+      <div class="watermark watermark--feed">
+        Powered by <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+      </div>
+    </div>
+  </div>
+}

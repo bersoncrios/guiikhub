@@ -36,6 +36,7 @@
     "@aws-sdk/client-s3": "^3.1073.0",
     "express": "^5.1.0",
     "firebase": "^11.1.0",
+    "html2canvas": "^1.4.1",
     "rxjs": "~7.8.0",
     "sweetalert2": "^11.26.25",
     "tslib": "^2.3.0",

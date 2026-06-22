@@ -800,3 +800,300 @@
     color: var(--secondary);
   }
 }
+
+/* ─── Story Generator Template ────────────────────────────────────────────────── */
+.story-generator-wrapper {
+  /* It is rendered off-screen via inline styles, but we need the internal sizing */
+  pointer-events: none;
+}
+
+.story-template {
+  width: 1080px;
+  height: 1920px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 120px 80px;
+  background-color: #0d0e15;
+  font-family: var(--font-sans);
+  
+  .story-bg {
+    position: absolute;
+    inset: -20px; /* slight overflow to prevent edges */
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px) brightness(0.6);
+    z-index: 0;
+  }
+
+  .story-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13,14,21,0.85) 0%, rgba(138,43,226,0.3) 100%);
+    z-index: 1;
+  }
+
+  .story-header {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    font-size: 3rem;
+    font-family: var(--font-display);
+    font-weight: 900;
+    letter-spacing: -0.05em;
+    text-transform: uppercase;
+    text-shadow: 0 4px 20px rgba(0,0,0,0.5);
+
+    .logo-geek { color: #f1f5f9; }
+    .logo-hub { color: var(--primary); }
+  }
+
+  .story-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+
+    .story-category {
+      background: var(--primary);
+      color: #fff;
+      font-size: 2rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      padding: 15px 40px;
+      border-radius: 100px;
+      letter-spacing: 0.1em;
+      box-shadow: 0 10px 30px rgba(138, 43, 226, 0.4);
+    }
+
+    .story-title {
+      font-size: 6rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.1;
+      text-shadow: 0 10px 40px rgba(0,0,0,0.6);
+      margin: 0;
+      font-family: var(--font-display);
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .story-blog-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+
+      .story-blog-avatar {
+        width: 140px;
+        height: 140px;
+        border-radius: 50%;
+        border: 6px solid var(--primary);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        object-fit: cover;
+      }
+
+      .story-blog-name {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        font-family: var(--font-display);
+      }
+    }
+
+    .story-author-small {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 30px;
+      background: rgba(0,0,0,0.4);
+      padding: 10px 30px 10px 10px;
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.2);
+
+      .story-author-avatar-sm {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      span {
+        font-size: 1.6rem;
+        color: rgba(255,255,255,0.9);
+        
+        strong {
+          color: #fff;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+
+  .story-footer {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+
+    .story-link-sticker-placeholder {
+      width: 400px;
+      height: 90px;
+      border: 4px dashed rgba(255, 255, 255, 0.4);
+      border-radius: 100px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+  }
+}
+
+.feed-template {
+  width: 1080px;
+  height: 1080px;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 80px;
+  background-color: #0d0e15;
+  font-family: var(--font-sans);
+
+  .story-bg {
+    position: absolute;
+    inset: -20px;
+    background-size: cover;
+    background-position: center;
+    filter: blur(8px) brightness(0.6);
+    z-index: 0;
+  }
+
+  .story-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13,14,21,0.85) 0%, rgba(138,43,226,0.4) 100%);
+    z-index: 1;
+  }
+
+  .feed-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+
+    .story-blog-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+
+      .story-blog-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 5px solid var(--primary);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        object-fit: cover;
+      }
+
+      .story-blog-name {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: #fff;
+        text-shadow: 0 5px 15px rgba(0,0,0,0.8);
+        font-family: var(--font-display);
+      }
+    }
+
+    .story-category {
+      background: var(--primary);
+      color: #fff;
+      font-size: 1.8rem;
+      font-weight: 800;
+      font-family: var(--font-display);
+      text-transform: uppercase;
+      padding: 12px 30px;
+      border-radius: 100px;
+      letter-spacing: 0.1em;
+      box-shadow: 0 10px 30px rgba(138, 43, 226, 0.4);
+    }
+
+    .story-title {
+      font-size: 5rem;
+      font-weight: 900;
+      color: #fff;
+      line-height: 1.15;
+      text-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      margin: 0;
+      font-family: var(--font-display);
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .story-author-small {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 30px;
+      background: rgba(0,0,0,0.5);
+      padding: 10px 25px 10px 10px;
+      border-radius: 100px;
+      border: 1px solid rgba(255,255,255,0.2);
+
+      .story-author-avatar-sm {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      span {
+        font-size: 1.4rem;
+        color: rgba(255,255,255,0.9);
+        
+        strong {
+          color: #fff;
+          font-weight: 700;
+        }
+      }
+    }
+  }
+}
+
+.watermark {
+  font-size: 1.5rem;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: var(--font-display);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  
+  .logo-geek { color: rgba(241, 245, 249, 0.7); }
+  .logo-hub { color: rgba(138, 43, 226, 0.8); }
+
+  &--feed {
+    position: absolute;
+    bottom: 40px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    z-index: 2;
+  }
+}

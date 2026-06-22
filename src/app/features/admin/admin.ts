@@ -37,6 +37,7 @@ export class AdminComponent {
   
   // Post Editing
   readonly editingArticleId = signal<string | null>(null);
+  storyPreviewArticle = signal<any | null>(null);
 
   // Blog Customizer Form
   blogTitle = '';
@@ -501,15 +502,28 @@ export class AdminComponent {
           color: '#f1f5f9'
         });
       } else {
-        Swal.fire({
+        const result = await Swal.fire({
           icon: 'success',
           title: isDraft ? 'Rascunho Salvo!' : 'Publicado!',
-          text: isDraft ? 'Sua matéria foi salva como rascunho.' : 'Sua nova matéria foi publicada com sucesso!',
-          timer: 1500,
-          showConfirmButton: false,
+          text: isDraft ? 'Sua matéria foi salva como rascunho.' : 'Sua nova matéria foi publicada com sucesso! Deseja gerar uma arte para suas redes sociais?',
+          showCancelButton: !isDraft,
+          confirmButtonText: isDraft ? 'OK' : '📸 Gerar Arte',
+          cancelButtonText: 'Fechar',
           background: '#121420',
-          color: '#f1f5f9'
+          color: '#f1f5f9',
+          customClass: {
+            popup: 'guiik-swal-popup',
+            title: 'guiik-swal-title',
+            htmlContainer: 'guiik-swal-html',
+            confirmButton: 'guiik-swal-confirm-btn',
+            cancelButton: 'guiik-swal-cancel-btn'
+          },
+          buttonsStyling: false
         });
+
+        if (!isDraft && result.isConfirmed && createdArticle) {
+          this.generateSocialImage(createdArticle);
+        }
       }
     }
     
@@ -877,6 +891,81 @@ export class AdminComponent {
 
   async deleteStatus(id: string) {
     await this.db.deleteBlogStatus(id);
+  }
+
+  async generateSocialImage(article: any) {
+    if (typeof window === 'undefined') return;
+
+    const formatChoice = await Swal.fire({
+      title: 'Qual formato?',
+      text: 'Escolha o formato ideal para a sua imagem.',
+      showDenyButton: true,
+      showCancelButton: true,
+      confirmButtonText: '📱 Story (1080x1920)',
+      denyButtonText: '🖼️ Feed (1080x1080)',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        denyButton: 'guiik-swal-confirm-btn', // Reuse confirm button style for deny button to make it look like an option
+        cancelButton: 'guiik-swal-cancel-btn'
+      },
+      buttonsStyling: false
+    });
+
+    if (!formatChoice.isConfirmed && !formatChoice.isDenied) {
+      return; // Canceled
+    }
+
+    const isFeed = formatChoice.isDenied;
+    this.storyPreviewArticle.set(article);
+    
+    // Give Angular a tick to render the off-screen template
+    setTimeout(async () => {
+      const templateId = isFeed ? 'feed-template' : 'story-template';
+      const element = document.getElementById(templateId);
+      if (!element) return;
+      
+      try {
+        Swal.fire({ title: 'Gerando arte...', text: 'Isso pode levar alguns segundos...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
+        Swal.showLoading();
+        
+        const html2canvas = (await import('html2canvas')).default;
+        const canvas = await html2canvas(element, {
+          scale: 2, // High resolution
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#0d0e15',
+          logging: false
+        });
+        
+        const link = document.createElement('a');
+        const prefix = isFeed ? 'feed' : 'story';
+        link.download = `${prefix}-${article.slug || 'post'}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        
+        this.storyPreviewArticle.set(null);
+        Swal.close();
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Arte Pronta!',
+          text: 'O download da imagem começou automaticamente!',
+          timer: 2000,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      } catch (err) {
+        console.error(err);
+        Swal.fire({ icon: 'error', title: 'Erro', text: 'Não foi possível gerar a arte.', background: '#121420', color: '#f1f5f9' });
+        this.storyPreviewArticle.set(null);
+      }
+    }, 100);
   }
 
 }
