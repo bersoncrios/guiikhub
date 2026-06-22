@@ -893,6 +893,35 @@ export class AdminComponent {
     await this.db.deleteBlogStatus(id);
   }
 
+  async urlToBase64(url: string | undefined): Promise<string> {
+    if (!url) return '';
+    if (url.startsWith('data:') || url.startsWith('/')) return url; // Already base64 or local path
+    try {
+      const response = await fetch(url, { mode: 'cors' });
+      const blob = await response.blob();
+      return await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(blob);
+      });
+    } catch (e) {
+      console.warn('CORS falhou para a imagem:', url, e);
+      // Fallback usando proxy genérico se CORS falhar (útil para imagens externas que não têm Access-Control-Allow-Origin)
+      try {
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        const response = await fetch(proxyUrl);
+        const blob = await response.blob();
+        return await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (proxyError) {
+        return url; // fallback absoluto
+      }
+    }
+  }
+
   async generateSocialImage(article: any) {
     if (typeof window === 'undefined') return;
 
@@ -921,17 +950,37 @@ export class AdminComponent {
     }
 
     const isFeed = formatChoice.isDenied;
-    this.storyPreviewArticle.set(article);
     
-    // Give Angular a tick to render the off-screen template
+    Swal.fire({ title: 'Preparando Arte...', text: 'Baixando imagens em alta resolução...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
+    Swal.showLoading();
+
+    // Convert URLs to Base64 to ensure html2canvas renders them
+    const coverBase64 = await this.urlToBase64(article.coverUrl);
+    const authorAvatarBase64 = await this.urlToBase64(article.authorAvatarUrl);
+    
+    const currentUser = this.db.currentUser();
+    const blogAvatarBase64 = await this.urlToBase64(currentUser?.avatarUrl);
+
+    // Create a safe copy of the article for the template
+    const safeArticle = {
+      ...article,
+      coverUrl: coverBase64,
+      authorAvatarUrl: authorAvatarBase64,
+      // Inject blog variables so template can use Base64
+      _blogAvatarBase64: blogAvatarBase64,
+      _blogName: currentUser?.blogSettings?.title || currentUser?.displayName
+    };
+
+    this.storyPreviewArticle.set(safeArticle);
+    
+    // Give Angular a tick to render the off-screen template with new base64 images
     setTimeout(async () => {
       const templateId = isFeed ? 'feed-template' : 'story-template';
       const element = document.getElementById(templateId);
       if (!element) return;
       
       try {
-        Swal.fire({ title: 'Gerando arte...', text: 'Isso pode levar alguns segundos...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
-        Swal.showLoading();
+        Swal.update({ title: 'Desenhando Layout...' });
         
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(element, {
@@ -945,7 +994,7 @@ export class AdminComponent {
         const link = document.createElement('a');
         const prefix = isFeed ? 'feed' : 'story';
         link.download = `${prefix}-${article.slug || 'post'}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.href = canvas.toDataURL('image/png', 0.95);
         link.click();
         
         this.storyPreviewArticle.set(null);
@@ -954,7 +1003,7 @@ export class AdminComponent {
         Swal.fire({
           icon: 'success',
           title: 'Arte Pronta!',
-          text: 'O download da imagem começou automaticamente!',
+          text: 'Sua imagem foi gerada com sucesso!',
           timer: 2000,
           showConfirmButton: false,
           background: '#121420',
@@ -965,7 +1014,7 @@ export class AdminComponent {
         Swal.fire({ icon: 'error', title: 'Erro', text: 'Não foi possível gerar a arte.', background: '#121420', color: '#f1f5f9' });
         this.storyPreviewArticle.set(null);
       }
-    }, 100);
+    }, 500); // 500ms for images to render
   }
 
 }

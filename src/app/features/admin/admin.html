@@ -917,8 +917,8 @@
 
       <div class="story-content">
         <div class="story-blog-badge">
-          <img [src]="db.currentUser()?.avatarUrl" class="story-blog-avatar" crossorigin="anonymous">
-          <span class="story-blog-name">{{ db.currentUser()?.blogSettings?.title || db.currentUser()?.displayName }}</span>
+          <img [src]="storyPreviewArticle()?._blogAvatarBase64" class="story-blog-avatar" crossorigin="anonymous">
+          <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
         </div>
 
         <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
@@ -947,8 +947,8 @@
       
       <div class="feed-content">
         <div class="story-blog-badge">
-          <img [src]="db.currentUser()?.avatarUrl" class="story-blog-avatar" crossorigin="anonymous">
-          <span class="story-blog-name">{{ db.currentUser()?.blogSettings?.title || db.currentUser()?.displayName }}</span>
+          <img [src]="storyPreviewArticle()?._blogAvatarBase64" class="story-blog-avatar" crossorigin="anonymous">
+          <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
         </div>
 
         <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
