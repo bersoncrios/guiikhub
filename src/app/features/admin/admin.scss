@@ -819,12 +819,11 @@
   background-color: #0d0e15;
   font-family: var(--font-sans);
   
-  .story-bg-img {
+  .story-bg {
     position: absolute;
-    inset: -20px; /* slight overflow to prevent edges */
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
-    object-fit: cover;
+    inset: -20px;
+    background-size: cover;
+    background-position: center;
     filter: blur(8px) brightness(0.6);
     z-index: 0;
   }
@@ -971,12 +970,11 @@
   background-color: #0d0e15;
   font-family: var(--font-sans);
 
-  .story-bg-img {
+  .story-bg {
     position: absolute;
     inset: -20px;
-    width: calc(100% + 40px);
-    height: calc(100% + 40px);
-    object-fit: cover;
+    background-size: cover;
+    background-position: center;
     filter: blur(8px) brightness(0.6);
     z-index: 0;
   }

@@ -902,33 +902,32 @@ export class AdminComponent {
       targetUrl = window.location.origin + url;
     }
 
-    try {
-      const response = await fetch(targetUrl, { mode: 'cors' });
-      if (!response.ok) throw new Error('CORS fail');
-      const blob = await response.blob();
-      if (!blob.type.startsWith('image/')) throw new Error('Not an image');
-      return await new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch (e) {
-      // Usar o wsrv.nl para contornar o CORS, e fazer o fetch MANUALMENTE do wsrv.nl
+    // Usar uma série de proxies hiper confiáveis em cascata para garantir o Base64
+    const proxies = [
+      targetUrl, // Tenta direto primeiro
+      `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`,
+      `https://wsrv.nl/?url=${encodeURIComponent(targetUrl)}&output=webp`,
+      `https://api.allorigins.win/raw?url=${encodeURIComponent(targetUrl)}`
+    ];
+
+    for (const proxy of proxies) {
       try {
-        const proxyUrl = 'https://wsrv.nl/?url=' + encodeURIComponent(targetUrl) + '&output=webp';
-        const response = await fetch(proxyUrl, { mode: 'cors' });
-        if (!response.ok) throw new Error('Proxy fail');
+        const response = await fetch(proxy, { mode: 'cors' });
+        if (!response.ok) continue;
         const blob = await response.blob();
-        if (!blob.type.startsWith('image/')) throw new Error('Proxy returned non-image');
+        if (!blob.type.startsWith('image/')) continue;
+        
         return await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
-      } catch (proxyError) {
-        return url; // último fallback
+      } catch (e) {
+        continue;
       }
     }
+    
+    return url; // Se tudo falhar (improvável), retorna a original
   }
 
   async generateSocialImage(article: any) {
@@ -960,48 +959,52 @@ export class AdminComponent {
 
     const isFeed = formatChoice.isDenied;
     
-    Swal.fire({ title: 'Preparando Arte...', text: 'Baixando imagens em alta resolução...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
+    Swal.fire({ title: 'Preparando Arte...', text: 'Baixando imagens diretamente na memória...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
     Swal.showLoading();
 
-    // Convert URLs to Base64 to ensure html2canvas renders them without network issues
+    // Buscar Base64 absoluto de forma blindada
     const coverBase64 = await this.urlToBase64(article.coverUrl);
     const authorAvatarBase64 = await this.urlToBase64(article.authorAvatarUrl);
     
     const currentUser = this.db.currentUser();
     const blogAvatarBase64 = await this.urlToBase64(currentUser?.avatarUrl);
 
-    // Create a safe copy of the article for the template
-    const safeArticle = {
+    // Set article so angular renders the text
+    this.storyPreviewArticle.set({
       ...article,
-      coverUrl: coverBase64,
-      authorAvatarUrl: authorAvatarBase64,
-      // Inject blog variables
-      _blogAvatarBase64: blogAvatarBase64,
       _blogName: currentUser?.blogSettings?.title || currentUser?.displayName
-    };
-
-    this.storyPreviewArticle.set(safeArticle);
+    });
     
-    // Give Angular a tick to render the off-screen template with new base64 images
+    // Give Angular a tick to render the off-screen template text
     setTimeout(async () => {
       const templateId = isFeed ? 'feed-template' : 'story-template';
       const element = document.getElementById(templateId);
       if (!element) return;
       
       try {
-        Swal.update({ title: 'Baixando Imagens e Desenhando...' });
+        Swal.update({ title: 'Injetando pixels...' });
         
-        // Wait EXPLICITLY for all images to completely load their data before html2canvas touches them
+        // Injeção manual no DOM para burlar sanitizadores do Angular e falhas do html2canvas
+        const prefix = isFeed ? 'feed' : 'story';
+        const bgLayer = element.querySelector(`#${prefix}-bg-layer`) as HTMLElement;
+        const blogAvatarLayer = element.querySelector(`#${prefix}-blog-avatar-layer`) as HTMLImageElement;
+        const authorAvatarLayer = element.querySelector(`#${prefix}-author-avatar-layer`) as HTMLImageElement;
+
+        if (bgLayer) bgLayer.style.backgroundImage = `url(${coverBase64})`;
+        if (blogAvatarLayer) blogAvatarLayer.src = blogAvatarBase64;
+        if (authorAvatarLayer) authorAvatarLayer.src = authorAvatarBase64;
+        
+        // Espera explícita para garantir que as tags img injetadas concluíram o carregamento do base64
         const images = Array.from(element.querySelectorAll('img'));
         await Promise.all(images.map(img => {
           if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
           return new Promise(resolve => {
             img.onload = resolve;
-            img.onerror = resolve; // Continue even if error
+            img.onerror = resolve; // Continue even se quebrar
           });
         }));
 
-        Swal.update({ title: 'Gerando o arquivo final...' });
+        Swal.update({ title: 'Tirando a foto final...' });
 
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(element, {
@@ -1012,7 +1015,6 @@ export class AdminComponent {
         });
         
         const link = document.createElement('a');
-        const prefix = isFeed ? 'feed' : 'story';
         link.download = `${prefix}-${article.slug || 'post'}.png`;
         link.href = canvas.toDataURL('image/png', 0.95);
         link.click();
@@ -1023,7 +1025,7 @@ export class AdminComponent {
         Swal.fire({
           icon: 'success',
           title: 'Arte Pronta!',
-          text: 'Sua imagem foi gerada com sucesso!',
+          text: 'Imagem gerada com imagens completas!',
           timer: 2000,
           showConfirmButton: false,
           background: '#121420',
@@ -1034,7 +1036,6 @@ export class AdminComponent {
         Swal.fire({ icon: 'error', title: 'Erro', text: 'Não foi possível gerar a arte.', background: '#121420', color: '#f1f5f9' });
         this.storyPreviewArticle.set(null);
       }
-    }, 500); // 500ms for images to render
+    }, 300);
   }
-
 }

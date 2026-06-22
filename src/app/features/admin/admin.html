@@ -908,7 +908,7 @@
 @if (storyPreviewArticle()) {
   <div class="story-generator-wrapper" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px;">
     <div id="story-template" class="story-template">
-      <img [src]="storyPreviewArticle()?.coverUrl" class="story-bg-img" alt="Background">
+      <div class="story-bg" id="story-bg-layer"></div>
       <div class="story-overlay"></div>
       
       <div class="story-header">
@@ -917,7 +917,7 @@
 
       <div class="story-content">
         <div class="story-blog-badge">
-          <img [src]="storyPreviewArticle()?._blogAvatarBase64" class="story-blog-avatar">
+          <img id="story-blog-avatar-layer" class="story-blog-avatar">
           <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
         </div>
 
@@ -925,7 +925,7 @@
         <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
         
         <div class="story-author-small">
-          <img [src]="storyPreviewArticle()?.authorAvatarUrl" class="story-author-avatar-sm">
+          <img id="story-author-avatar-layer" class="story-author-avatar-sm">
           <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
         </div>
       </div>
@@ -942,12 +942,12 @@
     
     <!-- Feed Template (1080x1080) -->
     <div id="feed-template" class="feed-template">
-      <img [src]="storyPreviewArticle()?.coverUrl" class="story-bg-img" alt="Background">
+      <div class="story-bg" id="feed-bg-layer"></div>
       <div class="story-overlay"></div>
       
       <div class="feed-content">
         <div class="story-blog-badge">
-          <img [src]="storyPreviewArticle()?._blogAvatarBase64" class="story-blog-avatar">
+          <img id="feed-blog-avatar-layer" class="story-blog-avatar">
           <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
         </div>
 
@@ -955,7 +955,7 @@
         <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
         
         <div class="story-author-small">
-          <img [src]="storyPreviewArticle()?.authorAvatarUrl" class="story-author-avatar-sm">
+          <img id="feed-author-avatar-layer" class="story-author-avatar-sm">
           <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
         </div>
       </div>
