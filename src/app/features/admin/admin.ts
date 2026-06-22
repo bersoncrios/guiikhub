@@ -895,9 +895,16 @@ export class AdminComponent {
 
   async urlToBase64(url: string | undefined): Promise<string> {
     if (!url) return '';
-    if (url.startsWith('data:') || url.startsWith('/')) return url; // Already base64 or local path
+    if (url.startsWith('data:')) return url; // Already base64
+    
+    // Resolve absolute path for local images
+    let targetUrl = url;
+    if (url.startsWith('/')) {
+      targetUrl = window.location.origin + url;
+    }
+
     try {
-      const response = await fetch(url, { mode: 'cors' });
+      const response = await fetch(targetUrl, { mode: 'cors' });
       const blob = await response.blob();
       return await new Promise((resolve) => {
         const reader = new FileReader();
@@ -905,10 +912,9 @@ export class AdminComponent {
         reader.readAsDataURL(blob);
       });
     } catch (e) {
-      console.warn('CORS falhou para a imagem:', url, e);
-      // Fallback usando proxy genérico se CORS falhar (útil para imagens externas que não têm Access-Control-Allow-Origin)
+      console.warn('CORS falhou para a imagem, tentando proxy genérico:', targetUrl);
       try {
-        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
+        const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(targetUrl);
         const response = await fetch(proxyUrl);
         const blob = await response.blob();
         return await new Promise((resolve) => {
@@ -917,7 +923,8 @@ export class AdminComponent {
           reader.readAsDataURL(blob);
         });
       } catch (proxyError) {
-        return url; // fallback absoluto
+        console.error('Falha no proxy para a imagem:', proxyError);
+        return targetUrl; // fallback
       }
     }
   }
@@ -980,13 +987,24 @@ export class AdminComponent {
       if (!element) return;
       
       try {
-        Swal.update({ title: 'Desenhando Layout...' });
+        Swal.update({ title: 'Carregando Imagens no Layout...' });
         
+        // Wait for all img elements in the template to finish loading
+        const images = Array.from(element.querySelectorAll('img'));
+        await Promise.all(images.map(img => {
+          if (img.complete) return Promise.resolve();
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve; // resolve anyway to avoid hanging
+          });
+        }));
+
+        Swal.update({ title: 'Desenhando a Arte...' });
+
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(element, {
           scale: 2, // High resolution
           useCORS: true,
-          allowTaint: true,
           backgroundColor: '#0d0e15',
           logging: false
         });
