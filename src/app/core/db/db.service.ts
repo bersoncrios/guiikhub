@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import Swal from 'sweetalert2';
-import { User, Article, Comment, BlogSettings } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus } from '../models/interfaces';
 import { 
   Firestore, 
   collection, 
@@ -38,6 +38,7 @@ export class DbService {
   readonly comments = signal<Comment[]>([]);
   readonly follows = signal<Array<{ followerId: string; followedId: string }>>([]);
   readonly likes = signal<Array<{ userId: string; articleId: string }>>([]);
+  readonly blogStatuses = signal<BlogStatus[]>([]);
 
   readonly isUsersLoading = signal<boolean>(true);
   readonly isArticlesLoading = signal<boolean>(true);
@@ -125,6 +126,13 @@ export class DbService {
     collectionData(collection(this.firestore, 'likes')).subscribe(data => {
       if (data) {
         this.likes.set(data as any[]);
+      }
+    });
+
+    // 7. Sync Blog Statuses Collection
+    collectionData(collection(this.firestore, 'blog_statuses'), { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.blogStatuses.set(data as BlogStatus[]);
       }
     });
   }
@@ -642,4 +650,29 @@ export class DbService {
     this.currentUser.update(curr => curr ? { ...curr, collaborators: newCollabs } : null);
   }
 
+  // Temporary Statuses (Stories)
+  async addBlogStatus(content: string, targetBlogId?: string) {
+    const user = this.currentUser();
+    if (!user) return null;
+
+    const id = 'status_' + Date.now();
+    const now = new Date();
+    const expiresAt = new Date(now.getTime() + 24 * 60 * 60 * 1000); // 24 hours
+
+    const newStatus: BlogStatus = {
+      id,
+      authorId: user.id,
+      blogId: targetBlogId || user.id,
+      content,
+      createdAt: now.toISOString(),
+      expiresAt: expiresAt.toISOString()
+    };
+
+    await setDoc(doc(this.firestore, `blog_statuses/${id}`), newStatus);
+    return newStatus;
+  }
+
+  async deleteBlogStatus(id: string) {
+    await deleteDoc(doc(this.firestore, `blog_statuses/${id}`));
+  }
 }

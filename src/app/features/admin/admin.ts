@@ -83,6 +83,18 @@ export class AdminComponent {
     return this.db.users().filter(u => user.collaborators!.includes(u.id));
   });
 
+  // Status (Stories)
+  newStatusContent = '';
+  statusTargetBlogId = '';
+  readonly activeStatus = computed(() => {
+    const user = this.db.currentUser();
+    if (!user) return null;
+    const now = Date.now();
+    return this.db.blogStatuses()
+      .filter(s => s.blogId === user.id && new Date(s.expiresAt).getTime() > now)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+  });
+
   constructor(public db: DbService) {
     // Re-initialize forms when the active user changes
     effect(() => {
@@ -829,21 +841,42 @@ export class AdminComponent {
     }
   }
 
-  async removeCollaborator(collabId: string) {
-    const res = await Swal.fire({
-      title: 'Remover Colaborador?',
-      text: 'Ele não poderá mais postar no seu blog.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: 'Sim',
-      cancelButtonText: 'Cancelar',
+  async removeCollaborator(id: string) {
+    if (confirm('Tem certeza que deseja remover este colaborador?')) {
+      await this.db.removeCollaborator(id);
+    }
+  }
+
+  // Status (Stories)
+  async postStatus() {
+    if (!this.newStatusContent.trim()) return;
+    if (this.newStatusContent.length > 150) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Texto muito longo',
+        text: 'O status deve ter no máximo 150 caracteres.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+    
+    await this.db.addBlogStatus(this.newStatusContent, this.statusTargetBlogId || undefined);
+    this.newStatusContent = '';
+    
+    Swal.fire({
+      icon: 'success',
+      title: 'Status Publicado!',
+      text: 'Seu status ficará visível por 24 horas.',
+      timer: 1500,
+      showConfirmButton: false,
       background: '#121420',
       color: '#f1f5f9'
     });
-    if (res.isConfirmed) {
-      await this.db.removeCollaborator(collabId);
-      Swal.fire({ icon: 'success', title: 'Removido!', timer: 1200, showConfirmButton: false, background: '#121420', color: '#f1f5f9' });
-    }
+  }
+
+  async deleteStatus(id: string) {
+    await this.db.deleteBlogStatus(id);
   }
 
 }

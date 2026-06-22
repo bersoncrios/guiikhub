@@ -165,6 +165,41 @@
   }
 }
 
+/* Status Bubble (Story) */
+.status-bubble-container {
+  max-width: 1000px;
+  width: 100%;
+  margin: 1.5rem auto 0;
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: center;
+
+  .status-bubble-content {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 3px solid var(--blog-primary);
+    border-radius: 8px;
+    padding: 1rem 1.5rem;
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    text-align: left;
+
+    .status-text {
+      font-size: 1rem;
+      color: var(--blog-text);
+      line-height: 1.5;
+      margin: 0;
+    }
+
+    .status-meta {
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+  }
+}
+
 /* Custom blog cards styling */
 .custom-card {
   background: var(--blog-card-bg);

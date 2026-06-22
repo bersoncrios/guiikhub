@@ -141,6 +141,29 @@
           <button class="btn btn-primary btn-sm" (click)="setTab('new-post')">+ Nova Matéria</button>
         </div>
 
+        <!-- Status / Stories Section -->
+        <div class="status-section" style="padding: 1.5rem; background: rgba(0,240,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05);">
+          <h3 style="font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+            💬 Meu Status Rápido (24h)
+          </h3>
+          
+          @if (activeStatus(); as status) {
+            <div class="active-status" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
+              <div>
+                <p style="margin: 0; font-size: 0.95rem;">"{{ status.content }}"</p>
+                <small style="color: #94a3b8; font-size: 0.75rem;">Postado em {{ status.createdAt | date:'shortTime' }}</small>
+              </div>
+              <button class="btn btn-secondary btn-sm" style="background: rgba(255,50,50,0.1); color: #ff6b6b; border-color: rgba(255,50,50,0.2);" (click)="deleteStatus(status.id)">Apagar</button>
+            </div>
+          } @else {
+            <div class="new-status-form" style="display: flex; gap: 0.5rem;">
+              <input type="text" [(ngModel)]="newStatusContent" class="form-control" placeholder="No que você está trabalhando hoje?" maxlength="150" style="flex: 1;">
+              <button class="btn btn-primary" (click)="postStatus()" [disabled]="!newStatusContent.trim()">Postar</button>
+            </div>
+            <small style="color: #94a3b8; font-size: 0.75rem; display: block; margin-top: 0.5rem;">O status ficará visível no topo do seu blog por 24 horas.</small>
+          }
+        </div>
+
         <div class="posts-table-wrapper">
           <table class="posts-table">
             <thead>

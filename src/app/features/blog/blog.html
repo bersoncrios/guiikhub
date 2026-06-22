@@ -86,6 +86,16 @@
       </div>
     </section>
 
+    <!-- Active Status Bubble (Story) -->
+    @if (activeStatus(); as status) {
+      <div class="status-bubble-container">
+        <div class="status-bubble-content">
+          <span class="status-meta">🕒 Atualização Rápida • {{ status.createdAt | date:'shortTime' }}</span>
+          <p class="status-text">{{ status.content }}</p>
+        </div>
+      </div>
+    }
+
     <!-- Main Content Layout with Sidebar -->
     <div class="blog-content-layout">
       

@@ -42,6 +42,15 @@ export class BlogComponent {
     return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && art.status === 'published');
   });
 
+  readonly activeStatus = computed(() => {
+    const user = this.blogUser();
+    if (!user) return null;
+    const now = Date.now();
+    return this.db.blogStatuses()
+      .filter(s => s.blogId === user.id && new Date(s.expiresAt).getTime() > now)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0] || null;
+  });
+
 
   // Build custom CSS variables map for the wrapper
   readonly customStyleVariables = computed(() => {
