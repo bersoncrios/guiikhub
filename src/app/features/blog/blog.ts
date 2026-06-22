@@ -4,6 +4,7 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-blog',
@@ -76,6 +77,7 @@ export class BlogComponent {
     } as Record<string, string>;
   });
 
+  private readonly seo = inject(SeoService);
   private viewRegisteredForUserId = '';
 
   constructor() {
@@ -89,26 +91,20 @@ export class BlogComponent {
         }
 
         const blogTitle = user.blogSettings?.title || user.displayName;
-        const fullTitle = `${blogTitle} — GuiikHub`;
         const description = user.blogSettings?.tagline || user.bio || 'Confira o meu blog no GuiikHub!';
-        const imageUrl = user.blogSettings?.bannerUrl || user.bannerUrl || 'https://guiikhub.vercel.app/images/cyberpunk_cover.png';
+        const imageUrl = user.blogSettings?.bannerUrl || user.bannerUrl || 'https://guiikhub.com/images/logo-guiikhub.png';
         
-        this.titleService.setTitle(fullTitle);
-        
-        this.metaService.updateTag({ property: 'og:title', content: fullTitle });
-        this.metaService.updateTag({ property: 'og:description', content: description });
-        this.metaService.updateTag({ property: 'og:image', content: imageUrl });
-        this.metaService.updateTag({ property: 'og:type', content: 'website' });
-        
-        this.metaService.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-        this.metaService.updateTag({ name: 'twitter:title', content: fullTitle });
-        this.metaService.updateTag({ name: 'twitter:description', content: description });
-        this.metaService.updateTag({ name: 'twitter:image', content: imageUrl });
+        this.seo.updateTags({
+          title: blogTitle,
+          description: description,
+          image: imageUrl,
+          type: 'profile',
+          route: `/b/${user.username}`
+        });
 
       } else if (this.username()) {
-        const fallbackTitle = `@${this.username()} — GuiikHub`;
-        this.titleService.setTitle(fallbackTitle);
-        this.metaService.updateTag({ property: 'og:title', content: fallbackTitle });
+        const fallbackTitle = `@${this.username()}`;
+        this.seo.updateTags({ title: fallbackTitle });
       }
     });
   }

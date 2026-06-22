@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-article-detail',
@@ -91,6 +92,7 @@ export class ArticleDetailComponent {
     } as Record<string, string>;
   });
 
+  private readonly seo = inject(SeoService);
   private viewRegisteredForUserId = '';
 
   constructor() {
@@ -105,19 +107,16 @@ export class ArticleDetailComponent {
 
       if (art) {
         const blogTitle = user?.blogSettings.title || art.authorDisplayName;
-        const fullTitle = `${art.title} — ${blogTitle}`;
         
-        this.titleService.setTitle(fullTitle);
-        
-        this.metaService.updateTag({ property: 'og:title', content: fullTitle });
-        this.metaService.updateTag({ property: 'og:description', content: art.summary });
-        this.metaService.updateTag({ property: 'og:image', content: art.coverUrl || 'https://guiikhub.vercel.app/images/cyberpunk_cover.png' });
-        this.metaService.updateTag({ property: 'og:type', content: 'article' });
-        
-        this.metaService.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-        this.metaService.updateTag({ name: 'twitter:title', content: fullTitle });
-        this.metaService.updateTag({ name: 'twitter:description', content: art.summary });
-        this.metaService.updateTag({ name: 'twitter:image', content: art.coverUrl || 'https://guiikhub.vercel.app/images/cyberpunk_cover.png' });
+        this.seo.updateTags({
+          title: `${art.title} — ${blogTitle}`,
+          description: art.summary,
+          image: art.coverUrl || 'https://guiikhub.com/images/logo-guiikhub.png',
+          type: 'article',
+          route: `/b/${user?.username}/post/${art.slug}`,
+          tags: art.tags,
+          author: art.authorDisplayName
+        });
       }
     });
   }

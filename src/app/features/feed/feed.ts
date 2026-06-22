@@ -1,9 +1,10 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { DbService } from '../../core/db/db.service';
 import { Article, User } from '../../core/models/interfaces';
+import { SeoService } from '../../core/services/seo.service';
 
 @Component({
   selector: 'app-feed',
@@ -12,8 +13,9 @@ import { Article, User } from '../../core/models/interfaces';
   templateUrl: './feed.html',
   styleUrl: './feed.scss'
 })
-export class FeedComponent {
+export class FeedComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
   readonly searchQuery = signal('');
   readonly selectedTag = signal<string | null>(null);
   readonly mobileNavOpen = signal(false);
@@ -60,6 +62,14 @@ export class FeedComponent {
   });
 
   constructor(public db: DbService) {}
+
+  ngOnInit() {
+    this.seo.updateTags({
+      title: 'GuiikHub',
+      description: 'Descubra e crie artigos incríveis sobre tudo o que você ama.',
+      route: ''
+    });
+  }
 
   selectTag(tag: string | null) {
     this.selectedTag.set(tag);
