@@ -17,7 +17,7 @@ import { BlogSettings } from '../../core/models/interfaces';
 export class AdminComponent {
   private readonly router = inject(Router);
   // Navigation
-  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs'>('posts');
+  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization'>('posts');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
   closeMobileNav()  { this.mobileNavOpen.set(false); }
@@ -47,6 +47,15 @@ export class AdminComponent {
   blogLayout: 'grid' | 'list' | 'magazine' = 'grid';
   blogBannerUrl = '';
   isUploadingBlogBanner = false;
+
+  // Sponsor Banners
+  blogSponsorUrl1 = '';
+  blogSponsorLink1 = '';
+  isUploadingSponsor1 = false;
+  
+  blogSponsorUrl2 = '';
+  blogSponsorLink2 = '';
+  isUploadingSponsor2 = false;
 
   // Profile Form
   profileName = '';
@@ -110,9 +119,14 @@ export class AdminComponent {
     this.blogFont = s.fontFamily;
     this.blogLayout = s.layoutType;
     this.blogBannerUrl = s.bannerUrl || '';
+    
+    this.blogSponsorUrl1 = s.sponsorBannerUrl1 || '';
+    this.blogSponsorLink1 = s.sponsorBannerLink1 || '';
+    this.blogSponsorUrl2 = s.sponsorBannerUrl2 || '';
+    this.blogSponsorLink2 = s.sponsorBannerLink2 || '';
   }
 
-  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs') {
+  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization') {
     this.activeTab.set(tab);
     if (tab === 'new-post') {
       // Clear editor when opening the new post tab
@@ -330,7 +344,11 @@ export class AdminComponent {
       textColor: this.blogText,
       fontFamily: this.blogFont,
       layoutType: this.blogLayout,
-      bannerUrl: this.blogBannerUrl || '/images/cyberpunk_cover.png'
+      bannerUrl: this.blogBannerUrl || '/images/cyberpunk_cover.png',
+      sponsorBannerUrl1: this.blogSponsorUrl1,
+      sponsorBannerLink1: this.blogSponsorLink1,
+      sponsorBannerUrl2: this.blogSponsorUrl2,
+      sponsorBannerLink2: this.blogSponsorLink2
     };
 
     this.db.updateBlogSettings(settings);
@@ -628,6 +646,65 @@ export class AdminComponent {
       Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
     } finally {
       this.isUploadingBlogBanner = false;
+      input.value = '';
+    }
+  }
+
+  async onSponsorBannerSelected(event: Event, sponsorIndex: 1 | 2) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    
+    if (file.size > 2 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'O banner deve ter no máximo 2MB.', 'error');
+      return;
+    }
+
+    if (sponsorIndex === 1) this.isUploadingSponsor1 = true;
+    else this.isUploadingSponsor2 = true;
+
+    const filename = `sponsor${sponsorIndex}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    try {
+      const s3 = new S3Client({
+        endpoint: 'https://s3.tebi.io',
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: 'ztWbSlXugHK1EYjV',
+          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
+        }
+      });
+
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      const cmd = new PutObjectCommand({
+        Bucket: 'guiikhub',
+        Key: filename,
+        Body: fileBuffer,
+        ContentType: file.type,
+        ACL: 'public-read'
+      });
+
+      await s3.send(cmd);
+
+      if (sponsorIndex === 1) this.blogSponsorUrl1 = uploadUrl;
+      else this.blogSponsorUrl2 = uploadUrl;
+
+      Swal.fire({
+        icon: 'success',
+        title: 'Banner Enviado!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } catch (err) {
+      console.error(`Erro ao enviar banner sponsor ${sponsorIndex}:`, err);
+      Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
+    } finally {
+      if (sponsorIndex === 1) this.isUploadingSponsor1 = false;
+      else this.isUploadingSponsor2 = false;
       input.value = '';
     }
   }

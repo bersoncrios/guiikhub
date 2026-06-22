@@ -86,9 +86,35 @@
       </div>
     </section>
 
-    <!-- Articles Feed Section -->
-    <main class="blog-articles-container">
-      <!-- Layout: Grid -->
+    <!-- Main Content Layout with Sidebar -->
+    <div class="blog-content-layout">
+      
+      <!-- Sidebar (Left) -->
+      @if (user.blogSettings.sponsorBannerUrl2) {
+        <aside class="blog-sidebar">
+          <div class="sponsor-banner-wrapper sidebar-sponsor glass-card">
+            <a [href]="user.blogSettings.sponsorBannerLink2 || '#'" target="_blank" rel="noopener noreferrer">
+              <div class="sponsor-label">Patrocinado</div>
+              <img [src]="user.blogSettings.sponsorBannerUrl2" alt="Patrocinador" class="sponsor-img">
+            </a>
+          </div>
+        </aside>
+      }
+
+      <!-- Main Feed (Right) -->
+      <div class="blog-main-feed">
+        @if (user.blogSettings.sponsorBannerUrl1) {
+          <div class="sponsor-banner-wrapper top-sponsor glass-card">
+            <a [href]="user.blogSettings.sponsorBannerLink1 || '#'" target="_blank" rel="noopener noreferrer">
+              <div class="sponsor-label">Patrocinado</div>
+              <img [src]="user.blogSettings.sponsorBannerUrl1" alt="Patrocinador" class="sponsor-img">
+            </a>
+          </div>
+        }
+
+        <!-- Articles Feed Section -->
+        <main class="blog-articles-container">
+          <!-- Layout: Grid -->
       @if (user.blogSettings.layoutType === 'grid') {
         <div class="layout-grid">
           @for (art of blogArticles(); track art.id) {
@@ -189,7 +215,9 @@
           <p>Este criador ainda não publicou matérias no seu blog.</p>
         </div>
       }
-    </main>
+        </main>
+      </div>
+    </div>
 
     <footer class="blog-footer">
       <p>© {{ user.blogSettings.title }} - Criado com GuiikHub</p>

@@ -9,6 +9,10 @@ export interface BlogSettings {
   fontFamily: 'Outfit' | 'Space Grotesk' | 'Fira Code' | 'system-ui';
   layoutType: 'grid' | 'list' | 'magazine';
   bannerUrl: string;
+  sponsorBannerUrl1?: string;
+  sponsorBannerLink1?: string;
+  sponsorBannerUrl2?: string;
+  sponsorBannerLink2?: string;
 }
 
 export interface User {

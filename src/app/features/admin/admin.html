@@ -122,6 +122,12 @@
           (click)="setTab('collabs')">
           <span class="icon">👥</span> Colaboradores
         </button>
+        <button 
+          class="menu-btn" 
+          [class.active]="activeTab() === 'monetization'" 
+          (click)="setTab('monetization')">
+          <span class="icon">💰</span> Monetização
+        </button>
       </div>
     </aside>
 
@@ -578,6 +584,8 @@
             </div>
           </div>
 
+
+
           <!-- Color Customizer Grid -->
           <div class="color-picker-grid">
             <h4 class="grid-title">Esquema de Cores Customizado</h4>
@@ -768,6 +776,95 @@
             </tbody>
           </table>
         </div>
+      </div>
+    }
+
+    <!-- Active Tab: Monetization -->
+    @if (activeTab() === 'monetization') {
+      <div class="glass-card work-card">
+        <div class="card-header">
+          <h2>Monetização & Patrocínios</h2>
+          <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
+        </div>
+
+        <form (submit)="saveBlogSettings()" class="studio-form">
+          <div class="color-picker-grid" style="margin-top: 1rem;">
+            <p class="form-help" style="margin-bottom: 1.5rem;">Adicione banners de patrocinadores ao seu blog para gerar receita. Os banners serão exibidos no seu feed.</p>
+            
+            <!-- Sponsor 1 -->
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>Banner do Patrocinador 1 (Topo do Feed)</label>
+                <div style="display: flex; gap: 0.5rem; width: 100%;">
+                  <input
+                    type="url"
+                    name="blogSponsorUrl1"
+                    [(ngModel)]="blogSponsorUrl1"
+                    class="form-control"
+                    placeholder="Link da imagem (ou envie um arquivo)"
+                    style="flex: 1;">
+                  
+                  <input type="file" id="sponsor1FileInput" class="file-input-hidden" accept="image/*" (change)="onSponsorBannerSelected($event, 1)" style="display: none;">
+                  <label for="sponsor1FileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                    @if (isUploadingSponsor1) {
+                      ⏳
+                    } @else {
+                      📁 Enviar
+                    }
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Link de Destino 1</label>
+                <input 
+                  type="url" 
+                  name="blogSponsorLink1" 
+                  [(ngModel)]="blogSponsorLink1" 
+                  class="form-control" 
+                  placeholder="https://site-do-patrocinador.com">
+              </div>
+            </div>
+
+            <!-- Sponsor 2 -->
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>Banner do Patrocinador 2 (Barra Lateral)</label>
+                <div style="display: flex; gap: 0.5rem; width: 100%;">
+                  <input
+                    type="url"
+                    name="blogSponsorUrl2"
+                    [(ngModel)]="blogSponsorUrl2"
+                    class="form-control"
+                    placeholder="Link da imagem (ou envie um arquivo)"
+                    style="flex: 1;">
+                  
+                  <input type="file" id="sponsor2FileInput" class="file-input-hidden" accept="image/*" (change)="onSponsorBannerSelected($event, 2)" style="display: none;">
+                  <label for="sponsor2FileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                    @if (isUploadingSponsor2) {
+                      ⏳
+                    } @else {
+                      📁 Enviar
+                    }
+                  </label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Link de Destino 2</label>
+                <input 
+                  type="url" 
+                  name="blogSponsorLink2" 
+                  [(ngModel)]="blogSponsorLink2" 
+                  class="form-control" 
+                  placeholder="https://site-do-patrocinador.com">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Salvar Monetização</button>
+            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+          </div>
+        </form>
       </div>
     }
   </section>
