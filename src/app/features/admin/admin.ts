@@ -37,6 +37,24 @@ export class AdminComponent {
   
   // Post Editing
   readonly editingArticleId = signal<string | null>(null);
+
+  // --- Editor Sidebar State ---
+  editorSidebarTab: 'notes' | 'versions' = 'notes';
+  newNoteContent: string = '';
+
+  articleNotes = computed(() => {
+    const id = this.editingArticleId();
+    if (!id) return [];
+    return this.db.articleNotes().filter(n => n.articleId === id);
+  });
+
+  articleVersions = computed(() => {
+    const id = this.editingArticleId();
+    if (!id) return [];
+    return this.db.articleVersions().filter(v => v.articleId === id);
+  });
+  // ----------------------------
+
   storyPreviewArticle = signal<any | null>(null);
 
   // Blog Customizer Form
@@ -253,6 +271,76 @@ export class AdminComponent {
       this.isUploadingInlineImage = false;
       input.value = ''; // Reset input
     }
+  }
+
+  async sendNote() {
+    const id = this.editingArticleId();
+    if (!id || !this.newNoteContent.trim()) return;
+    await this.db.addArticleNote(id, this.newNoteContent);
+    this.newNoteContent = '';
+  }
+
+  async saveArticleVersionManually() {
+    const id = this.editingArticleId();
+    if (!id) return;
+    const article = this.db.articles().find(a => a.id === id);
+    if (!article) return;
+    
+    // Create an updated mock article to save current editor state
+    const currentArticleState = {
+      ...article,
+      title: this.newPostTitle,
+      summary: this.newPostSummary,
+      content: this.newPostContent,
+      coverUrl: this.newPostCoverUrl,
+      tags: this.newPostTags.split(',').map(t => t.trim()).filter(t => t)
+    };
+
+    await this.db.saveArticleVersion(currentArticleState as any);
+    Swal.fire({
+      icon: 'success',
+      title: 'Versão Salva!',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 2000
+    });
+  }
+
+  restoreVersion(version: any) {
+    Swal.fire({
+      title: 'Restaurar Versão?',
+      text: `Deseja restaurar a versão salva em ${new Date(version.savedAt).toLocaleString()}? Isso irá substituir o conteúdo atual do editor.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, restaurar',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        this.newPostTitle = version.title;
+        this.newPostSummary = version.summary;
+        this.newPostContent = version.content;
+        this.newPostCoverUrl = version.coverUrl;
+        this.newPostTags = version.tags ? version.tags.join(', ') : '';
+        
+        // Update DOM editor
+        if (this.richEditorRef?.nativeElement) {
+          this.richEditorRef.nativeElement.innerHTML = this.newPostContent;
+          this.editorHasContent.set(this.newPostContent.trim().length > 0);
+        }
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Restaurado!',
+          toast: true,
+          position: 'top-end',
+          showConfirmButton: false,
+          timer: 2000
+        });
+      }
+    });
   }
 
   clearEditorContent() {

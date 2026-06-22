@@ -231,13 +231,20 @@
 
     <!-- Active Tab: New Post Form -->
     @if (activeTab() === 'new-post') {
-      <div class="glass-card work-card">
+      <div class="glass-card work-card editor-card">
         <div class="card-header">
           <h2>{{ editingArticleId() ? 'Editar Matéria' : 'Nova Matéria' }}</h2>
-          <button class="btn btn-secondary btn-sm" (click)="setTab('posts')">Cancelar</button>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            @if (editingArticleId()) {
+              <button class="btn btn-secondary btn-sm" (click)="saveArticleVersionManually()">🗂️ Salvar Versão Atual</button>
+            }
+            <button class="btn btn-secondary btn-sm" (click)="setTab('posts')">Cancelar</button>
+          </div>
         </div>
 
-        <form (submit)="$event.preventDefault()" class="studio-form">
+        <div class="editor-layout" [class.has-sidebar]="editingArticleId()">
+          <div class="editor-main">
+            <form (submit)="$event.preventDefault()" class="studio-form">
           @if (db.collaboratingBlogs().length > 0) {
             <div class="form-group">
               <label for="targetBlogId">Onde Postar?</label>
@@ -468,6 +475,57 @@
             <button type="button" class="btn btn-secondary" (click)="setTab('posts')" style="background: transparent;">Voltar</button>
           </div>
         </form>
+        </div>
+
+        @if (editingArticleId()) {
+          <div class="editor-sidebar">
+            <div class="sidebar-tabs">
+              <button [class.active]="editorSidebarTab === 'notes'" (click)="editorSidebarTab = 'notes'">💬 Notas da Equipe</button>
+              <button [class.active]="editorSidebarTab === 'versions'" (click)="editorSidebarTab = 'versions'">🗂️ Versões</button>
+            </div>
+
+            @if (editorSidebarTab === 'notes') {
+              <div class="sidebar-content notes-content">
+                <div class="notes-list">
+                  @for (note of articleNotes(); track note.id) {
+                    <div class="note-bubble" [class.own]="note.authorId === db.currentUser()?.id">
+                      <img [src]="note.authorAvatarUrl" class="note-avatar">
+                      <div class="note-body">
+                        <div class="note-author">{{ note.authorDisplayName }} <span class="note-time">{{ note.createdAt | date:'shortTime' }}</span></div>
+                        <div class="note-text">{{ note.content }}</div>
+                      </div>
+                    </div>
+                  } @empty {
+                    <div class="empty-state-small">Nenhuma nota ainda.</div>
+                  }
+                </div>
+                <div class="note-input-area">
+                  <input type="text" [(ngModel)]="newNoteContent" placeholder="Digite uma nota..." (keyup.enter)="sendNote()">
+                  <button class="btn btn-primary btn-sm" (click)="sendNote()">Enviar</button>
+                </div>
+              </div>
+            }
+
+            @if (editorSidebarTab === 'versions') {
+              <div class="sidebar-content versions-content">
+                <div class="versions-list">
+                  @for (version of articleVersions(); track version.id) {
+                    <div class="version-item">
+                      <div class="version-header">
+                        <strong>{{ version.savedAt | date:'dd/MM/yy HH:mm' }}</strong>
+                        <button class="btn btn-secondary btn-sm" (click)="restoreVersion(version)">Restaurar</button>
+                      </div>
+                      <div class="version-meta">Salvo por: {{ version.savedByDisplayName }}</div>
+                    </div>
+                  } @empty {
+                    <div class="empty-state-small">Nenhuma versão salva.</div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+        </div>
       </div>
     }
 

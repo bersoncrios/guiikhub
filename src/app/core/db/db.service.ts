@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
 import Swal from 'sweetalert2';
-import { User, Article, Comment, BlogSettings, BlogStatus } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion } from '../models/interfaces';
 import { 
   Firestore, 
   collection, 
@@ -39,6 +39,8 @@ export class DbService {
   readonly follows = signal<Array<{ followerId: string; followedId: string }>>([]);
   readonly likes = signal<Array<{ userId: string; articleId: string }>>([]);
   readonly blogStatuses = signal<BlogStatus[]>([]);
+  readonly articleNotes = signal<ArticleNote[]>([]);
+  readonly articleVersions = signal<ArticleVersion[]>([]);
 
   readonly isUsersLoading = signal<boolean>(true);
   readonly isArticlesLoading = signal<boolean>(true);
@@ -138,6 +140,22 @@ export class DbService {
     collectionData(collection(this.firestore, 'blog_statuses'), { idField: 'id' }).subscribe(data => {
       if (data) {
         this.blogStatuses.set(data as BlogStatus[]);
+      }
+    });
+
+    // 8. Sync Article Notes Collection
+    const notesQuery = query(collection(this.firestore, 'article_notes'), orderBy('createdAt', 'asc'));
+    collectionData(notesQuery, { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.articleNotes.set(data as ArticleNote[]);
+      }
+    });
+
+    // 9. Sync Article Versions Collection
+    const versionsQuery = query(collection(this.firestore, 'article_versions'), orderBy('savedAt', 'desc'));
+    collectionData(versionsQuery, { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.articleVersions.set(data as ArticleVersion[]);
       }
     });
   }
@@ -415,8 +433,41 @@ export class DbService {
   }
 
   async updateArticle(id: string, data: Partial<Article>) {
-    // Optional: add a new slug if title changes, but for simplicity let's just update the provided fields
     await updateDoc(doc(this.firestore, `articles/${id}`), data);
+  }
+
+  async saveArticleVersion(article: Article) {
+    const user = this.currentUser();
+    if (!user) return;
+    const versionId = 'v_' + Date.now();
+    const newVersion: ArticleVersion = {
+      id: versionId,
+      articleId: article.id,
+      title: article.title,
+      content: article.content,
+      summary: article.summary,
+      coverUrl: article.coverUrl,
+      tags: article.tags || [],
+      savedAt: new Date().toISOString(),
+      savedByDisplayName: user.displayName
+    };
+    await setDoc(doc(this.firestore, `article_versions/${versionId}`), newVersion);
+  }
+
+  async addArticleNote(articleId: string, content: string) {
+    const user = this.currentUser();
+    if (!user) return;
+    const noteId = 'n_' + Date.now();
+    const newNote: ArticleNote = {
+      id: noteId,
+      articleId,
+      authorId: user.id,
+      authorDisplayName: user.displayName,
+      authorAvatarUrl: user.avatarUrl,
+      content,
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(this.firestore, `article_notes/${noteId}`), newNote);
   }
 
   async deleteArticle(id: string) {
