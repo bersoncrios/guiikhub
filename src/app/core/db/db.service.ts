@@ -363,13 +363,20 @@ export class DbService {
 
 
   // Mutator Actions linked to Firestore
-  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[], targetBlogId?: string) {
+  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[], targetBlogId?: string, saveAsDraft: boolean = false) {
     const user = this.currentUser();
     if (!user) return null;
 
     const id = 'art_' + Date.now();
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
     const isCollaboratorPost = targetBlogId && targetBlogId !== user.id;
+    
+    let status: 'published' | 'pending' | 'draft' = 'published';
+    if (saveAsDraft) {
+      status = 'draft';
+    } else if (isCollaboratorPost) {
+      status = 'pending';
+    }
 
     const newArticle: Article = {
       id,
@@ -383,7 +390,7 @@ export class DbService {
       authorDisplayName: user.displayName,
       authorAvatarUrl: user.avatarUrl,
       blogId: targetBlogId || user.id,
-      status: isCollaboratorPost ? 'pending' : 'published',
+      status,
       createdAt: new Date().toISOString(),
       tags,
       likesCount: 0,
@@ -392,6 +399,11 @@ export class DbService {
 
     await setDoc(doc(this.firestore, `articles/${id}`), newArticle);
     return newArticle;
+  }
+
+  async updateArticle(id: string, data: Partial<Article>) {
+    // Optional: add a new slug if title changes, but for simplicity let's just update the provided fields
+    await updateDoc(doc(this.firestore, `articles/${id}`), data);
   }
 
   async deleteArticle(id: string) {

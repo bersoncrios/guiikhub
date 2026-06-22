@@ -47,11 +47,11 @@ export class ArticleDetailComponent {
     const art = this.db.articles().find(art => art.slug === slugStr) || null;
     if (!art) return null;
     
-    if (art.status === 'pending') {
+    if (art.status === 'pending' || art.status === 'draft') {
       const user = this.db.currentUser();
       if (!user) return null;
       if (art.authorId !== user.id && (art.blogId || art.authorId) !== user.id) {
-        return null; // Hide pending article from public
+        return null; // Hide pending/draft article from public
       }
     }
     return art;

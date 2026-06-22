@@ -39,8 +39,9 @@ export interface Article {
   authorDisplayName: string;
   authorAvatarUrl: string;
   blogId?: string;
-  status?: 'published' | 'pending';
+  status?: 'published' | 'pending' | 'draft';
   createdAt: string;
+  updatedAt?: string;
   tags: string[];
   likesCount: number;
   commentsCount: number;

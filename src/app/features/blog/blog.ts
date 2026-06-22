@@ -39,7 +39,7 @@ export class BlogComponent {
   readonly blogArticles = computed(() => {
     const user = this.blogUser();
     if (!user) return [];
-    return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && art.status !== 'pending');
+    return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && art.status === 'published');
   });
 
 

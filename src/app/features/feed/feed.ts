@@ -23,7 +23,7 @@ export class FeedComponent {
 
   // Filtered articles
   readonly filteredArticles = computed(() => {
-    let list = this.db.articles().filter(art => art.status !== 'pending');
+    let list = this.db.articles().filter(art => art.status === 'published');
     const query = this.searchQuery().toLowerCase().trim();
     const tag = this.selectedTag();
 
@@ -46,7 +46,7 @@ export class FeedComponent {
   readonly allTags = computed(() => {
     const tags = new Set<string>();
     this.db.articles()
-      .filter(art => art.status !== 'pending')
+      .filter(art => art.status === 'published')
       .forEach(art => {
         art.tags.forEach(t => tags.add(t));
       });

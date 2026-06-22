@@ -48,8 +48,11 @@
                 </div>
               </div>
               
-              <div class="date-info">
-                <span>Publicado em {{ art.createdAt | date:'longDate' }}</span>
+              <div class="date-info" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                <span>Publicado em {{ art.createdAt | date:'dd/MM/yyyy \'às\' HH:mm' }}</span>
+                @if (art.updatedAt) {
+                  <span class="edited-date" style="opacity: 0.8; font-style: italic; font-size: 0.85em;">(Editado em {{ art.updatedAt | date:'dd/MM/yyyy \'às\' HH:mm' }})</span>
+                }
               </div>
             </div>
 

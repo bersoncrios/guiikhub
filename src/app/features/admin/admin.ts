@@ -34,6 +34,9 @@ export class AdminComponent {
   // Rich Text Editor
   @ViewChild('richEditor') richEditorRef!: ElementRef<HTMLDivElement>;
   readonly editorHasContent = signal(false);
+  
+  // Post Editing
+  readonly editingArticleId = signal<string | null>(null);
 
   // Blog Customizer Form
   blogTitle = '';
@@ -128,14 +131,16 @@ export class AdminComponent {
 
   setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization') {
     this.activeTab.set(tab);
-    if (tab === 'new-post') {
-      // Clear editor when opening the new post tab
-      setTimeout(() => {
-        if (this.richEditorRef?.nativeElement) {
-          this.richEditorRef.nativeElement.innerHTML = '';
-          this.editorHasContent.set(false);
-        }
-      }, 0);
+    if (tab === 'new-post' && !this.editingArticleId()) {
+      // Clear editor when opening the new post tab for a NEW post
+      this.clearEditorContent();
+      this.newPostTitle = '';
+      this.newPostSummary = '';
+      this.newPostCoverUrl = '/images/cyberpunk_cover.png';
+      this.newPostTags = 'Gamer, Geek, Tech';
+      this.targetBlogId = '';
+    } else if (tab !== 'new-post') {
+      this.editingArticleId.set(null);
     }
   }
 
@@ -400,7 +405,7 @@ export class AdminComponent {
     }
   }
 
-  async createPost() {
+  async savePost(isDraft: boolean = false) {
     // Sync content from editor
     if (this.richEditorRef?.nativeElement) {
       this.newPostContent = this.richEditorRef.nativeElement.innerHTML;
@@ -429,46 +434,71 @@ export class AdminComponent {
       .split(',')
       .map(t => t.trim())
       .filter(t => t.length > 0);
+      
+    const user = this.db.currentUser();
+    if (!user) return;
+    
+    const isCollaboratorPost = this.targetBlogId && this.targetBlogId !== user.id;
+    let status: 'published' | 'pending' | 'draft' = 'published';
+    if (isDraft) {
+      status = 'draft';
+    } else if (isCollaboratorPost) {
+      status = 'pending';
+    }
 
-    const createdArticle = await this.db.addArticle(
-      this.newPostTitle,
-      this.newPostSummary || this.newPostContent.substring(0, 150) + '...',
-      this.newPostContent,
-      this.newPostCoverUrl,
-      tags,
-      this.targetBlogId
-    );
-
-    if (createdArticle && createdArticle.status === 'pending') {
-      Swal.fire({
-        icon: 'info',
-        title: 'Enviada para Aprovação!',
-        text: 'A matéria foi salva com sucesso, mas ficará com o status Pendente até que o dono do blog a aprove.',
-        timer: 3500,
-        showConfirmButton: false,
-        background: '#121420',
-        color: '#f1f5f9',
-        customClass: {
-          popup: 'guiik-swal-popup',
-          title: 'guiik-swal-title',
-          htmlContainer: 'guiik-swal-html'
-        }
+    const editId = this.editingArticleId();
+    if (editId) {
+      await this.db.updateArticle(editId, {
+        title: this.newPostTitle,
+        summary: this.newPostSummary || this.newPostContent.substring(0, 150) + '...',
+        content: this.newPostContent,
+        coverUrl: this.newPostCoverUrl,
+        tags,
+        blogId: this.targetBlogId || user.id,
+        status,
+        updatedAt: new Date().toISOString()
       });
-    } else {
+      
       Swal.fire({
         icon: 'success',
-        title: 'Publicado!',
-        text: 'Sua nova matéria foi publicada com sucesso!',
+        title: isDraft ? 'Rascunho Atualizado!' : 'Alterações Publicadas!',
         timer: 1500,
         showConfirmButton: false,
         background: '#121420',
-        color: '#f1f5f9',
-        customClass: {
-          popup: 'guiik-swal-popup',
-          title: 'guiik-swal-title',
-          htmlContainer: 'guiik-swal-html'
-        }
+        color: '#f1f5f9'
       });
+    } else {
+      const createdArticle = await this.db.addArticle(
+        this.newPostTitle,
+        this.newPostSummary || this.newPostContent.substring(0, 150) + '...',
+        this.newPostContent,
+        this.newPostCoverUrl,
+        tags,
+        this.targetBlogId,
+        isDraft
+      );
+
+      if (createdArticle && createdArticle.status === 'pending') {
+        Swal.fire({
+          icon: 'info',
+          title: 'Enviada para Aprovação!',
+          text: 'A matéria foi salva com sucesso, mas ficará com o status Pendente.',
+          timer: 3500,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      } else {
+        Swal.fire({
+          icon: 'success',
+          title: isDraft ? 'Rascunho Salvo!' : 'Publicado!',
+          text: isDraft ? 'Sua matéria foi salva como rascunho.' : 'Sua nova matéria foi publicada com sucesso!',
+          timer: 1500,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      }
     }
     
     // Clear post form
@@ -479,8 +509,29 @@ export class AdminComponent {
     this.newPostTags = 'Gamer, Geek, Tech';
     this.targetBlogId = '';
     this.clearEditorContent();
+    this.editingArticleId.set(null);
     
     this.setTab('posts');
+  }
+  
+  editPost(art: any) {
+    this.editingArticleId.set(art.id);
+    this.newPostTitle = art.title;
+    this.newPostSummary = art.summary;
+    this.newPostContent = art.content;
+    this.newPostCoverUrl = art.coverUrl;
+    this.newPostTags = art.tags.join(', ');
+    this.targetBlogId = art.blogId !== art.authorId ? art.blogId : '';
+    
+    this.setTab('new-post');
+    
+    // Set editor content
+    setTimeout(() => {
+      if (this.richEditorRef?.nativeElement) {
+        this.richEditorRef.nativeElement.innerHTML = this.newPostContent;
+        this.editorHasContent.set(this.newPostContent.trim().length > 0);
+      }
+    }, 100);
   }
 
   async onCoverFileSelected(event: Event) {

@@ -163,6 +163,13 @@
                           @if (art.status === 'pending') {
                             <span class="badge" style="background: #ffb703; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Pendente</span>
                           }
+                          @if (art.status === 'draft') {
+                            <span class="badge" style="background: #94a3b8; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Rascunho</span>
+                          }
+                        </span>
+                        <span class="post-author" style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 4px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                          <img [src]="art.authorAvatarUrl" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">
+                          {{ art.authorDisplayName }} (&#64;{{ art.authorUsername }})
                         </span>
                         <div class="tags-row">
                           @for (tag of art.tags; track tag) {
@@ -177,6 +184,7 @@
                   <td data-label="Ações">
                     <div class="table-actions">
                       <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]" class="btn btn-secondary btn-xs">Ver</a>
+                      <button class="btn btn-primary btn-xs" style="background: #00f0ff; color: #000; border: none;" (click)="editPost(art)">Editar</button>
                       @if (art.status === 'pending' && art.blogId === db.currentUser()?.id) {
                         <button class="btn btn-primary btn-xs" style="background: #39ff14; color: #000; border: none;" (click)="approvePost(art.id)">Aprovar</button>
                       }
@@ -201,11 +209,11 @@
     @if (activeTab() === 'new-post') {
       <div class="glass-card work-card">
         <div class="card-header">
-          <h2>Nova Matéria</h2>
+          <h2>{{ editingArticleId() ? 'Editar Matéria' : 'Nova Matéria' }}</h2>
           <button class="btn btn-secondary btn-sm" (click)="setTab('posts')">Cancelar</button>
         </div>
 
-        <form (submit)="createPost()" class="studio-form">
+        <form (submit)="$event.preventDefault()" class="studio-form">
           @if (db.collaboratingBlogs().length > 0) {
             <div class="form-group">
               <label for="targetBlogId">Onde Postar?</label>
@@ -430,9 +438,10 @@
             </div>
           </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Publicar Notícia</button>
-            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Voltar</button>
+          <div class="form-actions" style="display: flex; gap: 1rem; align-items: center; margin-top: 2rem;">
+            <button type="button" class="btn btn-primary" (click)="savePost(false)">🚀 Publicar Notícia</button>
+            <button type="button" class="btn btn-secondary" (click)="savePost(true)" style="background: #334155; color: #fff; border-color: #475569;">💾 Salvar sem publicar (Rascunho)</button>
+            <button type="button" class="btn btn-secondary" (click)="setTab('posts')" style="background: transparent;">Voltar</button>
           </div>
         </form>
       </div>
