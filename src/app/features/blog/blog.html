@@ -98,6 +98,12 @@
 
     <!-- Main Content Layout with Sidebar -->
     <div class="blog-content-layout">
+
+      @if (db.isOffline()) {
+        <div class="offline-alert" style="background: rgba(255,183,3,0.1); border: 1px solid #ffb703; color: #ffb703; padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; text-align: center; font-weight: 500; grid-column: 1 / -1;">
+          ☁️ Você está em modo offline. Mostrando as últimas matérias salvas no seu aparelho.
+        </div>
+      }
       
       <!-- Sidebar (Left) -->
       @if (user.blogSettings.sponsorBannerUrl2) {

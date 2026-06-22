@@ -50,12 +50,17 @@ export class DbService {
     return this.users().filter(u => u.collaborators?.includes(me.id));
   });
 
-  // Active / Logged-in user signal (real authenticated user)
   readonly currentUser = signal<User | null>(null);
   readonly isAuthenticated = signal<boolean>(false);
   readonly isAuthLoading = signal<boolean>(true);
+  readonly isOffline = signal<boolean>(false);
 
   constructor() {
+    if (typeof window !== 'undefined') {
+      this.isOffline.set(!navigator.onLine);
+      window.addEventListener('online', () => this.isOffline.set(false));
+      window.addEventListener('offline', () => this.isOffline.set(true));
+    }
     this.initFirebaseSync();
   }
 
