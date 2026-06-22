@@ -895,9 +895,8 @@ export class AdminComponent {
 
   async urlToBase64(url: string | undefined): Promise<string> {
     if (!url) return '';
-    if (url.startsWith('data:')) return url; // Already base64
+    if (url.startsWith('data:')) return url;
     
-    // Resolve absolute path for local images
     let targetUrl = url;
     if (url.startsWith('/')) {
       targetUrl = window.location.origin + url;
@@ -905,28 +904,29 @@ export class AdminComponent {
 
     try {
       const response = await fetch(targetUrl, { mode: 'cors' });
-      if (!response.ok) throw new Error('CORS fetch failed with status ' + response.status);
+      if (!response.ok) throw new Error('CORS fail');
       const blob = await response.blob();
+      if (!blob.type.startsWith('image/')) throw new Error('Not an image');
       return await new Promise((resolve) => {
         const reader = new FileReader();
         reader.onloadend = () => resolve(reader.result as string);
         reader.readAsDataURL(blob);
       });
     } catch (e) {
-      console.warn('CORS falhou para a imagem, tentando proxy:', targetUrl);
+      // Usar o wsrv.nl para contornar o CORS, e fazer o fetch MANUALMENTE do wsrv.nl
       try {
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(targetUrl);
-        const response = await fetch(proxyUrl);
-        if (!response.ok) throw new Error('Proxy fetch failed');
+        const proxyUrl = 'https://wsrv.nl/?url=' + encodeURIComponent(targetUrl) + '&output=webp';
+        const response = await fetch(proxyUrl, { mode: 'cors' });
+        if (!response.ok) throw new Error('Proxy fail');
         const blob = await response.blob();
+        if (!blob.type.startsWith('image/')) throw new Error('Proxy returned non-image');
         return await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
           reader.readAsDataURL(blob);
         });
       } catch (proxyError) {
-        console.error('Falha no proxy para a imagem:', proxyError);
-        return targetUrl; // fallback
+        return url; // último fallback
       }
     }
   }
@@ -948,7 +948,7 @@ export class AdminComponent {
         popup: 'guiik-swal-popup',
         title: 'guiik-swal-title',
         confirmButton: 'guiik-swal-confirm-btn',
-        denyButton: 'guiik-swal-confirm-btn', // Reuse confirm button style for deny button to make it look like an option
+        denyButton: 'guiik-swal-confirm-btn',
         cancelButton: 'guiik-swal-cancel-btn'
       },
       buttonsStyling: false
@@ -963,7 +963,7 @@ export class AdminComponent {
     Swal.fire({ title: 'Preparando Arte...', text: 'Baixando imagens em alta resolução...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
     Swal.showLoading();
 
-    // Convert URLs to Base64 to ensure html2canvas renders them
+    // Convert URLs to Base64 to ensure html2canvas renders them without network issues
     const coverBase64 = await this.urlToBase64(article.coverUrl);
     const authorAvatarBase64 = await this.urlToBase64(article.authorAvatarUrl);
     
@@ -975,7 +975,7 @@ export class AdminComponent {
       ...article,
       coverUrl: coverBase64,
       authorAvatarUrl: authorAvatarBase64,
-      // Inject blog variables so template can use Base64
+      // Inject blog variables
       _blogAvatarBase64: blogAvatarBase64,
       _blogName: currentUser?.blogSettings?.title || currentUser?.displayName
     };
@@ -989,19 +989,19 @@ export class AdminComponent {
       if (!element) return;
       
       try {
-        Swal.update({ title: 'Carregando Imagens no Layout...' });
+        Swal.update({ title: 'Baixando Imagens e Desenhando...' });
         
-        // Wait for all img elements in the template to finish loading
+        // Wait EXPLICITLY for all images to completely load their data before html2canvas touches them
         const images = Array.from(element.querySelectorAll('img'));
         await Promise.all(images.map(img => {
-          if (img.complete) return Promise.resolve();
+          if (img.complete && img.naturalHeight !== 0) return Promise.resolve();
           return new Promise(resolve => {
             img.onload = resolve;
-            img.onerror = resolve; // resolve anyway to avoid hanging
+            img.onerror = resolve; // Continue even if error
           });
         }));
 
-        Swal.update({ title: 'Desenhando a Arte...' });
+        Swal.update({ title: 'Gerando o arquivo final...' });
 
         const html2canvas = (await import('html2canvas')).default;
         const canvas = await html2canvas(element, {
