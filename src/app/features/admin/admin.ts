@@ -30,6 +30,7 @@ export class AdminComponent {
   isUploadingCover = false;
   newPostTags = 'Gamer, Geek, Tech';
   newPostSection = '';
+  sendNewsletter = false;
   targetBlogId = '';
 
   // Rich Text Editor
@@ -172,6 +173,18 @@ export class AdminComponent {
     }
     const blogOwner = this.db.users().find(u => u.id === targetId);
     return blogOwner?.blogSettings?.sections || ['Geral', 'Tech', 'Quadrinhos'];
+  });
+
+  readonly targetBlogFollowersCount = computed(() => {
+    const targetId = this.targetBlogId || this.db.currentUser()?.id;
+    if (!targetId) return 0;
+    return this.db.follows().filter(f => f.followedId === targetId).length;
+  });
+
+  readonly editingArticle = computed(() => {
+    const id = this.editingArticleId();
+    if (!id) return null;
+    return this.db.articles().find(a => a.id === id) || null;
   });
 
   addSection() {
@@ -604,6 +617,10 @@ export class AdminComponent {
         updatedAt: new Date().toISOString(),
         section: this.newPostSection || ''
       });
+
+      if (this.sendNewsletter && status === 'published') {
+        await this.db.sendNewsletter(editId, this.targetBlogId || user.id);
+      }
       
       Swal.fire({
         icon: 'success',
@@ -624,6 +641,10 @@ export class AdminComponent {
         isDraft,
         this.newPostSection || ''
       );
+
+      if (createdArticle && this.sendNewsletter && !isDraft) {
+        await this.db.sendNewsletter(createdArticle.id, createdArticle.blogId || createdArticle.authorId);
+      }
 
       if (createdArticle && createdArticle.status === 'pending') {
         Swal.fire({
@@ -668,6 +689,7 @@ export class AdminComponent {
     this.newPostCoverUrl = '/images/cyberpunk_cover.png';
     this.newPostTags = 'Gamer, Geek, Tech';
     this.newPostSection = '';
+    this.sendNewsletter = false;
     this.targetBlogId = '';
     this.clearEditorContent();
     this.editingArticleId.set(null);

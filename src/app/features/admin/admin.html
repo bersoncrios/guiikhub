@@ -483,6 +483,34 @@
             </div>
           </div>
 
+          <!-- Newsletter Trigger Switch -->
+          <div class="form-group" style="margin-top: 2rem;">
+            <div class="newsletter-switch-card" style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.1); padding: 1.25rem; border-radius: 12px;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <input 
+                  type="checkbox" 
+                  id="sendNewsletter" 
+                  name="sendNewsletter" 
+                  [(ngModel)]="sendNewsletter" 
+                  [disabled]="editingArticle()?.newsletterSent ? true : false"
+                  style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--blog-primary, #00f0ff);">
+                <label for="sendNewsletter" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
+                  📢 Disparar Newsletter por E-mail 
+                  @if (editingArticle()?.newsletterSent) {
+                    <span class="badge" style="background: #10b981; color: #fff; font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.2);">Enviado</span>
+                  }
+                </label>
+              </div>
+              <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; padding-left: 1.75rem; line-height: 1.4;">
+                @if (editingArticle()?.newsletterSent) {
+                  A newsletter para esta matéria já foi disparada anteriormente para os seus seguidores.
+                } @else {
+                  Esta matéria será enviada automaticamente por e-mail para todos os <strong>{{ targetBlogFollowersCount() }} seguidores</strong> do blog assim que for publicada.
+                }
+              </p>
+            </div>
+          </div>
+
           <div class="form-actions" style="display: flex; gap: 1rem; align-items: center; margin-top: 2rem;">
             <button type="button" class="btn btn-primary" (click)="savePost(false)">🚀 Publicar Notícia</button>
             <button type="button" class="btn btn-secondary" (click)="savePost(true)" style="background: #334155; color: #fff; border-color: #475569;">💾 Salvar sem publicar (Rascunho)</button>

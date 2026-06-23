@@ -22,6 +22,7 @@ export interface User {
   displayName: string;
   avatarUrl: string;
   bio: string;
+  email?: string;
   bannerUrl?: string;
   blogSettings: BlogSettings;
   viewsCount?: number;
@@ -47,6 +48,7 @@ export interface Article {
   likesCount: number;
   commentsCount: number;
   section?: string;
+  newsletterSent?: boolean;
 }
 
 export interface Comment {
