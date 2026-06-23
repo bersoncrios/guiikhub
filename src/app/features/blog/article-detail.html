@@ -46,7 +46,14 @@
               <div class="author-info">
                 <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName" class="avatar-sm">
                 <div>
-                  <a [routerLink]="['/b', art.authorUsername]" class="author-name">{{ art.authorDisplayName }}</a>
+                  <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <a [routerLink]="['/b', art.authorUsername]" class="author-name">{{ art.authorDisplayName }}</a>
+                    <div class="author-badges-inline" style="display: flex; gap: 4px;">
+                      @for (badge of getUserBadges(user); track badge.id) {
+                        <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blog-primary, #00f0ff); box-shadow: 0 0 5px rgba(0,240,255,0.2);">
+                      }
+                    </div>
+                  </div>
                   <span class="author-handle">&#64;{{ art.authorUsername }}</span>
                 </div>
               </div>
@@ -84,7 +91,7 @@
             <div class="article-content" [innerHTML]="formatContent(art.content)"></div>
 
             <!-- Footer Interaction Bar -->
-            <div class="article-interactions-bar">
+            <div class="article-interactions-bar" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
               <button 
                 class="btn like-button" 
                 [class.liked]="db.isLiked(art.id)"
@@ -93,6 +100,21 @@
                 {{ db.isLiked(art.id) ? 'Curtido!' : 'Curtir Matéria' }}
                 <span class="badge">{{ art.likesCount }}</span>
               </button>
+
+              <!-- Applause (Claps) Button -->
+              <div class="clap-button-wrapper" style="position: relative; display: inline-block;">
+                <button 
+                  class="btn clap-button" 
+                  [class.has-claps]="(art.applauseCount || 0) + localClapIncrement() > 0"
+                  (click)="addClap()">
+                  <span class="icon">👏</span> 
+                  Aplaudir Artigo
+                  <span class="badge">{{ (art.applauseCount || 0) + localClapIncrement() }}</span>
+                </button>
+                @if (showClapFloatingText()) {
+                  <span class="floating-clap-score">+1 Bit</span>
+                }
+              </div>
             </div>
           </div>
         </article>

@@ -4,34 +4,40 @@
     <a routerLink="/" class="logo">
       <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
     </a>
-    
+
     <nav class="main-nav">
       <a routerLink="/" class="nav-item">Feed</a>
-      <a routerLink="/admin" class="nav-item active">Studio Criador</a>
+      <a [routerLink]="['/admin']" [queryParams]="{ tab: 'gamification' }" class="nav-item"
+        [class.active]="activeTab() !== 'sys-admin'">Studio Criador</a>
+      @if (db.currentUser()?.role === 'admin') {
+      <a [routerLink]="['/admin']" [queryParams]="{ tab: 'sys-admin' }" class="nav-item"
+        [class.active]="activeTab() === 'sys-admin'">Admin do Sistema</a>
+      }
       <button class="nav-item-stumble" (click)="db.stumbleUpon()">🎲 Estou com Sorte</button>
     </nav>
 
     <div class="user-action-area">
       @if (db.isAuthenticated()) {
-        @if (db.currentUser(); as user) {
-          <div class="current-user-badge authenticated">
-            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
-            <div class="user-info">
-              <span class="user-name">{{ user.displayName }}</span>
-              <span class="user-role">Conectado</span>
-            </div>
-            
-            <div class="switcher-dropdown">
-              <button class="btn btn-danger btn-xs logout-btn" (click)="db.logout()">Sair da Conta</button>
-            </div>
-          </div>
-        }
-      } @else {
-        <div class="auth-buttons-wrapper" style="display: flex; gap: 0.75rem; align-items: center;">
-          <a routerLink="/auth" class="btn btn-primary btn-sm login-btn" style="padding: 0.5rem 1rem; font-size: 0.8rem; height: 38px; display: inline-flex; align-items: center;">
-            ⚡ Entrar / Cadastrar
-          </a>
+      @if (db.currentUser(); as user) {
+      <div class="current-user-badge authenticated">
+        <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+        <div class="user-info">
+          <span class="user-name">{{ user.displayName }}</span>
+          <span class="user-role">Conectado</span>
         </div>
+
+        <div class="switcher-dropdown">
+          <button class="btn btn-danger btn-xs logout-btn" (click)="db.logout()">Sair da Conta</button>
+        </div>
+      </div>
+      }
+      } @else {
+      <div class="auth-buttons-wrapper" style="display: flex; gap: 0.75rem; align-items: center;">
+        <a routerLink="/auth" class="btn btn-primary btn-sm login-btn"
+          style="padding: 0.5rem 1rem; font-size: 0.8rem; height: 38px; display: inline-flex; align-items: center;">
+          ⚡ Entrar / Cadastrar
+        </a>
+      </div>
       }
     </div>
 
@@ -52,23 +58,28 @@
     </div>
 
     <a routerLink="/" class="mobile-nav-item" (click)="closeMobileNav()">🏠 Feed</a>
-    <a routerLink="/admin" class="mobile-nav-item active" (click)="closeMobileNav()">🎛️ Studio Criador</a>
+    <a [routerLink]="['/admin']" [queryParams]="{ tab: 'gamification' }" class="mobile-nav-item"
+      [class.active]="activeTab() !== 'sys-admin'" (click)="closeMobileNav()">🎛️ Studio Criador</a>
+    @if (db.currentUser()?.role === 'admin') {
+    <a [routerLink]="['/admin']" [queryParams]="{ tab: 'sys-admin' }" class="mobile-nav-item"
+      [class.active]="activeTab() === 'sys-admin'" (click)="closeMobileNav()">🛠️ Admin do Sistema</a>
+    }
     <button class="nav-item-stumble-mobile" (click)="db.stumbleUpon(); closeMobileNav()">🎲 Estou com Sorte</button>
 
     <div class="mobile-nav-divider"></div>
 
     @if (db.isAuthenticated()) {
-      @if (db.currentUser(); as user) {
-        <div class="mobile-user-section">
-          <div class="mobile-user-info">
-            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
-            <span class="mobile-user-name">{{ user.displayName }}</span>
-          </div>
-          <button class="btn btn-danger btn-xs" (click)="db.logout(); closeMobileNav()">Sair</button>
-        </div>
-      }
+    @if (db.currentUser(); as user) {
+    <div class="mobile-user-section">
+      <div class="mobile-user-info">
+        <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+        <span class="mobile-user-name">{{ user.displayName }}</span>
+      </div>
+      <button class="btn btn-danger btn-xs" (click)="db.logout(); closeMobileNav()">Sair</button>
+    </div>
+    }
     } @else {
-      <a routerLink="/auth" class="mobile-nav-item" (click)="closeMobileNav()">⚡ Entrar / Cadastrar</a>
+    <a routerLink="/auth" class="mobile-nav-item" (click)="closeMobileNav()">⚡ Entrar / Cadastrar</a>
     }
   </div>
 </div>
@@ -76,1014 +87,1403 @@
 
 <main class="admin-layout container">
   @if (db.isAuthLoading()) {
-    <!-- Cyberpunk Gamer Loader -->
-    <div class="glass-card loading-container" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; width: 100%; gap: 1.5rem;">
-      <svg width="60" height="60" viewBox="0 0 50 50" style="color: #00f0ff; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));">
-        <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="80" stroke-dashoffset="20">
-          <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s" repeatCount="indefinite" />
-        </circle>
-      </svg>
-      <div class="loading-text" style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #00f0ff; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); letter-spacing: 2px; font-size: 0.9rem;">
-        SINCRO_CONEXAO_NEURAL...
-      </div>
+  <!-- Cyberpunk Gamer Loader -->
+  <div class="glass-card loading-container"
+    style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 400px; width: 100%; gap: 1.5rem;">
+    <svg width="60" height="60" viewBox="0 0 50 50"
+      style="color: #00f0ff; filter: drop-shadow(0 0 10px rgba(0, 240, 255, 0.4));">
+      <circle cx="25" cy="25" r="20" fill="none" stroke="currentColor" stroke-width="4" stroke-dasharray="80"
+        stroke-dashoffset="20">
+        <animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="1s"
+          repeatCount="indefinite" />
+      </circle>
+    </svg>
+    <div class="loading-text"
+      style="font-family: 'Space Grotesk', sans-serif; font-weight: 700; color: #00f0ff; text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); letter-spacing: 2px; font-size: 0.9rem;">
+      SINCRO_CONEXAO_NEURAL...
     </div>
+  </div>
   } @else {
-    <!-- Studio Menu Sidebar -->
-    <aside class="admin-sidebar glass-card">
-      <h3 class="studio-title">Creator Studio</h3>
-      <p class="studio-subtitle">Personalize seu espaço e gerencie seu conteúdo</p>
-      
-      <div class="admin-menu">
-        <button 
-          class="menu-btn" 
-          [class.active]="activeTab() === 'posts'" 
-          (click)="setTab('posts')">
-          <span class="icon">📰</span> Minhas Matérias
-        </button>
-        <button 
-          class="menu-btn" 
-          [class.active]="activeTab() === 'new-post'" 
-          (click)="setTab('new-post')">
-          <span class="icon">✍️</span> Nova Matéria
-        </button>
-        <button 
-          class="menu-btn" 
-          [class.active]="activeTab() === 'customize'" 
-          (click)="setTab('customize')">
-          <span class="icon">🎨</span> Personalizar Blog
-        </button>
-        <button 
-          class="menu-btn" 
-          [class.active]="activeTab() === 'profile'" 
-          (click)="setTab('profile')">
-          <span class="icon">👤</span> Editar Perfil
-        </button>
-        <button 
-          class="menu-btn" 
-          [class.active]="activeTab() === 'collabs'" 
-          (click)="setTab('collabs')">
-          <span class="icon">👥</span> Colaboradores
-        </button>
-        <button 
-          class="menu-btn" 
-          [class.active]="activeTab() === 'monetization'" 
-          (click)="setTab('monetization')">
-          <span class="icon">💰</span> Monetização
-        </button>
-      </div>
-    </aside>
+  <!-- Studio Menu Sidebar -->
+  <aside class="admin-sidebar glass-card">
+    <h3 class="studio-title">Creator Studio</h3>
+    <p class="studio-subtitle">Personalize seu espaço e gerencie seu conteúdo</p>
 
-    <section class="admin-main">
-    
+    <div class="admin-menu">
+      <button class="menu-btn" [class.active]="activeTab() === 'gamification'" (click)="setTab('gamification')">
+        <span class="icon">👤</span> Perfil
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'posts'" (click)="setTab('posts')">
+        <span class="icon">📰</span> Minhas Matérias
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'new-post'" (click)="setTab('new-post')">
+        <span class="icon">✍️</span> Nova Matéria
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'customize'" (click)="setTab('customize')">
+        <span class="icon">🎨</span> Personalizar Blog
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'profile'" (click)="setTab('profile')">
+        <span class="icon">⚙️</span> Editar Perfil
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'spotlight'" (click)="setTab('spotlight')">
+        <span class="icon">⚡</span> Holofote
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'collabs'" (click)="setTab('collabs')">
+        <span class="icon">👥</span> Colaboradores
+      </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'monetization'" (click)="setTab('monetization')">
+        <span class="icon">💰</span> Monetização
+      </button>
+    </div>
+  </aside>
+
+  <section class="admin-main">
+
     <!-- Active Tab: Posts list -->
     @if (activeTab() === 'posts') {
-      <div class="glass-card work-card">
-        <div class="card-header">
-          <h2>Minhas Matérias</h2>
-          <button class="btn btn-primary btn-sm" (click)="setTab('new-post')">+ Nova Matéria</button>
-        </div>
-
-        <!-- Status / Stories Section -->
-        <div class="status-section" style="padding: 1.5rem; background: rgba(0,240,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05);">
-          <h3 style="font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-            💬 Meu Status Rápido (24h)
-          </h3>
-          
-          @if (activeStatus(); as status) {
-            <div class="active-status" style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
-              <div>
-                <p style="margin: 0; font-size: 0.95rem;">"{{ status.content }}"</p>
-                <small style="color: #94a3b8; font-size: 0.75rem;">Postado em {{ status.createdAt | date:'shortTime' }}</small>
-              </div>
-              <button class="btn btn-secondary btn-sm" style="background: rgba(255,50,50,0.1); color: #ff6b6b; border-color: rgba(255,50,50,0.2);" (click)="deleteStatus(status.id)">Apagar</button>
-            </div>
-          } @else {
-            <div class="new-status-form" style="display: flex; gap: 0.5rem;">
-              <input type="text" [(ngModel)]="newStatusContent" class="form-control" placeholder="No que você está trabalhando hoje?" maxlength="150" style="flex: 1;">
-              <button class="btn btn-primary" (click)="postStatus()" [disabled]="!newStatusContent.trim()">Postar</button>
-            </div>
-            <small style="color: #94a3b8; font-size: 0.75rem; display: block; margin-top: 0.5rem;">O status ficará visível no topo do seu blog por 24 horas.</small>
-          }
-        </div>
-
-        <div class="posts-table-wrapper">
-          <table class="posts-table">
-            <thead>
-              <tr>
-                <th>Título</th>
-                <th>Data</th>
-                <th>Curtidas</th>
-                <th>Ações</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (art of myArticles(); track art.id) {
-                <tr>
-                  <td class="col-title" data-label="Título">
-                    <div class="post-title-cell">
-                      <img [src]="art.coverUrl" [alt]="art.title" class="post-thumb">
-                      <div>
-                        <span class="title-text">
-                          {{ art.title }}
-                          @if (art.status === 'pending') {
-                            <span class="badge" style="background: #ffb703; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Pendente</span>
-                          }
-                          @if (art.status === 'draft') {
-                            <span class="badge" style="background: #94a3b8; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Rascunho</span>
-                          }
-                          @if (art.status === 'published' && art.scheduledAt && isFutureDate(art.scheduledAt)) {
-                            <span class="badge" style="background: #a855f7; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; border: 1px solid rgba(168, 85, 247, 0.3);">Agendado ({{ art.scheduledAt | date:'short' }})</span>
-                          }
-                        </span>
-                        <span class="post-author" style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 4px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
-                          <img [src]="art.authorAvatarUrl" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">
-                          {{ art.authorDisplayName }} (&#64;{{ art.authorUsername }})
-                        </span>
-                        <div class="tags-row">
-                          @for (tag of art.tags; track tag) {
-                            <span class="tag-badge">#{{ tag }}</span>
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  </td>
-                  <td data-label="Data">{{ art.createdAt | date:'shortDate' }}</td>
-                  <td data-label="Curtidas">⚡ {{ art.likesCount }}</td>
-                  <td data-label="Ações">
-                    <div class="table-actions">
-                      <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]" class="btn btn-secondary btn-xs">Ver</a>
-                      <button class="btn btn-primary btn-xs" style="background: rgba(138,43,226,0.2); color: #c4b5fd; border: 1px solid rgba(138,43,226,0.5);" (click)="generateSocialImage(art)" title="Gerar Imagem para Redes Sociais">📸 Arte</button>
-                      <button class="btn btn-primary btn-xs" style="background: #00f0ff; color: #000; border: none;" (click)="editPost(art)">Editar</button>
-                      @if (art.status === 'pending' && art.blogId === db.currentUser()?.id) {
-                        <button class="btn btn-primary btn-xs" style="background: #39ff14; color: #000; border: none;" (click)="approvePost(art.id)">Aprovar</button>
-                      }
-                      <button class="btn btn-danger btn-xs" (click)="deletePost(art.id)">Excluir</button>
-                    </div>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="4" class="empty-table-cell">
-                    <p>Você ainda não publicou nenhuma matéria. Escreva algo incrível para começar!</p>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-        </div>
+    <div class="glass-card work-card">
+      <div class="card-header">
+        <h2>Minhas Matérias</h2>
+        <button class="btn btn-primary btn-sm" (click)="setTab('new-post')">+ Nova Matéria</button>
       </div>
+
+      <!-- Status / Stories Section -->
+      <div class="status-section"
+        style="padding: 1.5rem; background: rgba(0,240,255,0.03); border-bottom: 1px solid rgba(255,255,255,0.05);">
+        <h3 style="font-size: 1.1rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+          💬 Meu Status Rápido (24h)
+        </h3>
+
+        @if (activeStatus(); as status) {
+        <div class="active-status"
+          style="display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px; border: 1px solid rgba(0,240,255,0.2);">
+          <div>
+            <p style="margin: 0; font-size: 0.95rem;">"{{ status.content }}"</p>
+            <small style="color: #94a3b8; font-size: 0.75rem;">Postado em {{ status.createdAt | date:'shortTime'
+              }}</small>
+          </div>
+          <button class="btn btn-secondary btn-sm"
+            style="background: rgba(255,50,50,0.1); color: #ff6b6b; border-color: rgba(255,50,50,0.2);"
+            (click)="deleteStatus(status.id)">Apagar</button>
+        </div>
+        } @else {
+        <div class="new-status-form" style="display: flex; gap: 0.5rem;">
+          <input type="text" [(ngModel)]="newStatusContent" class="form-control"
+            placeholder="No que você está trabalhando hoje?" maxlength="150" style="flex: 1;">
+          <button class="btn btn-primary" (click)="postStatus()" [disabled]="!newStatusContent.trim()">Postar</button>
+        </div>
+        <small style="color: #94a3b8; font-size: 0.75rem; display: block; margin-top: 0.5rem;">O status ficará visível
+          no topo do seu blog por 24 horas.</small>
+        }
+      </div>
+
+      <div class="posts-table-wrapper">
+        <table class="posts-table">
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Data</th>
+              <th>Curtidas</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (art of myArticles(); track art.id) {
+            <tr>
+              <td class="col-title" data-label="Título">
+                <div class="post-title-cell">
+                  <img [src]="art.coverUrl" [alt]="art.title" class="post-thumb">
+                  <div>
+                    <span class="title-text">
+                      {{ art.title }}
+                      @if (art.status === 'pending') {
+                      <span class="badge"
+                        style="background: #ffb703; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Pendente</span>
+                      }
+                      @if (art.status === 'draft') {
+                      <span class="badge"
+                        style="background: #94a3b8; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Rascunho</span>
+                      }
+                      @if (art.status === 'published' && art.scheduledAt && isFutureDate(art.scheduledAt)) {
+                      <span class="badge"
+                        style="background: #a855f7; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; border: 1px solid rgba(168, 85, 247, 0.3);">Agendado
+                        ({{ art.scheduledAt | date:'short' }})</span>
+                      }
+                    </span>
+                    <span class="post-author"
+                      style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 4px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                      <img [src]="art.authorAvatarUrl"
+                        style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">
+                      {{ art.authorDisplayName }} (&#64;{{ art.authorUsername }})
+                    </span>
+                    <div class="tags-row">
+                      @for (tag of art.tags; track tag) {
+                      <span class="tag-badge">#{{ tag }}</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+              </td>
+              <td data-label="Data">{{ art.createdAt | date:'shortDate' }}</td>
+              <td data-label="Curtidas">⚡ {{ art.likesCount }}</td>
+              <td data-label="Ações">
+                <div class="table-actions">
+                  <a [routerLink]="['/b', art.authorUsername, 'post', art.slug]"
+                    class="btn btn-secondary btn-xs">Ver</a>
+                  <button class="btn btn-primary btn-xs"
+                    style="background: rgba(138,43,226,0.2); color: #c4b5fd; border: 1px solid rgba(138,43,226,0.5);"
+                    (click)="generateSocialImage(art)" title="Gerar Imagem para Redes Sociais">📸 Arte</button>
+                  <button class="btn btn-primary btn-xs" style="background: #00f0ff; color: #000; border: none;"
+                    (click)="editPost(art)">Editar</button>
+                  @if (art.status === 'pending' && art.blogId === db.currentUser()?.id) {
+                  <button class="btn btn-primary btn-xs" style="background: #39ff14; color: #000; border: none;"
+                    (click)="approvePost(art.id)">Aprovar</button>
+                  }
+                  <button class="btn btn-danger btn-xs" (click)="deletePost(art.id)">Excluir</button>
+                </div>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="4" class="empty-table-cell">
+                <p>Você ainda não publicou nenhuma matéria. Escreva algo incrível para começar!</p>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
     }
 
     <!-- Active Tab: New Post Form -->
     @if (activeTab() === 'new-post') {
-      <div class="glass-card work-card editor-card">
-        <div class="card-header">
-          <h2>{{ editingArticleId() ? 'Editar Matéria' : 'Nova Matéria' }}</h2>
-          <div style="display: flex; gap: 10px; align-items: center;">
-            @if (editingArticleId()) {
-              <button class="btn btn-secondary btn-sm" (click)="saveArticleVersionManually()">🗂️ Salvar Versão Atual</button>
-            }
-            <button class="btn btn-secondary btn-sm" (click)="setTab('posts')">Cancelar</button>
-          </div>
+    <div class="glass-card work-card editor-card">
+      <div class="card-header">
+        <h2>{{ editingArticleId() ? 'Editar Matéria' : 'Nova Matéria' }}</h2>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          @if (editingArticleId()) {
+          <button class="btn btn-secondary btn-sm" (click)="saveArticleVersionManually()">🗂️ Salvar Versão
+            Atual</button>
+          }
+          <button class="btn btn-secondary btn-sm" (click)="setTab('posts')">Cancelar</button>
         </div>
+      </div>
 
-        <div class="editor-layout" [class.has-sidebar]="editingArticleId()">
-          <div class="editor-main">
-            <form (submit)="$event.preventDefault()" class="studio-form">
-          @if (db.collaboratingBlogs().length > 0) {
+      <div class="editor-layout" [class.has-sidebar]="editingArticleId()">
+        <div class="editor-main">
+          <form (submit)="$event.preventDefault()" class="studio-form">
+            @if (db.collaboratingBlogs().length > 0) {
             <div class="form-group">
               <label for="targetBlogId">Onde Postar?</label>
               <select id="targetBlogId" name="targetBlogId" [(ngModel)]="targetBlogId" class="form-control">
                 <option value="">Meu Blog</option>
                 @for (blog of db.collaboratingBlogs(); track blog.id) {
-                  <option [value]="blog.id">Blog de {{ blog.displayName }} ({{ blog.username }})</option>
+                <option [value]="blog.id">Blog de {{ blog.displayName }} ({{ blog.username }})</option>
                 }
               </select>
             </div>
-          }
+            }
 
-          <div class="form-group">
-            <label for="postTitle">Título da Matéria</label>
-            <input 
-              type="text" 
-              id="postTitle" 
-              name="postTitle" 
-              [(ngModel)]="newPostTitle" 
-              class="form-control" 
-              placeholder="Ex: O novo RPG de Ação que promete redefinir a geração..."
-              required>
-          </div>
+            <div class="form-group">
+              <label for="postTitle">Título da Matéria</label>
+              <input type="text" id="postTitle" name="postTitle" [(ngModel)]="newPostTitle" class="form-control"
+                placeholder="Ex: O novo RPG de Ação que promete redefinir a geração..." required>
+            </div>
 
-          <div class="form-group">
-            <label for="postTags">Tags (Separadas por vírgula)</label>
-            <input 
-              type="text" 
-              id="postTags" 
-              name="postTags" 
-              [(ngModel)]="newPostTags" 
-              class="form-control" 
-              placeholder="Ex: RPG, Games, Xbox">
-          </div>
+            <div class="form-group">
+              <label for="postTags">Tags (Separadas por vírgula)</label>
+              <input type="text" id="postTags" name="postTags" [(ngModel)]="newPostTags" class="form-control"
+                placeholder="Ex: RPG, Games, Xbox">
+            </div>
 
-          <div class="form-group">
-            <label for="postSection">Seção do Blog</label>
-            <select 
-              id="postSection" 
-              name="postSection" 
-              [(ngModel)]="newPostSection" 
-              class="form-control">
-              <option value="">Nenhuma (Geral)</option>
-              @for (sec of availableSections(); track sec) {
+            <div class="form-group">
+              <label for="postSection">Seção do Blog</label>
+              <select id="postSection" name="postSection" [(ngModel)]="newPostSection" class="form-control">
+                <option value="">Nenhuma (Geral)</option>
+                @for (sec of availableSections(); track sec) {
                 <option [value]="sec">{{ sec }}</option>
-              }
-            </select>
-          </div>
-
-          <!-- Cover Image Picker -->
-          <div class="form-group">
-            <label>Imagem de Capa da Matéria</label>
-            <div class="banner-picker banner-picker--compact">
-
-              <!-- Live Preview -->
-              <div class="banner-preview banner-preview--sm" [style.background-image]="'url(' + newPostCoverUrl + ')'">
-                @if (!newPostCoverUrl) {
-                  <span class="banner-preview-placeholder">Prévia da Capa</span>
                 }
-                <div class="banner-preview-overlay">
-                  <span class="banner-preview-label">Capa</span>
-                </div>
-              </div>
+              </select>
+            </div>
 
-              <div class="banner-picker-right">
-                <!-- URL Input -->
-                <div class="banner-url-input-group">
-                  <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
-                  <div style="display: flex; gap: 0.5rem; width: 100%;">
-                    <input
-                      type="url"
-                      id="postCoverUrl"
-                      name="postCoverUrl"
-                      [(ngModel)]="newPostCoverUrl"
-                      class="form-control"
-                      placeholder="https://exemplo.com/imagem-da-materia.jpg"
-                      style="flex: 1;">
-                    
-                    <input type="file" id="coverFileInput" class="file-input-hidden" accept="image/*" (change)="onCoverFileSelected($event)" style="display: none;">
-                    <label for="coverFileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
-                      @if (isUploadingCover) {
+            <!-- Cover Image Picker -->
+            <div class="form-group">
+              <label>Imagem de Capa da Matéria</label>
+              <div class="banner-picker banner-picker--compact">
+
+                <!-- Live Preview -->
+                <div class="banner-preview banner-preview--sm"
+                  [style.background-image]="'url(' + newPostCoverUrl + ')'">
+                  @if (!newPostCoverUrl) {
+                  <span class="banner-preview-placeholder">Prévia da Capa</span>
+                  }
+                  <div class="banner-preview-overlay">
+                    <span class="banner-preview-label">Capa</span>
+                  </div>
+                </div>
+
+                <div class="banner-picker-right">
+                  <!-- URL Input -->
+                  <div class="banner-url-input-group">
+                    <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
+                    <div style="display: flex; gap: 0.5rem; width: 100%;">
+                      <input type="url" id="postCoverUrl" name="postCoverUrl" [(ngModel)]="newPostCoverUrl"
+                        class="form-control" placeholder="https://exemplo.com/imagem-da-materia.jpg" style="flex: 1;">
+
+                      <input type="file" id="coverFileInput" class="file-input-hidden" accept="image/*"
+                        (change)="onCoverFileSelected($event)" style="display: none;">
+                      <label for="coverFileInput" class="btn btn-secondary"
+                        style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                        @if (isUploadingCover) {
                         ⏳ Enviando...
-                      } @else {
+                        } @else {
                         📁 Enviar Imagem
-                      }
-                    </label>
+                        }
+                      </label>
+                    </div>
+                    <small class="form-help">JPG, PNG ou WebP. Recomendado: 16:9 ou 3:1.</small>
                   </div>
-                  <small class="form-help">JPG, PNG ou WebP. Recomendado: 16:9 ou 3:1.</small>
+
+                  <!-- Quick-pick presets -->
+                  <div class="banner-presets">
+                    <span class="banner-presets-label">Ou use uma capa padrão:</span>
+                    <div class="banner-presets-grid">
+                      <button type="button" class="banner-preset-thumb"
+                        [class.active]="newPostCoverUrl === '/images/cyberpunk_cover.png'"
+                        (click)="newPostCoverUrl = '/images/cyberpunk_cover.png'" title="Cyberpunk / Neon">
+                        <img src="/images/cyberpunk_cover.png" alt="Cyberpunk Neon">
+                        <span>Cyberpunk</span>
+                      </button>
+                      <button type="button" class="banner-preset-thumb"
+                        [class.active]="newPostCoverUrl === '/images/retro_cover.png'"
+                        (click)="newPostCoverUrl = '/images/retro_cover.png'" title="Retro Arcade">
+                        <img src="/images/retro_cover.png" alt="Retro Arcade">
+                        <span>Retro</span>
+                      </button>
+                      <button type="button" class="banner-preset-thumb"
+                        [class.active]="newPostCoverUrl === '/images/tabletop_cover.png'"
+                        (click)="newPostCoverUrl = '/images/tabletop_cover.png'" title="Fantasy RPG">
+                        <img src="/images/tabletop_cover.png" alt="Fantasy RPG">
+                        <span>Fantasy</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <!-- Quick-pick presets -->
-                <div class="banner-presets">
-                  <span class="banner-presets-label">Ou use uma capa padrão:</span>
-                  <div class="banner-presets-grid">
-                    <button
-                      type="button"
-                      class="banner-preset-thumb"
-                      [class.active]="newPostCoverUrl === '/images/cyberpunk_cover.png'"
-                      (click)="newPostCoverUrl = '/images/cyberpunk_cover.png'"
-                      title="Cyberpunk / Neon">
-                      <img src="/images/cyberpunk_cover.png" alt="Cyberpunk Neon">
-                      <span>Cyberpunk</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="banner-preset-thumb"
-                      [class.active]="newPostCoverUrl === '/images/retro_cover.png'"
-                      (click)="newPostCoverUrl = '/images/retro_cover.png'"
-                      title="Retro Arcade">
-                      <img src="/images/retro_cover.png" alt="Retro Arcade">
-                      <span>Retro</span>
-                    </button>
-                    <button
-                      type="button"
-                      class="banner-preset-thumb"
-                      [class.active]="newPostCoverUrl === '/images/tabletop_cover.png'"
-                      (click)="newPostCoverUrl = '/images/tabletop_cover.png'"
-                      title="Fantasy RPG">
-                      <img src="/images/tabletop_cover.png" alt="Fantasy RPG">
-                      <span>Fantasy</span>
-                    </button>
-                  </div>
-                </div>
               </div>
-
             </div>
-          </div>
 
-          <div class="form-group">
-            <label for="postSummary">Resumo Rápido</label>
-            <input 
-              type="text" 
-              id="postSummary" 
-              name="postSummary" 
-              [(ngModel)]="newPostSummary" 
-              class="form-control" 
-              placeholder="Uma curta frase que resume a notícia e aparece no feed principal.">
-          </div>
+            <div class="form-group">
+              <label for="postSummary">Resumo Rápido</label>
+              <input type="text" id="postSummary" name="postSummary" [(ngModel)]="newPostSummary" class="form-control"
+                placeholder="Uma curta frase que resume a notícia e aparece no feed principal.">
+            </div>
 
-          <div class="form-group">
-            <label>Conteúdo da Matéria</label>
-            <div class="rich-editor-wrapper">
+            <div class="form-group">
+              <label>Conteúdo da Matéria</label>
+              <div class="rich-editor-wrapper">
 
-              <!-- Toolbar -->
-              <div class="editor-toolbar">
+                <!-- Toolbar -->
+                <div class="editor-toolbar">
 
-                <!-- Headings group -->
-                <div class="toolbar-group">
-                  <button type="button" class="tool-btn" title="Parágrafo" (click)="insertParagraph()">
-                    <span class="tool-icon">¶</span> P
-                  </button>
-                  <button type="button" class="tool-btn" title="Título H1" (click)="insertHeading(1)">H1</button>
-                  <button type="button" class="tool-btn" title="Título H2" (click)="insertHeading(2)">H2</button>
-                  <button type="button" class="tool-btn" title="Título H3" (click)="insertHeading(3)">H3</button>
-                  <button type="button" class="tool-btn" title="Título H4" (click)="insertHeading(4)">H4</button>
-                </div>
+                  <!-- Headings group -->
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" title="Parágrafo" (click)="insertParagraph()">
+                      <span class="tool-icon">¶</span> P
+                    </button>
+                    <button type="button" class="tool-btn" title="Título H1" (click)="insertHeading(1)">H1</button>
+                    <button type="button" class="tool-btn" title="Título H2" (click)="insertHeading(2)">H2</button>
+                    <button type="button" class="tool-btn" title="Título H3" (click)="insertHeading(3)">H3</button>
+                    <button type="button" class="tool-btn" title="Título H4" (click)="insertHeading(4)">H4</button>
+                  </div>
 
-                <div class="toolbar-divider"></div>
+                  <div class="toolbar-divider"></div>
 
-                <!-- Formatting group -->
-                <div class="toolbar-group">
-                  <button type="button" class="tool-btn tool-bold" title="Negrito (Ctrl+B)" (click)="execFormat('bold')">
-                    <strong>B</strong>
-                  </button>
-                  <button type="button" class="tool-btn tool-italic" title="Itálico (Ctrl+I)" (click)="execFormat('italic')">
-                    <em>I</em>
-                  </button>
-                  <button type="button" class="tool-btn tool-underline" title="Sublinhado (Ctrl+U)" (click)="execFormat('underline')">
-                    <u>U</u>
-                  </button>
-                  <button type="button" class="tool-btn tool-strike" title="Tachado" (click)="execFormat('strikeThrough')">
-                    <s>S</s>
-                  </button>
-                </div>
+                  <!-- Formatting group -->
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn tool-bold" title="Negrito (Ctrl+B)"
+                      (click)="execFormat('bold')">
+                      <strong>B</strong>
+                    </button>
+                    <button type="button" class="tool-btn tool-italic" title="Itálico (Ctrl+I)"
+                      (click)="execFormat('italic')">
+                      <em>I</em>
+                    </button>
+                    <button type="button" class="tool-btn tool-underline" title="Sublinhado (Ctrl+U)"
+                      (click)="execFormat('underline')">
+                      <u>U</u>
+                    </button>
+                    <button type="button" class="tool-btn tool-strike" title="Tachado"
+                      (click)="execFormat('strikeThrough')">
+                      <s>S</s>
+                    </button>
+                  </div>
 
-                <div class="toolbar-divider"></div>
+                  <div class="toolbar-divider"></div>
 
-                <!-- Alignment group -->
-                <div class="toolbar-group">
-                  <button type="button" class="tool-btn" title="Alinhar à Esquerda" (click)="execFormat('justifyLeft')">⬡</button>
-                  <button type="button" class="tool-btn" title="Centralizar" (click)="execFormat('justifyCenter')">☰</button>
-                  <button type="button" class="tool-btn" title="Alinhar à Direita" (click)="execFormat('justifyRight')">☷</button>
-                </div>
+                  <!-- Alignment group -->
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" title="Alinhar à Esquerda"
+                      (click)="execFormat('justifyLeft')">⬡</button>
+                    <button type="button" class="tool-btn" title="Centralizar"
+                      (click)="execFormat('justifyCenter')">☰</button>
+                    <button type="button" class="tool-btn" title="Alinhar à Direita"
+                      (click)="execFormat('justifyRight')">☷</button>
+                  </div>
 
-                <div class="toolbar-divider"></div>
+                  <div class="toolbar-divider"></div>
 
-                <!-- Lists group -->
-                <div class="toolbar-group">
-                  <button type="button" class="tool-btn" title="Lista com marcadores" (click)="execFormat('insertUnorderedList')">• —</button>
-                  <button type="button" class="tool-btn" title="Lista numerada" (click)="execFormat('insertOrderedList')">1. —</button>
-                  <button type="button" class="tool-btn" title="Citação" (click)="execFormat('formatBlock', 'blockquote')">" "</button>
-                </div>
+                  <!-- Lists group -->
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" title="Lista com marcadores"
+                      (click)="execFormat('insertUnorderedList')">• —</button>
+                    <button type="button" class="tool-btn" title="Lista numerada"
+                      (click)="execFormat('insertOrderedList')">1. —</button>
+                    <button type="button" class="tool-btn" title="Citação"
+                      (click)="execFormat('formatBlock', 'blockquote')">" "</button>
+                  </div>
 
-                <div class="toolbar-divider"></div>
+                  <div class="toolbar-divider"></div>
 
-                <!-- Insert group -->
-                <div class="toolbar-group">
-                  <button type="button" class="tool-btn" title="Inserir Link" (click)="insertLink()">🔗</button>
-                  
-                  <!-- Inline Image Upload -->
-                  <input type="file" id="inlineImageInput" class="file-input-hidden" accept="image/*" (change)="onInlineImageSelected($event)" style="display: none;">
-                  <button type="button" class="tool-btn" title="Inserir Imagem do Dispositivo" (click)="triggerInlineImageUpload()" [disabled]="isUploadingInlineImage">
-                    @if (isUploadingInlineImage) {
+                  <!-- Insert group -->
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn" title="Inserir Link" (click)="insertLink()">🔗</button>
+
+                    <!-- Inline Image Upload -->
+                    <input type="file" id="inlineImageInput" class="file-input-hidden" accept="image/*"
+                      (change)="onInlineImageSelected($event)" style="display: none;">
+                    <button type="button" class="tool-btn" title="Inserir Imagem do Dispositivo"
+                      (click)="triggerInlineImageUpload()" [disabled]="isUploadingInlineImage">
+                      @if (isUploadingInlineImage) {
                       ⏳
-                    } @else {
+                      } @else {
                       🖼️
-                    }
-                  </button>
+                      }
+                    </button>
 
-                  <button type="button" class="tool-btn" title="Linha Divisória" (click)="insertDivider()">—</button>
+                    <button type="button" class="tool-btn" title="Linha Divisória" (click)="insertDivider()">—</button>
+                  </div>
+
+                  <div class="toolbar-spacer"></div>
+
+                  <!-- Clear button -->
+                  <div class="toolbar-group">
+                    <button type="button" class="tool-btn tool-danger" title="Limpar conteúdo"
+                      (click)="clearEditorContent()">🗑️ Limpar</button>
+                  </div>
                 </div>
 
-                <div class="toolbar-spacer"></div>
-
-                <!-- Clear button -->
-                <div class="toolbar-group">
-                  <button type="button" class="tool-btn tool-danger" title="Limpar conteúdo" (click)="clearEditorContent()">🗑️ Limpar</button>
+                <!-- Editor area -->
+                <div #richEditor class="rich-editor-content" contenteditable="true" (input)="onEditorInput($event)"
+                  (keydown)="onEditorKeydown($event)"
+                  data-placeholder="Escreva sua matéria aqui... Digite [[ para buscar e linkar posts anteriores.">
                 </div>
-              </div>
 
-              <!-- Editor area -->
-              <div
-                #richEditor
-                class="rich-editor-content"
-                contenteditable="true"
-                (input)="onEditorInput($event)"
-                (keydown)="onEditorKeydown($event)"
-                data-placeholder="Escreva sua matéria aqui... Digite [[ para buscar e linkar posts anteriores.">
-              </div>
-
-              <!-- Word count / hint -->
-              @if (!editorHasContent()) {
+                <!-- Word count / hint -->
+                @if (!editorHasContent()) {
                 <div class="editor-hint">
-                  💡 Dica: selecione o texto para formatar. Digite [[ a qualquer momento para buscar e linkar suas matérias anteriores!
+                  💡 Dica: selecione o texto para formatar. Digite [[ a qualquer momento para buscar e linkar suas
+                  matérias anteriores!
                 </div>
-              }
-            </div>
-          </div>
-
-          <!-- Scheduling Post Option -->
-          <div class="form-group" style="margin-top: 2rem;">
-            <div class="schedule-switch-card" style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(168, 85, 247, 0.03); border: 1px solid rgba(168, 85, 247, 0.15); padding: 1.25rem; border-radius: 12px;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <input 
-                  type="checkbox" 
-                  id="isScheduled" 
-                  name="isScheduled" 
-                  [(ngModel)]="isScheduled" 
-                  style="width: 20px; height: 20px; cursor: pointer; accent-color: #a855f7;">
-                <label for="isScheduled" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; color: #c084fc;">
-                  📅 Agendar Publicação (Calendário de Conteúdo)
-                </label>
+                }
               </div>
-              
-              @if (isScheduled) {
+            </div>
+
+            <!-- Scheduling Post Option -->
+            <div class="form-group" style="margin-top: 2rem;">
+              <div class="schedule-switch-card"
+                style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(168, 85, 247, 0.03); border: 1px solid rgba(168, 85, 247, 0.15); padding: 1.25rem; border-radius: 12px;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <input type="checkbox" id="isScheduled" name="isScheduled" [(ngModel)]="isScheduled"
+                    style="width: 20px; height: 20px; cursor: pointer; accent-color: #a855f7;">
+                  <label for="isScheduled"
+                    style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; color: #c084fc;">
+                    📅 Agendar Publicação (Calendário de Conteúdo)
+                  </label>
+                </div>
+
+                @if (isScheduled) {
                 <div style="padding-left: 1.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
-                  <label for="scheduledDateTime" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Escolha a data e hora de lançamento:</label>
-                  <input 
-                    type="datetime-local" 
-                    id="scheduledDateTime" 
-                    name="scheduledDateTime" 
-                    [(ngModel)]="scheduledDateTime"
-                    class="form-control" 
+                  <label for="scheduledDateTime" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Escolha a
+                    data e hora de lançamento:</label>
+                  <input type="datetime-local" id="scheduledDateTime" name="scheduledDateTime"
+                    [(ngModel)]="scheduledDateTime" class="form-control"
                     style="max-width: 300px; background: #1e1b4b; color: #fff; border: 1px solid #4c1d95; border-radius: 6px; padding: 0.5rem;">
                   <p style="margin: 0; font-size: 0.8rem; color: #a78bfa;">
-                    A matéria ficará oculta para leitores até a data/hora selecionada. Quando o horário chegar, ela aparecerá automaticamente em seu blog e feed.
+                    A matéria ficará oculta para leitores até a data/hora selecionada. Quando o horário chegar, ela
+                    aparecerá automaticamente em seu blog e feed.
                   </p>
                 </div>
-              }
-            </div>
-          </div>
-
-          <!-- Newsletter Trigger Switch -->
-          <div class="form-group" style="margin-top: 1.5rem;">
-            <div class="newsletter-switch-card" style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.1); padding: 1.25rem; border-radius: 12px;">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <input 
-                  type="checkbox" 
-                  id="sendNewsletter" 
-                  name="sendNewsletter" 
-                  [(ngModel)]="sendNewsletter" 
-                  [disabled]="editingArticle()?.newsletterSent ? true : false"
-                  style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--blog-primary, #00f0ff);">
-                <label for="sendNewsletter" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
-                  📢 Disparar Newsletter por E-mail 
-                  @if (editingArticle()?.newsletterSent) {
-                    <span class="badge" style="background: #10b981; color: #fff; font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.2);">Enviado</span>
-                  }
-                </label>
-              </div>
-              <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; padding-left: 1.75rem; line-height: 1.4;">
-                @if (editingArticle()?.newsletterSent) {
-                  A newsletter para esta matéria já foi disparada anteriormente para os seus seguidores.
-                } @else if (isScheduled) {
-                  A newsletter para esta matéria será **disparada automaticamente por e-mail** para todos os seus seguidores quando a publicação for lançada.
-                } @else {
-                  Esta matéria será enviada automaticamente por e-mail para todos os <strong>{{ targetBlogFollowersCount() }} seguidores</strong> do blog assim que for publicada.
                 }
-              </p>
+              </div>
             </div>
-          </div>
 
-          <div class="form-actions" style="display: flex; gap: 1rem; align-items: center; margin-top: 2rem;">
-            <button type="button" class="btn btn-primary" (click)="savePost(false)">🚀 Publicar Notícia</button>
-            <button type="button" class="btn btn-secondary" (click)="savePost(true)" style="background: #334155; color: #fff; border-color: #475569;">💾 Salvar sem publicar (Rascunho)</button>
-            <button type="button" class="btn btn-secondary" (click)="setTab('posts')" style="background: transparent;">Voltar</button>
-          </div>
-        </form>
+            <!-- Newsletter Trigger Switch -->
+            <div class="form-group" style="margin-top: 1.5rem;">
+              <div class="newsletter-switch-card"
+                style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.1); padding: 1.25rem; border-radius: 12px;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <input type="checkbox" id="sendNewsletter" name="sendNewsletter" [(ngModel)]="sendNewsletter"
+                    [disabled]="editingArticle()?.newsletterSent ? true : false"
+                    style="width: 20px; height: 20px; cursor: pointer; accent-color: var(--blog-primary, #00f0ff);">
+                  <label for="sendNewsletter"
+                    style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem;">
+                    📢 Disparar Newsletter por E-mail
+                    @if (editingArticle()?.newsletterSent) {
+                    <span class="badge"
+                      style="background: #10b981; color: #fff; font-size: 0.7rem; padding: 0.25rem 0.5rem; border-radius: 4px; font-weight: bold; border: 1px solid rgba(16, 185, 129, 0.2);">Enviado</span>
+                    }
+                  </label>
+                </div>
+                <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; padding-left: 1.75rem; line-height: 1.4;">
+                  @if (editingArticle()?.newsletterSent) {
+                  A newsletter para esta matéria já foi disparada anteriormente para os seus seguidores.
+                  } @else if (isScheduled) {
+                  A newsletter para esta matéria será **disparada automaticamente por e-mail** para todos os seus
+                  seguidores quando a publicação for lançada.
+                  } @else {
+                  Esta matéria será enviada automaticamente por e-mail para todos os <strong>{{
+                    targetBlogFollowersCount() }} seguidores</strong> do blog assim que for publicada.
+                  }
+                </p>
+              </div>
+            </div>
+
+            <div class="form-actions" style="display: flex; gap: 1rem; align-items: center; margin-top: 2rem;">
+              <button type="button" class="btn btn-primary" (click)="savePost(false)">🚀 Publicar Notícia</button>
+              <button type="button" class="btn btn-secondary" (click)="savePost(true)"
+                style="background: #334155; color: #fff; border-color: #475569;">💾 Salvar sem publicar
+                (Rascunho)</button>
+              <button type="button" class="btn btn-secondary" (click)="setTab('posts')"
+                style="background: transparent;">Voltar</button>
+            </div>
+          </form>
         </div>
 
         @if (editingArticleId()) {
-          <div class="editor-sidebar">
-            <div class="sidebar-tabs">
-              <button [class.active]="editorSidebarTab === 'notes'" (click)="editorSidebarTab = 'notes'">💬 Notas da Equipe</button>
-              <button [class.active]="editorSidebarTab === 'versions'" (click)="editorSidebarTab = 'versions'">🗂️ Versões</button>
-            </div>
-
-            @if (editorSidebarTab === 'notes') {
-              <div class="sidebar-content notes-content">
-                <div class="notes-list">
-                  @for (note of articleNotes(); track note.id) {
-                    <div class="note-bubble" [class.own]="note.authorId === db.currentUser()?.id">
-                      <img [src]="note.authorAvatarUrl" class="note-avatar">
-                      <div class="note-body">
-                        <div class="note-author">{{ note.authorDisplayName }} <span class="note-time">{{ note.createdAt | date:'shortTime' }}</span></div>
-                        <div class="note-text">{{ note.content }}</div>
-                      </div>
-                    </div>
-                  } @empty {
-                    <div class="empty-state-small">Nenhuma nota ainda.</div>
-                  }
-                </div>
-                <div class="note-input-area">
-                  <input type="text" [(ngModel)]="newNoteContent" placeholder="Digite uma nota..." (keyup.enter)="sendNote()">
-                  <button class="btn btn-primary btn-sm" (click)="sendNote()">Enviar</button>
-                </div>
-              </div>
-            }
-
-            @if (editorSidebarTab === 'versions') {
-              <div class="sidebar-content versions-content">
-                <div class="versions-list">
-                  @for (version of articleVersions(); track version.id) {
-                    <div class="version-item">
-                      <div class="version-header">
-                        <strong>{{ version.savedAt | date:'dd/MM/yy HH:mm' }}</strong>
-                        <button class="btn btn-secondary btn-sm" (click)="restoreVersion(version)">Restaurar</button>
-                      </div>
-                      <div class="version-meta">Salvo por: {{ version.savedByDisplayName }}</div>
-                    </div>
-                  } @empty {
-                    <div class="empty-state-small">Nenhuma versão salva.</div>
-                  }
-                </div>
-              </div>
-            }
+        <div class="editor-sidebar">
+          <div class="sidebar-tabs">
+            <button [class.active]="editorSidebarTab === 'notes'" (click)="editorSidebarTab = 'notes'">💬 Notas da
+              Equipe</button>
+            <button [class.active]="editorSidebarTab === 'versions'" (click)="editorSidebarTab = 'versions'">🗂️
+              Versões</button>
           </div>
-        }
+
+          @if (editorSidebarTab === 'notes') {
+          <div class="sidebar-content notes-content">
+            <div class="notes-list">
+              @for (note of articleNotes(); track note.id) {
+              <div class="note-bubble" [class.own]="note.authorId === db.currentUser()?.id">
+                <img [src]="note.authorAvatarUrl" class="note-avatar">
+                <div class="note-body">
+                  <div class="note-author">{{ note.authorDisplayName }} <span class="note-time">{{ note.createdAt |
+                      date:'shortTime' }}</span></div>
+                  <div class="note-text">{{ note.content }}</div>
+                </div>
+              </div>
+              } @empty {
+              <div class="empty-state-small">Nenhuma nota ainda.</div>
+              }
+            </div>
+            <div class="note-input-area">
+              <input type="text" [(ngModel)]="newNoteContent" placeholder="Digite uma nota..."
+                (keyup.enter)="sendNote()">
+              <button class="btn btn-primary btn-sm" (click)="sendNote()">Enviar</button>
+            </div>
+          </div>
+          }
+
+          @if (editorSidebarTab === 'versions') {
+          <div class="sidebar-content versions-content">
+            <div class="versions-list">
+              @for (version of articleVersions(); track version.id) {
+              <div class="version-item">
+                <div class="version-header">
+                  <strong>{{ version.savedAt | date:'dd/MM/yy HH:mm' }}</strong>
+                  <button class="btn btn-secondary btn-sm" (click)="restoreVersion(version)">Restaurar</button>
+                </div>
+                <div class="version-meta">Salvo por: {{ version.savedByDisplayName }}</div>
+              </div>
+              } @empty {
+              <div class="empty-state-small">Nenhuma versão salva.</div>
+              }
+            </div>
+          </div>
+          }
         </div>
+        }
       </div>
+    </div>
     }
 
     <!-- Active Tab: Blog Customizer -->
     @if (activeTab() === 'customize') {
-      <div class="glass-card work-card">
-        <div class="card-header">
-          <h2>Personalizar Blog & Site</h2>
-          <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
+    <div class="glass-card work-card">
+      <div class="card-header">
+        <h2>Personalizar Blog & Site</h2>
+        <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
+      </div>
+
+      <!-- Presets Section -->
+      <div class="preset-section">
+        <h4>Estilos Temáticos Rápidos</h4>
+        <div class="preset-buttons">
+          <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('cyberpunk')">
+            <span class="preset-glow cp-dot"></span> Cyberpunk Neon
+          </button>
+          <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('retro')">
+            <span class="preset-glow retro-dot"></span> Retro 16-Bit
+          </button>
+          <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('tabletop')">
+            <span class="preset-glow tt-dot"></span> Fantasy RPG
+          </button>
         </div>
+      </div>
 
-        <!-- Presets Section -->
-        <div class="preset-section">
-          <h4>Estilos Temáticos Rápidos</h4>
-          <div class="preset-buttons">
-            <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('cyberpunk')">
-              <span class="preset-glow cp-dot"></span> Cyberpunk Neon
-            </button>
-            <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('retro')">
-              <span class="preset-glow retro-dot"></span> Retro 16-Bit
-            </button>
-            <button type="button" class="btn btn-secondary preset-btn" (click)="applyPreset('tabletop')">
-              <span class="preset-glow tt-dot"></span> Fantasy RPG
-            </button>
-          </div>
-        </div>
-
-        <form (submit)="saveBlogSettings()" class="studio-form">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="blogTitle">Título do seu Blog</label>
-              <input 
-                type="text" 
-                id="blogTitle" 
-                name="blogTitle" 
-                [(ngModel)]="blogTitle" 
-                class="form-control" 
-                required>
-            </div>
-            
-            <div class="form-group">
-              <label for="blogTagline">Slogan / Descrição Curta</label>
-              <input 
-                type="text" 
-                id="blogTagline" 
-                name="blogTagline" 
-                [(ngModel)]="blogTagline" 
-                class="form-control">
-            </div>
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="blogFont">Fonte do Blog</label>
-              <select id="blogFont" name="blogFont" [(ngModel)]="blogFont" class="form-control">
-                <option value="Outfit">Outfit (Moderno / Elegante)</option>
-                <option value="Space Grotesk">Space Grotesk (Gamer / Futurista)</option>
-                <option value="Fira Code">Fira Code (Developer / Retro)</option>
-                <option value="system-ui">Padrão do Sistema</option>
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="blogLayout">Layout das Matérias</label>
-              <select id="blogLayout" name="blogLayout" [(ngModel)]="blogLayout" class="form-control">
-                <option value="grid">Grid (Moderno / Mosaico)</option>
-                <option value="list">Lista (Blog Tradicional)</option>
-                <option value="magazine">Revista (Banner Destacado)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Banner Customizer -->
+      <form (submit)="saveBlogSettings()" class="studio-form">
+        <div class="form-row-2">
           <div class="form-group">
-            <label>Imagem de Banner / Capa do Blog</label>
-            <div class="banner-picker">
-
-              <!-- Live Preview -->
-              <div class="banner-preview" [style.background-image]="'url(' + blogBannerUrl + ')'">
-                @if (!blogBannerUrl) {
-                  <span class="banner-preview-placeholder">Prévia do Banner</span>
-                }
-                <div class="banner-preview-overlay">
-                  <span class="banner-preview-label">Prévia</span>
-                </div>
-              </div>
-
-              <!-- URL Input -->
-              <div class="banner-url-input-group">
-                <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
-                <div style="display: flex; gap: 0.5rem; width: 100%;">
-                  <input
-                    type="url"
-                    id="blogBannerUrl"
-                    name="blogBannerUrl"
-                    [(ngModel)]="blogBannerUrl"
-                    class="form-control"
-                    placeholder="https://exemplo.com/minha-imagem.jpg"
-                    style="flex: 1;">
-                  
-                  <input type="file" id="blogBannerFileInput" class="file-input-hidden" accept="image/*" (change)="onBlogBannerSelected($event)" style="display: none;">
-                  <label for="blogBannerFileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
-                    @if (isUploadingBlogBanner) {
-                      ⏳ Enviando...
-                    } @else {
-                      📁 Enviar Imagem
-                    }
-                  </label>
-                </div>
-                <small class="form-help">Use imagens de alta resolução (mín. 1200px de largura). Formatos: JPG, PNG, WebP.</small>
-              </div>
-
-              <!-- Quick-pick presets -->
-              <div class="banner-presets">
-                <span class="banner-presets-label">Ou escolha um tema padrão:</span>
-                <div class="banner-presets-grid">
-                  <button
-                    type="button"
-                    class="banner-preset-thumb"
-                    [class.active]="blogBannerUrl === '/images/cyberpunk_cover.png'"
-                    (click)="blogBannerUrl = '/images/cyberpunk_cover.png'"
-                    title="Cyberpunk / Neon">
-                    <img src="/images/cyberpunk_cover.png" alt="Cyberpunk Neon">
-                    <span>Cyberpunk</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="banner-preset-thumb"
-                    [class.active]="blogBannerUrl === '/images/retro_cover.png'"
-                    (click)="blogBannerUrl = '/images/retro_cover.png'"
-                    title="Retro Arcade">
-                    <img src="/images/retro_cover.png" alt="Retro Arcade">
-                    <span>Retro</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="banner-preset-thumb"
-                    [class.active]="blogBannerUrl === '/images/tabletop_cover.png'"
-                    (click)="blogBannerUrl = '/images/tabletop_cover.png'"
-                    title="Fantasy RPG">
-                    <img src="/images/tabletop_cover.png" alt="Fantasy RPG">
-                    <span>Fantasy</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
+            <label for="blogTitle">Título do seu Blog</label>
+            <input type="text" id="blogTitle" name="blogTitle" [(ngModel)]="blogTitle" class="form-control" required>
           </div>
 
+          <div class="form-group">
+            <label for="blogTagline">Slogan / Descrição Curta</label>
+            <input type="text" id="blogTagline" name="blogTagline" [(ngModel)]="blogTagline" class="form-control">
+          </div>
+        </div>
 
-
-          <!-- Color Customizer Grid -->
-          <div class="color-picker-grid">
-            <h4 class="grid-title">Esquema de Cores Customizado</h4>
-            <div class="color-inputs">
-              <div class="color-item">
-                <label>Fundo da Página</label>
-                <div class="color-control-wrapper">
-                  <input type="color" name="blogBg" [(ngModel)]="blogBg">
-                  <input type="text" name="blogBgText" [(ngModel)]="blogBg" class="color-hex">
-                </div>
-              </div>
-
-              <div class="color-item">
-                <label>Fundo dos Cards</label>
-                <div class="color-control-wrapper">
-                  <input type="color" name="blogCardBg" [(ngModel)]="blogCardBg">
-                  <input type="text" name="blogCardBgText" [(ngModel)]="blogCardBg" class="color-hex">
-                </div>
-              </div>
-
-              <div class="color-item">
-                <label>Cor Primária (Links)</label>
-                <div class="color-control-wrapper">
-                  <input type="color" name="blogPrimary" [(ngModel)]="blogPrimary">
-                  <input type="text" name="blogPrimaryText" [(ngModel)]="blogPrimary" class="color-hex">
-                </div>
-              </div>
-
-              <div class="color-item">
-                <label>Cor de Destaque / Glow</label>
-                <div class="color-control-wrapper">
-                  <input type="color" name="blogAccent" [(ngModel)]="blogAccent">
-                  <input type="text" name="blogAccentText" [(ngModel)]="blogAccent" class="color-hex">
-                </div>
-              </div>
-
-              <div class="color-item">
-                <label>Cor do Texto</label>
-                <div class="color-control-wrapper">
-                  <input type="color" name="blogText" [(ngModel)]="blogText">
-                  <input type="text" name="blogTextText" [(ngModel)]="blogText" class="color-hex">
-                </div>
-              </div>
-            </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="blogFont">Fonte do Blog</label>
+            <select id="blogFont" name="blogFont" [(ngModel)]="blogFont" class="form-control">
+              <option value="Outfit">Outfit (Moderno / Elegante)</option>
+              <option value="Space Grotesk">Space Grotesk (Gamer / Futurista)</option>
+              <option value="Fira Code">Fira Code (Developer / Retro)</option>
+              <option value="system-ui">Padrão do Sistema</option>
+            </select>
           </div>
 
-          <!-- Customizable Sections Management -->
-          <div class="color-picker-grid" style="margin-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 2rem;">
-            <h4 class="grid-title" style="margin-bottom: 0.5rem;">Seções do Blog</h4>
-            <p class="form-help" style="margin-bottom: 1.5rem; opacity: 0.8; font-size: 0.85rem;">Crie e gerencie as seções temáticas do seu blog (ex: Quadrinhos, Tech, Resenhas).</p>
-            
-            <div class="form-group">
-              <label>Adicionar Nova Seção</label>
+          <div class="form-group">
+            <label for="blogLayout">Layout das Matérias</label>
+            <select id="blogLayout" name="blogLayout" [(ngModel)]="blogLayout" class="form-control">
+              <option value="grid">Grid (Moderno / Mosaico)</option>
+              <option value="list">Lista (Blog Tradicional)</option>
+              <option value="magazine">Revista (Banner Destacado)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Banner Customizer -->
+        <div class="form-group">
+          <label>Imagem de Banner / Capa do Blog</label>
+          <div class="banner-picker">
+
+            <!-- Live Preview -->
+            <div class="banner-preview" [style.background-image]="'url(' + blogBannerUrl + ')'">
+              @if (!blogBannerUrl) {
+              <span class="banner-preview-placeholder">Prévia do Banner</span>
+              }
+              <div class="banner-preview-overlay">
+                <span class="banner-preview-label">Prévia</span>
+              </div>
+            </div>
+
+            <!-- URL Input -->
+            <div class="banner-url-input-group">
+              <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
               <div style="display: flex; gap: 0.5rem; width: 100%;">
-                <input 
-                  type="text" 
-                  name="newSectionName" 
-                  [(ngModel)]="newSectionName" 
-                  class="form-control" 
-                  placeholder="Nome da seção (ex: RPG)"
-                  style="flex: 1;"
-                  (keyup.enter)="$event.preventDefault(); addSection()">
-                <button type="button" class="btn btn-primary" (click)="addSection()">Adicionar</button>
+                <input type="url" id="blogBannerUrl" name="blogBannerUrl" [(ngModel)]="blogBannerUrl"
+                  class="form-control" placeholder="https://exemplo.com/minha-imagem.jpg" style="flex: 1;">
+
+                <input type="file" id="blogBannerFileInput" class="file-input-hidden" accept="image/*"
+                  (change)="onBlogBannerSelected($event)" style="display: none;">
+                <label for="blogBannerFileInput" class="btn btn-secondary"
+                  style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                  @if (isUploadingBlogBanner) {
+                  ⏳ Enviando...
+                  } @else {
+                  📁 Enviar Imagem
+                  }
+                </label>
+              </div>
+              <small class="form-help">Use imagens de alta resolução (mín. 1200px de largura). Formatos: JPG, PNG,
+                WebP.</small>
+            </div>
+
+            <!-- Quick-pick presets -->
+            <div class="banner-presets">
+              <span class="banner-presets-label">Ou escolha um tema padrão:</span>
+              <div class="banner-presets-grid">
+                <button type="button" class="banner-preset-thumb"
+                  [class.active]="blogBannerUrl === '/images/cyberpunk_cover.png'"
+                  (click)="blogBannerUrl = '/images/cyberpunk_cover.png'" title="Cyberpunk / Neon">
+                  <img src="/images/cyberpunk_cover.png" alt="Cyberpunk Neon">
+                  <span>Cyberpunk</span>
+                </button>
+                <button type="button" class="banner-preset-thumb"
+                  [class.active]="blogBannerUrl === '/images/retro_cover.png'"
+                  (click)="blogBannerUrl = '/images/retro_cover.png'" title="Retro Arcade">
+                  <img src="/images/retro_cover.png" alt="Retro Arcade">
+                  <span>Retro</span>
+                </button>
+                <button type="button" class="banner-preset-thumb"
+                  [class.active]="blogBannerUrl === '/images/tabletop_cover.png'"
+                  (click)="blogBannerUrl = '/images/tabletop_cover.png'" title="Fantasy RPG">
+                  <img src="/images/tabletop_cover.png" alt="Fantasy RPG">
+                  <span>Fantasy</span>
+                </button>
               </div>
             </div>
 
-            <!-- List of current sections -->
-            <div style="margin-top: 1.5rem;">
-              <label style="display: block; margin-bottom: 0.75rem;">Seções Ativas</label>
-              @if (blogSections.length > 0) {
-                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
-                  @for (sec of blogSections; track sec) {
-                    <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                      <span>{{ sec }}</span>
-                      <button 
-                        type="button" 
-                        style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0; font-size: 0.9rem; line-height: 1;" 
-                        (click)="removeSection(sec)"
-                        title="Remover Seção">
-                        ✕
-                      </button>
-                    </div>
-                  }
-                </div>
-              } @else {
-                <p style="font-size: 0.9rem; color: #94a3b8; font-style: italic;">Nenhuma seção cadastrada. Crie uma acima!</p>
+          </div>
+        </div>
+
+
+
+        <!-- Color Customizer Grid -->
+        <div class="color-picker-grid">
+          <h4 class="grid-title">Esquema de Cores Customizado</h4>
+          <div class="color-inputs">
+            <div class="color-item">
+              <label>Fundo da Página</label>
+              <div class="color-control-wrapper">
+                <input type="color" name="blogBg" [(ngModel)]="blogBg">
+                <input type="text" name="blogBgText" [(ngModel)]="blogBg" class="color-hex">
+              </div>
+            </div>
+
+            <div class="color-item">
+              <label>Fundo dos Cards</label>
+              <div class="color-control-wrapper">
+                <input type="color" name="blogCardBg" [(ngModel)]="blogCardBg">
+                <input type="text" name="blogCardBgText" [(ngModel)]="blogCardBg" class="color-hex">
+              </div>
+            </div>
+
+            <div class="color-item">
+              <label>Cor Primária (Links)</label>
+              <div class="color-control-wrapper">
+                <input type="color" name="blogPrimary" [(ngModel)]="blogPrimary">
+                <input type="text" name="blogPrimaryText" [(ngModel)]="blogPrimary" class="color-hex">
+              </div>
+            </div>
+
+            <div class="color-item">
+              <label>Cor de Destaque / Glow</label>
+              <div class="color-control-wrapper">
+                <input type="color" name="blogAccent" [(ngModel)]="blogAccent">
+                <input type="text" name="blogAccentText" [(ngModel)]="blogAccent" class="color-hex">
+              </div>
+            </div>
+
+            <div class="color-item">
+              <label>Cor do Texto</label>
+              <div class="color-control-wrapper">
+                <input type="color" name="blogText" [(ngModel)]="blogText">
+                <input type="text" name="blogTextText" [(ngModel)]="blogText" class="color-hex">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Customizable Sections Management -->
+        <div class="color-picker-grid"
+          style="margin-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 2rem;">
+          <h4 class="grid-title" style="margin-bottom: 0.5rem;">Seções do Blog</h4>
+          <p class="form-help" style="margin-bottom: 1.5rem; opacity: 0.8; font-size: 0.85rem;">Crie e gerencie as
+            seções temáticas do seu blog (ex: Quadrinhos, Tech, Resenhas).</p>
+
+          <div class="form-group">
+            <label>Adicionar Nova Seção</label>
+            <div style="display: flex; gap: 0.5rem; width: 100%;">
+              <input type="text" name="newSectionName" [(ngModel)]="newSectionName" class="form-control"
+                placeholder="Nome da seção (ex: RPG)" style="flex: 1;"
+                (keyup.enter)="$event.preventDefault(); addSection()">
+              <button type="button" class="btn btn-primary" (click)="addSection()">Adicionar</button>
+            </div>
+          </div>
+
+          <!-- List of current sections -->
+          <div style="margin-top: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.75rem;">Seções Ativas</label>
+            @if (blogSections.length > 0) {
+            <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+              @for (sec of blogSections; track sec) {
+              <div
+                style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                <span>{{ sec }}</span>
+                <button type="button"
+                  style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0; font-size: 0.9rem; line-height: 1;"
+                  (click)="removeSection(sec)" title="Remover Seção">
+                  ✕
+                </button>
+              </div>
               }
             </div>
+            } @else {
+            <p style="font-size: 0.9rem; color: #94a3b8; font-style: italic;">Nenhuma seção cadastrada. Crie uma acima!
+            </p>
+            }
           </div>
+        </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Salvar Customizações</button>
-            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
-          </div>
-        </form>
-      </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Salvar Customizações</button>
+          <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+        </div>
+      </form>
+    </div>
     }
 
     <!-- Active Tab: Profile Editor -->
     @if (activeTab() === 'profile') {
-      <div class="glass-card work-card">
-        <div class="card-header">
-          <h2>Editar Perfil Social</h2>
+    <div class="glass-card work-card">
+      <div class="card-header">
+        <h2>Editar Perfil Social</h2>
+      </div>
+
+      <form (submit)="saveProfile()" class="studio-form">
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="profileName">Nome de Exibição</label>
+            <input type="text" id="profileName" name="profileName" [(ngModel)]="profileName" class="form-control"
+              required>
+          </div>
+
+          <div class="form-group">
+            <label for="profileUsername">Apelido do Blog (Endereço do Site)</label>
+            <div class="username-input-wrapper">
+              <span class="handle-prefix">@</span>
+              <input type="text" id="profileUsername" name="profileUsername" [(ngModel)]="profileUsername"
+                class="form-control username-control" placeholder="ex: dnd_wizard" required>
+            </div>
+            <small class="form-help">Seu blog ficará em: <strong>guiikhub.com/b/{{ profileUsername }}</strong></small>
+          </div>
         </div>
 
-        <form (submit)="saveProfile()" class="studio-form">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="profileName">Nome de Exibição</label>
-              <input 
-                type="text" 
-                id="profileName" 
-                name="profileName" 
-                [(ngModel)]="profileName" 
-                class="form-control" 
-                required>
-            </div>
-            
-            <div class="form-group">
-              <label for="profileUsername">Apelido do Blog (Endereço do Site)</label>
-              <div class="username-input-wrapper">
-                <span class="handle-prefix">@</span>
-                <input 
-                  type="text" 
-                  id="profileUsername" 
-                  name="profileUsername" 
-                  [(ngModel)]="profileUsername" 
-                  class="form-control username-control" 
-                  placeholder="ex: dnd_wizard" 
-                  required>
-              </div>
-              <small class="form-help">Seu blog ficará em: <strong>guiikhub.com/b/{{ profileUsername }}</strong></small>
-            </div>
-          </div>
+        <div class="form-group">
+          <label for="profileAvatar">Link do Avatar ou envie uma foto</label>
+          <div style="display: flex; gap: 0.5rem; width: 100%;">
+            <input type="url" id="profileAvatar" name="profileAvatar" [(ngModel)]="profileAvatar" class="form-control"
+              placeholder="https://exemplo.com/meu-avatar.jpg" style="flex: 1;">
 
-          <div class="form-group">
-            <label for="profileAvatar">Link do Avatar ou envie uma foto</label>
-            <div style="display: flex; gap: 0.5rem; width: 100%;">
-              <input 
-                type="url" 
-                id="profileAvatar" 
-                name="profileAvatar" 
-                [(ngModel)]="profileAvatar" 
-                class="form-control" 
-                placeholder="https://exemplo.com/meu-avatar.jpg"
-                style="flex: 1;">
-              
-              <input type="file" id="profileAvatarFileInput" class="file-input-hidden" accept="image/*" (change)="onAvatarSelected($event)" style="display: none;">
-              <label for="profileAvatarFileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
-                @if (isUploadingAvatar) {
-                  ⏳ Enviando...
-                } @else {
-                  📁 Enviar Imagem
-                }
-              </label>
-            </div>
-            <small class="form-help">Para melhor visualização, use imagens quadradas (1:1).</small>
+            <input type="file" id="profileAvatarFileInput" class="file-input-hidden" accept="image/*"
+              (change)="onAvatarSelected($event)" style="display: none;">
+            <label for="profileAvatarFileInput" class="btn btn-secondary"
+              style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+              @if (isUploadingAvatar) {
+              ⏳ Enviando...
+              } @else {
+              📁 Enviar Imagem
+              }
+            </label>
           </div>
+          <small class="form-help">Para melhor visualização, use imagens quadradas (1:1).</small>
+        </div>
 
-          <div class="form-group">
-            <label for="profileBio">Bio Social</label>
-            <textarea 
-              id="profileBio" 
-              name="profileBio" 
-              [(ngModel)]="profileBio" 
-              class="form-control" 
-              placeholder="Escreva algo sobre você..."></textarea>
-          </div>
+        <div class="form-group">
+          <label for="profileBio">Bio Social</label>
+          <textarea id="profileBio" name="profileBio" [(ngModel)]="profileBio" class="form-control"
+            placeholder="Escreva algo sobre você..."></textarea>
+        </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Salvar Perfil</button>
-            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
-          </div>
-        </form>
-      </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Salvar Perfil</button>
+          <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+        </div>
+      </form>
+    </div>
     }
 
     <!-- Active Tab: Collaborators -->
     @if (activeTab() === 'collabs') {
-      <div class="glass-card work-card">
-        <div class="card-header">
-          <h2>Equipe de Colaboradores</h2>
+    <div class="glass-card work-card">
+      <div class="card-header">
+        <h2>Equipe de Colaboradores</h2>
+      </div>
+
+      <div class="studio-form" style="margin-bottom: 2rem;">
+        <div class="form-group">
+          <label for="newCollabUsername">Adicionar novo colaborador (Apelido do usuário)</label>
+          <div style="display: flex; gap: 0.5rem; width: 100%;">
+            <input type="text" id="newCollabUsername" name="newCollabUsername" [(ngModel)]="newCollabUsername"
+              class="form-control" placeholder="ex: dnd_wizard" style="flex: 1;">
+            <button class="btn btn-primary" (click)="addCollaborator()">Adicionar</button>
+          </div>
         </div>
-        
-        <div class="studio-form" style="margin-bottom: 2rem;">
-          <div class="form-group">
-            <label for="newCollabUsername">Adicionar novo colaborador (Apelido do usuário)</label>
-            <div style="display: flex; gap: 0.5rem; width: 100%;">
-              <input 
-                type="text" 
-                id="newCollabUsername" 
-                name="newCollabUsername" 
-                [(ngModel)]="newCollabUsername" 
-                class="form-control" 
-                placeholder="ex: dnd_wizard"
-                style="flex: 1;">
-              <button class="btn btn-primary" (click)="addCollaborator()">Adicionar</button>
+      </div>
+
+      <div class="posts-table-wrapper">
+        <table class="posts-table">
+          <thead>
+            <tr>
+              <th>Colaborador</th>
+              <th>Apelido</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of currentCollaborators(); track user.id) {
+            <tr>
+              <td class="col-title" data-label="Colaborador">
+                <div class="post-title-cell">
+                  <img [src]="user.avatarUrl" [alt]="user.displayName" class="post-thumb"
+                    style="border-radius: 50%; aspect-ratio: 1; object-fit: cover;">
+                  <span class="title-text">{{ user.displayName }}</span>
+                </div>
+              </td>
+              <td data-label="Apelido">{{ user.username }}</td>
+              <td data-label="Ações">
+                <button class="btn btn-danger btn-xs" (click)="removeCollaborator(user.id)">Remover</button>
+              </td>
+            </tr>
+            } @empty {
+            <tr>
+              <td colspan="3" class="empty-table-cell">
+                <p>Você ainda não tem colaboradores no seu blog.</p>
+              </td>
+            </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+    }
+
+    <!-- Active Tab: Monetization -->
+    @if (activeTab() === 'monetization') {
+    <div class="glass-card work-card">
+      <div class="card-header">
+        <h2>Monetização & Patrocínios</h2>
+        <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
+      </div>
+
+      <form (submit)="saveBlogSettings()" class="studio-form">
+        <div class="color-picker-grid" style="margin-top: 1rem;">
+          <p class="form-help" style="margin-bottom: 1.5rem;">Adicione banners de patrocinadores ao seu blog para gerar
+            receita. Os banners serão exibidos no seu feed.</p>
+
+          <!-- Sponsor 1 -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>Banner do Patrocinador 1 (Topo do Feed)</label>
+              <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <input type="url" name="blogSponsorUrl1" [(ngModel)]="blogSponsorUrl1" class="form-control"
+                  placeholder="Link da imagem (ou envie um arquivo)" style="flex: 1;">
+
+                <input type="file" id="sponsor1FileInput" class="file-input-hidden" accept="image/*"
+                  (change)="onSponsorBannerSelected($event, 1)" style="display: none;">
+                <label for="sponsor1FileInput" class="btn btn-secondary"
+                  style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                  @if (isUploadingSponsor1) {
+                  ⏳
+                  } @else {
+                  📁 Enviar
+                  }
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Link de Destino 1</label>
+              <input type="url" name="blogSponsorLink1" [(ngModel)]="blogSponsorLink1" class="form-control"
+                placeholder="https://site-do-patrocinador.com">
+            </div>
+          </div>
+
+          <!-- Sponsor 2 -->
+          <div class="form-row-2">
+            <div class="form-group">
+              <label>Banner do Patrocinador 2 (Barra Lateral)</label>
+              <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <input type="url" name="blogSponsorUrl2" [(ngModel)]="blogSponsorUrl2" class="form-control"
+                  placeholder="Link da imagem (ou envie um arquivo)" style="flex: 1;">
+
+                <input type="file" id="sponsor2FileInput" class="file-input-hidden" accept="image/*"
+                  (change)="onSponsorBannerSelected($event, 2)" style="display: none;">
+                <label for="sponsor2FileInput" class="btn btn-secondary"
+                  style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                  @if (isUploadingSponsor2) {
+                  ⏳
+                  } @else {
+                  📁 Enviar
+                  }
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Link de Destino 2</label>
+              <input type="url" name="blogSponsorLink2" [(ngModel)]="blogSponsorLink2" class="form-control"
+                placeholder="https://site-do-patrocinador.com">
             </div>
           </div>
         </div>
 
-        <div class="posts-table-wrapper">
-          <table class="posts-table">
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">Salvar Monetização</button>
+          <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+        </div>
+      </form>
+    </div>
+    }
+
+    <!-- Active Tab: Gamification Dashboard -->
+    @if (activeTab() === 'gamification') {
+    <div class="glass-card work-card gamification-dashboard">
+      <div class="card-header">
+        <h2>Perfil</h2>
+        <div class="header-badge">
+          <span class="badge-icon">🎮</span> Economia Fictícia
+        </div>
+      </div>
+
+      <div class="gamification-grid">
+        <!-- Stats Row -->
+        <div class="stats-row">
+          <!-- Level Card -->
+          <div class="stat-box level-box">
+            <span class="box-tag">NÍVEL ATUAL</span>
+            <div class="box-val">🚀 {{ db.currentUserLevel() }}</div>
+            <div class="xp-progress-details">
+              <span>{{ db.currentUserXpInLevel() }}/{{ db.currentUserXpRequiredForNext() }} XP para o próximo
+                nível</span>
+              <div class="progress-bar-bg">
+                <div class="progress-bar-fill" [style.width.%]="db.currentUserXpProgress()"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bits Card -->
+          <div class="stat-box bits-box">
+            <span class="box-tag">SALDO DE BITS</span>
+            <div class="box-val">🪙 {{ db.currentUser()?.bits_balance || 0 }} <span class="val-unit">Bits</span></div>
+            <p class="box-desc">Bits acumulados através de engajamento, leitura e publicação na rede.</p>
+          </div>
+
+          <!-- XP Card -->
+          <div class="stat-box xp-box">
+            <span class="box-tag">TOTAL DE XP</span>
+            <div class="box-val">⚡ {{ db.currentUser()?.xp_points || 0 }} <span class="val-unit">XP</span></div>
+            <p class="box-desc">Pontuação de experiência acumulada ao longo da vida no GuiikHub.</p>
+          </div>
+        </div>
+
+        <!-- Badges Section -->
+        <div class="logs-section" style="margin-top: 1rem;">
+          <h3>🏆 Meus Emblemas Conquistados</h3>
+          <div
+            style="display: flex; flex-wrap: wrap; gap: 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px;">
+            @for (badge of getUserBadges(db.currentUser()); track badge.id) {
+            <div
+              style="display: flex; align-items: center; gap: 0.75rem; background: rgba(0,0,0,0.2); padding: 0.75rem 1.25rem; border-radius: 10px; border: 1px solid #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.15); min-width: 220px; flex: 1;">
+              <img [src]="badge.iconUrl"
+                style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #00f0ff;">
+              <div>
+                <h4 style="margin: 0; font-size: 0.95rem; color: #fff; font-weight: 700;">{{ badge.name }}</h4>
+                <p style="margin: 3px 0 0; font-size: 0.75rem; color: var(--text-muted); line-height: 1.3;">{{
+                  badge.description }}</p>
+              </div>
+            </div>
+            } @empty {
+            <p
+              style="font-size: 0.88rem; color: var(--text-muted); font-style: italic; margin: 0; width: 100%; text-align: center;">
+              Você ainda não desbloqueou nenhum emblema. Continue produzindo e lendo conteúdos para ganhar XP!</p>
+            }
+          </div>
+        </div>
+
+        <!-- History Logs Section -->
+        <div class="logs-section">
+          <h3>📜 Histórico de Atividades</h3>
+          <div class="logs-table-wrapper">
+            <table class="logs-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Ação</th>
+                  <th>Valor</th>
+                  <th>Descrição</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (log of db.gamificationLogs(); track log.id) {
+                <tr>
+                  <td class="col-date">{{ log.createdAt | date:'short' }}</td>
+                  <td class="col-action">
+                    <span class="badge" [class]="log.typeAction">
+                      {{ log.typeAction === 'earn' ? 'Recebido' : log.typeAction === 'spend' ? 'Gasto' : 'Transferência'
+                      }}
+                    </span>
+                  </td>
+                  <td class="col-amount" [class.earn]="log.typeAction === 'earn'"
+                    [class.spend]="log.typeAction === 'spend'">
+                    {{ log.typeAction === 'earn' ? '+' : '-' }}{{ log.amount }} Bits
+                  </td>
+                  <td class="col-desc">{{ log.description }}</td>
+                </tr>
+                } @empty {
+                <tr>
+                  <td colspan="4" class="empty-row">Nenhuma transação registrada no seu histórico.</td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Active Tab: Spotlight Auction -->
+    @if (activeTab() === 'spotlight') {
+    <div class="glass-card work-card spotlight-dashboard">
+      <div class="card-header">
+        <h2>Leilão do Holofote (Destaque do Feed)</h2>
+        <div class="header-badge">
+          <span class="badge-icon">⚡</span> Tempo Restante: {{ timeLeftString }}
+        </div>
+      </div>
+
+      <div class="spotlight-grid">
+        <!-- Live Auction Card -->
+        <div class="live-auction-card">
+          <h3>🔴 Situação do Leilão de Hoje</h3>
+          @if (db.leilaoDiaAtual(); as leilao) {
+          <div class="auction-status-box">
+            <div class="status-item">
+              <span class="label">LÍDER ATUAL:</span>
+              <span class="val">{{ leilao.maiorLanceAtual > 0 ? leilao.usuarioLiderDisplayName : 'Ninguém' }}</span>
+            </div>
+            <div class="status-item">
+              <span class="label">MAIOR LANCE:</span>
+              <span class="val text-gold">🪙 {{ leilao.maiorLanceAtual }} Bits</span>
+            </div>
+            @if (leilao.maiorLanceAtual > 0) {
+            <div class="status-item">
+              <span class="label">MATÉRIA EM DESTAQUE:</span>
+              <span class="val text-cyan">"{{ leilao.postLiderTitle }}"</span>
+            </div>
+            }
+          </div>
+          } @else {
+          <div class="loading-auction">
+            <span>Carregando dados do leilão...</span>
+          </div>
+          }
+        </div>
+
+        <!-- Bid Form Card -->
+        <div class="bid-form-card">
+          <h3>💸 Dar um Lance</h3>
+          <form (submit)="$event.preventDefault()" class="studio-form">
+            <div class="form-group">
+              <label for="spotlightArticleSelect">Escolha sua Matéria para Destacar</label>
+              <select id="spotlightArticleSelect" name="spotlightArticleSelect"
+                [(ngModel)]="selectedArticleForSpotlightId" class="form-control">
+                <option value="" disabled selected>-- Selecione uma Matéria --</option>
+                @for (art of myArticles(); track art.id) {
+                @if (!art.status || art.status === 'published') {
+                <option [value]="art.id">{{ art.title }}</option>
+                }
+                }
+              </select>
+              <small class="form-help">Apenas matérias já publicadas estão qualificadas para o leilão.</small>
+            </div>
+
+            <div class="form-group">
+              <label for="bidAmountInput">Valor do Lance (Bits)</label>
+              <input type="number" id="bidAmountInput" name="bidAmountInput" [(ngModel)]="spotlightBidAmount"
+                class="form-control"
+                [min]="((db.leilaoDiaAtual()?.maiorLanceAtual || 0) === 0 ? 10 : (db.leilaoDiaAtual()?.maiorLanceAtual || 0) + 10)">
+              <small class="form-help">
+                Mínimo exigido: <strong>{{ (db.leilaoDiaAtual()?.maiorLanceAtual || 0) === 0 ? 10 :
+                  (db.leilaoDiaAtual()?.maiorLanceAtual || 0) + 10 }} Bits</strong>.
+                Seu saldo atual: <strong>🪙 {{ db.currentUser()?.bits_balance || 0 }} Bits</strong>.
+              </small>
+            </div>
+
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" (click)="placeSpotlightBid()"
+                [disabled]="!selectedArticleForSpotlightId">
+                ⚡ Confirmar Lance
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Today's Bids Log -->
+      <div class="logs-section">
+        <h3>📜 Histórico de Lances de Hoje</h3>
+        <div class="logs-table-wrapper">
+          <table class="logs-table">
             <thead>
               <tr>
-                <th>Colaborador</th>
-                <th>Apelido</th>
-                <th>Ações</th>
+                <th>Horário</th>
+                <th>Criador</th>
+                <th>Valor</th>
+                <th>Matéria Indicada</th>
               </tr>
             </thead>
             <tbody>
-              @for (user of currentCollaborators(); track user.id) {
-                <tr>
-                  <td class="col-title" data-label="Colaborador">
-                    <div class="post-title-cell">
-                      <img [src]="user.avatarUrl" [alt]="user.displayName" class="post-thumb" style="border-radius: 50%; aspect-ratio: 1; object-fit: cover;">
-                      <span class="title-text">{{ user.displayName }}</span>
-                    </div>
-                  </td>
-                  <td data-label="Apelido">{{ user.username }}</td>
-                  <td data-label="Ações">
-                    <button class="btn btn-danger btn-xs" (click)="removeCollaborator(user.id)">Remover</button>
-                  </td>
-                </tr>
+              @for (bid of (db.leilaoDiaAtual()?.historicoLances || []).slice().reverse(); track bid.timestamp) {
+              <tr>
+                <td class="col-date">{{ bid.timestamp | date:'shortTime' }}</td>
+                <td class="col-desc" style="font-weight: 600;">{{ bid.displayName }}</td>
+                <td class="col-amount earn">🪙 {{ bid.amount }} Bits</td>
+                <td class="col-desc" style="font-style: italic;">
+                  "{{ getArticleTitle(bid.postId) }}"
+                </td>
+              </tr>
               } @empty {
-                <tr>
-                  <td colspan="3" class="empty-table-cell">
-                    <p>Você ainda não tem colaboradores no seu blog.</p>
-                  </td>
-                </tr>
+              <tr>
+                <td colspan="4" class="empty-row">Nenhum lance foi dado no dia de hoje. Seja o primeiro!</td>
+              </tr>
               }
             </tbody>
           </table>
         </div>
       </div>
+    </div>
     }
 
-    <!-- Active Tab: Monetization -->
-    @if (activeTab() === 'monetization') {
-      <div class="glass-card work-card">
-        <div class="card-header">
-          <h2>Monetização & Patrocínios</h2>
-          <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
+    <!-- Active Tab: Sys-Admin Panel -->
+    @if (activeTab() === 'sys-admin' && db.currentUser()?.role === 'admin') {
+    <div class="glass-card work-card sys-admin-dashboard">
+      <div class="card-header">
+        <h2>Painel do Administrador Geral</h2>
+        <div class="header-badge"
+          style="background: rgba(239, 68, 68, 0.1); border-color: rgba(239, 68, 68, 0.3); color: #ef4444;">
+          🛡️ Acesso Admin
+        </div>
+      </div>
+
+      <!-- Quick Admin Commands -->
+      <div class="admin-commands-grid"
+        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1rem;">
+        <div class="stat-box"
+          style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
+          <span class="box-tag" style="color: #ef4444;">CONSOLIDAÇÃO DE LEILÃO</span>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+            Força o encerramento do leilão em data ativa e atualiza o post em destaque do feed global.
+          </p>
+          <button class="btn btn-primary"
+            style="background: #ef4444; border: none; align-self: flex-start; margin-top: auto;"
+            (click)="triggerManualConsolidation()">
+            ⚙️ Executar Fechamento
+          </button>
         </div>
 
-        <form (submit)="saveBlogSettings()" class="studio-form">
-          <div class="color-picker-grid" style="margin-top: 1rem;">
-            <p class="form-help" style="margin-bottom: 1.5rem;">Adicione banners de patrocinadores ao seu blog para gerar receita. Os banners serão exibidos no seu feed.</p>
-            
-            <!-- Sponsor 1 -->
-            <div class="form-row-2">
-              <div class="form-group">
-                <label>Banner do Patrocinador 1 (Topo do Feed)</label>
-                <div style="display: flex; gap: 0.5rem; width: 100%;">
-                  <input
-                    type="url"
-                    name="blogSponsorUrl1"
-                    [(ngModel)]="blogSponsorUrl1"
-                    class="form-control"
-                    placeholder="Link da imagem (ou envie um arquivo)"
-                    style="flex: 1;">
-                  
-                  <input type="file" id="sponsor1FileInput" class="file-input-hidden" accept="image/*" (change)="onSponsorBannerSelected($event, 1)" style="display: none;">
-                  <label for="sponsor1FileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
-                    @if (isUploadingSponsor1) {
-                      ⏳
-                    } @else {
-                      📁 Enviar
-                    }
-                  </label>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Link de Destino 1</label>
-                <input 
-                  type="url" 
-                  name="blogSponsorLink1" 
-                  [(ngModel)]="blogSponsorLink1" 
-                  class="form-control" 
-                  placeholder="https://site-do-patrocinador.com">
-              </div>
+        <div class="stat-box"
+          style="border-left: 4px solid #a855f7; background: rgba(168, 85, 247, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
+          <span class="box-tag" style="color: #c084fc;">MIGRAÇÃO DE BANCO</span>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+            Inicializa e corrige saldos/XP de contas antigas no Firestore que estejam indefinidos.
+          </p>
+          <button class="btn btn-primary"
+            style="background: #a855f7; border: none; align-self: flex-start; margin-top: auto;"
+            (click)="triggerManualMigration()">
+            ⚙️ Executar Migração
+          </button>
+        </div>
+      </div>
+
+      <!-- Grant Balance Form -->
+      <div class="grant-balance-card"
+        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+        <h3>🪙 Ajuste Administrativo de Saldo</h3>
+        <form (submit)="$event.preventDefault()" class="studio-form">
+          <div class="form-row-3">
+            <div class="form-group">
+              <label for="sysAdminUserSelect">Selecionar Usuário</label>
+              <select id="sysAdminUserSelect" name="sysAdminUserSelect" [(ngModel)]="sysAdminGrantUserId"
+                class="form-control" required>
+                <option value="" disabled selected>-- Escolha o Usuário --</option>
+                @for (u of db.users(); track u.id) {
+                <option [value]="u.id">{{ u.displayName }} (@{{ u.username }})</option>
+                }
+              </select>
             </div>
 
-            <!-- Sponsor 2 -->
-            <div class="form-row-2">
-              <div class="form-group">
-                <label>Banner do Patrocinador 2 (Barra Lateral)</label>
-                <div style="display: flex; gap: 0.5rem; width: 100%;">
-                  <input
-                    type="url"
-                    name="blogSponsorUrl2"
-                    [(ngModel)]="blogSponsorUrl2"
-                    class="form-control"
-                    placeholder="Link da imagem (ou envie um arquivo)"
-                    style="flex: 1;">
-                  
-                  <input type="file" id="sponsor2FileInput" class="file-input-hidden" accept="image/*" (change)="onSponsorBannerSelected($event, 2)" style="display: none;">
-                  <label for="sponsor2FileInput" class="btn btn-secondary" style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
-                    @if (isUploadingSponsor2) {
-                      ⏳
-                    } @else {
-                      📁 Enviar
-                    }
-                  </label>
-                </div>
-              </div>
-              <div class="form-group">
-                <label>Link de Destino 2</label>
-                <input 
-                  type="url" 
-                  name="blogSponsorLink2" 
-                  [(ngModel)]="blogSponsorLink2" 
-                  class="form-control" 
-                  placeholder="https://site-do-patrocinador.com">
-              </div>
+            <div class="form-group">
+              <label for="sysAdminAmountInput">Quantia de Bits (Negativo para Deduzir)</label>
+              <input type="number" id="sysAdminAmountInput" name="sysAdminAmountInput" [(ngModel)]="sysAdminGrantAmount"
+                class="form-control" required>
+            </div>
+
+            <div class="form-group">
+              <label for="sysAdminDescInput">Motivo / Descrição</label>
+              <input type="text" id="sysAdminDescInput" name="sysAdminDescInput" [(ngModel)]="sysAdminGrantDescription"
+                class="form-control" required>
             </div>
           </div>
 
-          <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Salvar Monetização</button>
-            <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
+          <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+            <button type="button" class="btn btn-primary" (click)="grantBits()" [disabled]="!sysAdminGrantUserId">
+              ⚡ Aplicar Ajuste de Bits/XP
+            </button>
           </div>
         </form>
       </div>
+
+      <!-- Create Dynamic Badge Form -->
+      <div class="grant-balance-card"
+        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+        <h3>🏆 Gerenciar Emblemas (Badges) do Sistema</h3>
+        <form (submit)="$event.preventDefault()" class="studio-form">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="badgeNameInput">Nome do Emblema</label>
+              <input type="text" id="badgeNameInput" name="badgeNameInput" [(ngModel)]="badgeName" class="form-control"
+                placeholder="Ex: Influenciador do Hub" required>
+            </div>
+
+            <div class="form-group">
+              <label for="badgeXpReqInput">Marco de XP Necessário</label>
+              <input type="number" id="badgeXpReqInput" name="badgeXpReqInput" [(ngModel)]="badgeXpRequirement"
+                class="form-control" min="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="badgeDescInput">Descrição da Conquista</label>
+            <input type="text" id="badgeDescInput" name="badgeDescInput" [(ngModel)]="badgeDescription"
+              class="form-control" placeholder="Ex: Escreveu conteúdos memoráveis e acumulou 1500 XP" required>
+          </div>
+
+          <!-- Upload Badge Icon -->
+          <div class="form-group">
+            <label>Ícone do Emblema</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center; width: 100%;">
+              @if (badgeIconUrl) {
+              <img [src]="badgeIconUrl"
+                style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.3); object-fit: cover;">
+              } @else {
+              <div
+                style="width: 44px; height: 44px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);">
+                Sem ícone
+              </div>
+              }
+
+              <input type="url" name="badgeIconUrlInput" [(ngModel)]="badgeIconUrl" class="form-control"
+                placeholder="Link do ícone ou envie um arquivo" style="flex: 1;">
+
+              <input type="file" id="badgeIconFileInput" class="file-input-hidden" accept="image/*"
+                (change)="onBadgeIconSelected($event)" style="display: none;">
+              <label for="badgeIconFileInput" class="btn btn-secondary"
+                style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                @if (isUploadingBadgeIcon) {
+                ⏳ Enviando...
+                } @else {
+                📁 Enviar Ícone
+                }
+              </label>
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+            <button type="button" class="btn btn-primary" (click)="saveBadge()"
+              [disabled]="!badgeName || !badgeDescription || badgeXpRequirement <= 0">
+              🏆 Criar e Publicar Emblema
+            </button>
+          </div>
+        </form>
+
+        <!-- List of active system badges -->
+        <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.75rem; font-weight: 700;">Emblemas Ativos no Sistema</label>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            @for (b of db.badges(); track b.id) {
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <img [src]="b.iconUrl"
+                  style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+                <div>
+                  <strong style="font-size: 0.9rem; color: #fff;">{{ b.name }}</strong>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
+                    Requisito: <b style="color: #ff007f;">{{ b.xpRequirement }} XP</b> — {{ b.description }}
+                  </span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-danger btn-xs"
+                style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
+                (click)="deleteBadge(b.id)">
+                Excluir
+              </button>
+            </div>
+            } @empty {
+            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum emblema cadastrado no
+              sistema ainda. Cadastre um acima!</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Users Table -->
+      <div class="logs-section" style="margin-top: 2rem;">
+        <h3>👥 Contas Cadastradas no GuiikHub</h3>
+        <div class="posts-table-wrapper" style="overflow-x: auto;">
+          <table class="posts-table">
+            <thead>
+              <tr>
+                <th>Usuário</th>
+                <th>E-mail</th>
+                <th>Saldo Bits</th>
+                <th>Total XP</th>
+                <th>Cargo</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (user of db.users(); track user.id) {
+              <tr>
+                <td class="col-title">
+                  <div class="post-title-cell">
+                    <img [src]="user.avatarUrl" class="post-thumb" style="border-radius: 50%;">
+                    <div>
+                      <span class="title-text">{{ user.displayName }}</span>
+                      <span style="font-size: 0.75rem; color: var(--text-muted);">@{{ user.username }}</span>
+                      <div class="user-badges-list" style="display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;">
+                        @for (badge of getUserBadges(user); track badge.id) {
+                        <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'"
+                          class="badge-mini-icon"
+                          style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); object-fit: cover;">
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td>{{ user.email || 'N/A' }}</td>
+                <td style="color: #ffd700; font-weight: 700;">🪙 {{ user.bits_balance ?? 0 }}</td>
+                <td style="color: #ff007f; font-weight: 700;">⚡ {{ user.xp_points ?? 0 }}</td>
+                <td>
+                  <span class="badge" [style.background]="user.role === 'admin' ? '#ef4444' : '#64748b'"
+                    style="color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">
+                    {{ user.role === 'admin' ? 'Admin' : 'Criador' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="table-actions">
+                    @if (user.id !== db.currentUser()?.id) {
+                    <button class="btn btn-secondary btn-xs"
+                      style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
+                      (click)="changeUserRole(user.id, user.role === 'admin' ? 'creator' : 'admin')">
+                      Alterar Cargo
+                    </button>
+                    } @else {
+                    <span style="font-size: 0.75rem; color: var(--text-muted); font-style: italic;">Você mesmo</span>
+                    }
+                  </div>
+                </td>
+              </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
     }
   </section>
   }
@@ -1091,101 +1491,102 @@
 
 <!-- Off-screen Story Template for html2canvas -->
 @if (storyPreviewArticle()) {
-  <div class="story-generator-wrapper" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px;">
-    <div id="story-template" class="story-template">
-      <div class="story-bg" id="story-bg-layer"></div>
-      <div class="story-overlay"></div>
-      
-      <div class="story-header">
-        <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+<div class="story-generator-wrapper" aria-hidden="true" style="position: absolute; left: -9999px; top: -9999px;">
+  <div id="story-template" class="story-template">
+    <div class="story-bg" id="story-bg-layer"></div>
+    <div class="story-overlay"></div>
+
+    <div class="story-header">
+      <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+    </div>
+
+    <div class="story-content">
+      <div class="story-blog-badge">
+        <img id="story-blog-avatar-layer" class="story-blog-avatar">
+        <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
       </div>
 
-      <div class="story-content">
-        <div class="story-blog-badge">
-          <img id="story-blog-avatar-layer" class="story-blog-avatar">
-          <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
-        </div>
+      <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
+      <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
 
-        <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
-        <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
-        
-        <div class="story-author-small">
-          <img id="story-author-avatar-layer" class="story-author-avatar-sm">
-          <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
-        </div>
-      </div>
-
-      <div class="story-footer">
-        <div class="story-link-sticker-placeholder">
-        </div>
-        
-        <div class="watermark">
-          Powered by <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
-        </div>
+      <div class="story-author-small">
+        <img id="story-author-avatar-layer" class="story-author-avatar-sm">
+        <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
       </div>
     </div>
-    
-    <!-- Feed Template (1080x1080) -->
-    <div id="feed-template" class="feed-template">
-      <div class="story-bg" id="feed-bg-layer"></div>
-      <div class="story-overlay"></div>
-      
-      <div class="feed-content">
-        <div class="story-blog-badge">
-          <img id="feed-blog-avatar-layer" class="story-blog-avatar">
-          <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
-        </div>
 
-        <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
-        <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
-        
-        <div class="story-author-small">
-          <img id="feed-author-avatar-layer" class="story-author-avatar-sm">
-          <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
-        </div>
+    <div class="story-footer">
+      <div class="story-link-sticker-placeholder">
       </div>
 
-      <div class="watermark watermark--feed">
+      <div class="watermark">
         Powered by <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
       </div>
     </div>
   </div>
+
+  <!-- Feed Template (1080x1080) -->
+  <div id="feed-template" class="feed-template">
+    <div class="story-bg" id="feed-bg-layer"></div>
+    <div class="story-overlay"></div>
+
+    <div class="feed-content">
+      <div class="story-blog-badge">
+        <img id="feed-blog-avatar-layer" class="story-blog-avatar">
+        <span class="story-blog-name">{{ storyPreviewArticle()?._blogName }}</span>
+      </div>
+
+      <div class="story-category">{{ storyPreviewArticle()?.tags?.[0] || 'Novo Post' }}</div>
+      <h1 class="story-title">{{ storyPreviewArticle()?.title }}</h1>
+
+      <div class="story-author-small">
+        <img id="feed-author-avatar-layer" class="story-author-avatar-sm">
+        <span>Escrito por <strong>{{ storyPreviewArticle()?.authorDisplayName }}</strong></span>
+      </div>
+    </div>
+
+    <div class="watermark watermark--feed">
+      Powered by <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
+    </div>
+  </div>
+</div>
 }
 
 <!-- Floating Autocomplete dropdown for WikiLinks (viewport-fixed position) -->
 @if (showLinkSelector) {
-  <div 
-    class="internal-link-dropdown" 
-    [style.top.px]="linkSelectorPosition.top" 
-    [style.left.px]="linkSelectorPosition.left"
-    style="position: absolute; z-index: 100000; min-width: 280px; max-width: 400px; max-height: 250px; overflow-y: auto; background: #0c0e14; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 240, 255, 0.15); padding: 0.5rem 0; display: flex; flex-direction: column; gap: 0.25rem;"
-    (mousedown)="$event.preventDefault()">
-    
-    <div style="font-size: 0.7rem; color: #94a3b8; padding: 0.25rem 0.75rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; gap: 1rem; align-items: center; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.5px;">
-      <span style="font-weight: 700; color: #00f0ff;">🔗 LINKAR ANTERIOR</span>
-      <span style="font-size: 0.65rem; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">Navegue com ↑↓ Enter</span>
-    </div>
-    
-    @for (art of filteredLinkArticles(); track art.id; let idx = $index) {
-      <div 
-        (click)="insertInternalLink(art)"
-        (mouseenter)="linkSelectorSelectedIndex.set(idx)"
-        [class.active]="idx === linkSelectorSelectedIndex()"
-        class="dropdown-item"
-        style="padding: 0.5rem 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: background 0.15s; border-left: 2px solid transparent;"
-        [style.background]="idx === linkSelectorSelectedIndex() ? 'rgba(0, 240, 255, 0.08)' : 'transparent'"
-        [style.border-left-color]="idx === linkSelectorSelectedIndex() ? '#00f0ff' : 'transparent'">
-        
-        <img [src]="art.coverUrl" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);">
-        <div style="flex: 1; min-width: 0;">
-          <div style="font-size: 0.8rem; font-weight: bold; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">{{ art.title }}</div>
-          <div style="font-size: 0.68rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ art.summary }}</div>
-        </div>
-      </div>
-    } @empty {
-      <div style="padding: 1rem 0.75rem; text-align: center; color: #94a3b8; font-size: 0.78rem;">
-        Nenhuma postagem publicada encontrada.
-      </div>
-    }
+<div class="internal-link-dropdown" [style.top.px]="linkSelectorPosition.top"
+  [style.left.px]="linkSelectorPosition.left"
+  style="position: absolute; z-index: 100000; min-width: 280px; max-width: 400px; max-height: 250px; overflow-y: auto; background: #0c0e14; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 240, 255, 0.15); padding: 0.5rem 0; display: flex; flex-direction: column; gap: 0.25rem;"
+  (mousedown)="$event.preventDefault()">
+
+  <div
+    style="font-size: 0.7rem; color: #94a3b8; padding: 0.25rem 0.75rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; gap: 1rem; align-items: center; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.5px;">
+    <span style="font-weight: 700; color: #00f0ff;">🔗 LINKAR ANTERIOR</span>
+    <span style="font-size: 0.65rem; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">Navegue
+      com ↑↓ Enter</span>
   </div>
+
+  @for (art of filteredLinkArticles(); track art.id; let idx = $index) {
+  <div (click)="insertInternalLink(art)" (mouseenter)="linkSelectorSelectedIndex.set(idx)"
+    [class.active]="idx === linkSelectorSelectedIndex()" class="dropdown-item"
+    style="padding: 0.5rem 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: background 0.15s; border-left: 2px solid transparent;"
+    [style.background]="idx === linkSelectorSelectedIndex() ? 'rgba(0, 240, 255, 0.08)' : 'transparent'"
+    [style.border-left-color]="idx === linkSelectorSelectedIndex() ? '#00f0ff' : 'transparent'">
+
+    <img [src]="art.coverUrl"
+      style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);">
+    <div style="flex: 1; min-width: 0;">
+      <div
+        style="font-size: 0.8rem; font-weight: bold; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">
+        {{ art.title }}</div>
+      <div style="font-size: 0.68rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+        {{ art.summary }}</div>
+    </div>
+  </div>
+  } @empty {
+  <div style="padding: 1rem 0.75rem; text-align: center; color: #94a3b8; font-size: 0.78rem;">
+    Nenhuma postagem publicada encontrada.
+  </div>
+  }
+</div>
 }

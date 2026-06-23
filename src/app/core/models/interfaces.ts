@@ -27,6 +27,11 @@ export interface User {
   blogSettings: BlogSettings;
   viewsCount?: number;
   collaborators?: string[];
+  bits_balance?: number;
+  xp_points?: number;
+  lastDailyRewardAt?: string;
+  role?: 'admin' | 'creator';
+  unlockedBadges?: string[];
 }
 
 export interface Article {
@@ -51,6 +56,7 @@ export interface Article {
   newsletterSent?: boolean;
   scheduledAt?: string | null;
   scheduledNewsletter?: boolean;
+  applauseCount?: number;
 }
 
 export interface Comment {
@@ -93,4 +99,47 @@ export interface ArticleVersion {
   tags: string[];
   savedAt: string;
   savedByDisplayName: string;
+}
+
+export interface GamificationLog {
+  id: string;
+  userId: string;
+  typeAction: 'earn' | 'spend' | 'transfer';
+  amount: number;
+  description: string;
+  createdAt: string;
+}
+
+export interface LeilaoDia {
+  id: string; // YYYY-MM-DD
+  maiorLanceAtual: number;
+  usuarioLiderId: string;
+  usuarioLiderDisplayName: string;
+  postLiderId: string;
+  postLiderTitle: string;
+  finalizado: boolean;
+  historicoLances: Array<{
+    usuarioId: string;
+    displayName: string;
+    postId: string;
+    amount: number;
+    timestamp: string;
+  }>;
+}
+
+export interface ConfiguracaoHolofote {
+  id: string; // 'feed_spotlight'
+  postDestaqueId: string;
+  autorUsername: string;
+  maiorLanceVencedor: number;
+  dataDestaque: string; // YYYY-MM-DD
+}
+
+export interface Badge {
+  id: string;
+  name: string;
+  description: string;
+  xpRequirement: number;
+  iconUrl: string;
+  createdAt: string;
 }

@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, effect, HostListener } from '@angular/core';
+import { Component, computed, inject, signal, effect, HostListener, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -6,6 +6,8 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
 import { SeoService } from '../../core/services/seo.service';
+import { Subject, Subscription, debounceTime } from 'rxjs';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-article-detail',
@@ -14,7 +16,7 @@ import { SeoService } from '../../core/services/seo.service';
   templateUrl: './article-detail.html',
   styleUrl: './article-detail.scss'
 })
-export class ArticleDetailComponent {
+export class ArticleDetailComponent implements OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly titleService = inject(Title);
@@ -22,6 +24,16 @@ export class ArticleDetailComponent {
   public readonly db = inject(DbService);
 
   readonly scrollPercent = signal(0);
+  readingRewardClaimed = false;
+
+  // Claps / Gamification Local States
+  readonly localClapsPending = signal<number>(0);
+  readonly localClapIncrement = signal<number>(0);
+  readonly showClapFloatingText = signal<boolean>(false);
+
+  private readonly clapSubject = new Subject<number>();
+  private clapSubscription?: Subscription;
+  private animationTimeout: any;
 
   @HostListener('window:scroll')
   onWindowScroll() {
@@ -37,6 +49,14 @@ export class ArticleDetailComponent {
     } else {
       const percentage = (scrollTop / totalScroll) * 100;
       this.scrollPercent.set(percentage);
+      
+      if (percentage >= 99.5 && !this.readingRewardClaimed) {
+        const art = this.article();
+        if (art && this.db.isAuthenticated()) {
+          this.readingRewardClaimed = true;
+          this.db.rewardPostReading(art.id, art.title);
+        }
+      }
     }
   }
 
@@ -131,9 +151,27 @@ export class ArticleDetailComponent {
   private viewRegisteredForUserId = '';
 
   constructor() {
+    // Setup claps debouncing
+    this.clapSubscription = this.clapSubject.pipe(
+      debounceTime(1500)
+    ).subscribe(async (accumulatedClaps) => {
+      const art = this.article();
+      if (art && accumulatedClaps > 0) {
+        const success = await this.db.applaudArticle(art.id, art.authorId, accumulatedClaps);
+        if (success) {
+          this.localClapsPending.set(0);
+        } else {
+          this.localClapIncrement.update(v => Math.max(0, v - accumulatedClaps));
+          this.localClapsPending.set(0);
+        }
+      }
+    });
+
     effect(() => {
       const art = this.article();
       const user = this.blogUser();
+      
+      this.readingRewardClaimed = false; // Reset claim flag on transition
       
       if (user && this.viewRegisteredForUserId !== user.id) {
         this.db.registerBlogView(user.id);
@@ -183,5 +221,79 @@ export class ArticleDetailComponent {
       .replace(/\* ([^*]+)/g, '<li>$1</li>')
       .replace(/- ([^-]+)/g, '<li>$1</li>')
       .replace(/\n/g, '<br>');
+  }
+
+  addClap() {
+    if (!this.db.isAuthenticated()) {
+      this.router.navigate(['/auth']);
+      return;
+    }
+    const art = this.article();
+    const user = this.db.currentUser();
+    if (!art || !user) return;
+
+    if (user.id === art.authorId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Auto-Aplauso Bloqueado',
+        text: 'Você não pode aplaudir seu próprio artigo!',
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
+    const currentBalance = user.bits_balance || 0;
+    const pending = this.localClapsPending();
+
+    if (currentBalance <= pending) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Saldo Insuficiente',
+        text: 'Você não tem mais Bits suficientes para enviar mais aplausos!',
+        toast: true,
+        position: 'top-end',
+        timer: 3000,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
+    this.localClapsPending.update(v => v + 1);
+    this.localClapIncrement.update(v => v + 1);
+    
+    this.clapSubject.next(this.localClapsPending());
+    this.showClapPopupAnimation();
+  }
+
+  showClapPopupAnimation() {
+    this.showClapFloatingText.set(false);
+    setTimeout(() => {
+      this.showClapFloatingText.set(true);
+      if (this.animationTimeout) clearTimeout(this.animationTimeout);
+      this.animationTimeout = setTimeout(() => {
+        this.showClapFloatingText.set(false);
+      }, 800);
+    }, 10);
+  }
+
+  ngOnDestroy() {
+    if (this.clapSubscription) {
+      this.clapSubscription.unsubscribe();
+    }
+    if (this.animationTimeout) {
+      clearTimeout(this.animationTimeout);
+    }
+  }
+
+  getUserBadges(user: any): any[] {
+    if (!user || !user.unlockedBadges) return [];
+    return this.db.badges().filter(b => user.unlockedBadges.includes(b.id));
   }
 }

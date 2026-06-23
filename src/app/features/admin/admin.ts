@@ -1,9 +1,9 @@
-import { Component, signal, computed, effect, inject, ElementRef, ViewChild, HostListener } from '@angular/core';
+import { Component, signal, computed, effect, inject, ElementRef, ViewChild, HostListener, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import Swal from 'sweetalert2';
 import { FormsModule } from '@angular/forms';
-import { RouterLink, Router } from '@angular/router';
+import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { DbService } from '../../core/db/db.service';
 import { BlogSettings } from '../../core/models/interfaces';
 
@@ -14,13 +14,32 @@ import { BlogSettings } from '../../core/models/interfaces';
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
 })
-export class AdminComponent {
+export class AdminComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   // Navigation
-  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization'>('posts');
+  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin'>('gamification');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
   closeMobileNav()  { this.mobileNavOpen.set(false); }
+
+  // Spotlight Bidding variables
+  selectedArticleForSpotlightId = '';
+  spotlightBidAmount = 10;
+  timeLeftString = '';
+  private timerIntervalId: any = null;
+
+  // Sys-Admin management variables
+  sysAdminGrantUserId = '';
+  sysAdminGrantAmount = 10;
+  sysAdminGrantDescription = 'Bonificação administrativa';
+
+  // Dynamic Badge variables
+  badgeName = '';
+  badgeDescription = '';
+  badgeXpRequirement = 100;
+  badgeIconUrl = '';
+  isUploadingBadgeIcon = false;
 
   // New Post Form
   newPostTitle = '';
@@ -254,7 +273,7 @@ export class AdminComponent {
     this.blogSections = this.blogSections.filter(s => s !== name);
   }
 
-  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization') {
+  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin') {
     this.activeTab.set(tab);
     if (tab === 'new-post' && !this.editingArticleId()) {
       // Clear editor when opening the new post tab for a NEW post
@@ -1480,5 +1499,320 @@ export class AdminComponent {
         this.storyPreviewArticle.set(null);
       }
     }, 300);
+  }
+
+  ngOnInit() {
+    this.startCountdownTimer();
+    
+    // Check for active tab in query parameters
+    this.route.queryParams.subscribe(params => {
+      const tab = params['tab'];
+      if (tab && ['posts', 'customize', 'profile', 'new-post', 'collabs', 'monetization', 'gamification', 'spotlight', 'sys-admin'].includes(tab)) {
+        this.setTab(tab as any);
+      }
+    });
+  }
+
+  ngOnDestroy() {
+    if (this.timerIntervalId) {
+      clearInterval(this.timerIntervalId);
+    }
+  }
+
+  private startCountdownTimer() {
+    if (typeof window === 'undefined') return;
+    
+    const updateTimer = () => {
+      const now = new Date();
+      const midnight = new Date();
+      midnight.setHours(24, 0, 0, 0);
+      
+      const diffMs = midnight.getTime() - now.getTime();
+      if (diffMs <= 0) {
+        this.timeLeftString = '00:00:00';
+        return;
+      }
+      
+      const hours = Math.floor(diffMs / (1000 * 60 * 60));
+      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+      
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      this.timeLeftString = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+    };
+
+    updateTimer();
+    this.timerIntervalId = setInterval(updateTimer, 1000);
+  }
+
+  async placeSpotlightBid() {
+    if (!this.selectedArticleForSpotlightId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Selecione uma Matéria',
+        text: 'Você precisa escolher uma matéria para receber o Holofote!',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return;
+    }
+
+    const currentHighest = this.db.leilaoDiaAtual()?.maiorLanceAtual || 0;
+    const minRequired = currentHighest === 0 ? 10 : currentHighest + 10;
+    
+    if (this.spotlightBidAmount < minRequired) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Lance Inválido',
+        text: `O lance mínimo exigido é de ${minRequired} Bits!`,
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return;
+    }
+
+    const success = await this.db.placeBid(this.selectedArticleForSpotlightId, this.spotlightBidAmount);
+    if (success) {
+      this.spotlightBidAmount = this.spotlightBidAmount + 10;
+    }
+  }
+
+  async grantBits() {
+    if (!this.sysAdminGrantUserId) {
+      Swal.fire('Erro', 'Selecione um usuário para ajustar o saldo.', 'error');
+      return;
+    }
+    const success = await this.db.grantBitsToUser(
+      this.sysAdminGrantUserId,
+      this.sysAdminGrantAmount,
+      this.sysAdminGrantDescription
+    );
+    if (success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Saldo Ajustado!',
+        text: `O saldo do usuário foi alterado com sucesso em ${this.sysAdminGrantAmount} Bits.`,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      this.sysAdminGrantAmount = 10;
+      this.sysAdminGrantDescription = 'Bonificação administrativa';
+    }
+  }
+
+  async changeUserRole(userId: string, newRole: 'admin' | 'creator') {
+    const success = await this.db.updateUserRole(userId, newRole);
+    if (success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Cargo Atualizado!',
+        text: `O cargo do usuário foi atualizado para ${newRole === 'admin' ? 'Administrador' : 'Criador'}.`,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } else {
+      Swal.fire('Erro', 'Não foi possível atualizar o cargo.', 'error');
+    }
+  }
+
+  async triggerManualConsolidation() {
+    const active = this.db.holofoteAtivo();
+    if (!active) {
+      Swal.fire('Erro', 'Configuração de holofote não disponível.', 'error');
+      return;
+    }
+    
+    Swal.fire({
+      title: 'Consolidar Leilão?',
+      text: `Esta ação fechará o leilão da data ${active.dataDestaque} e atualizará o holofote do feed. Deseja continuar?`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Consolidar',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        cancelButton: 'guiik-swal-confirm-btn'
+      },
+      buttonsStyling: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Processando Consolidação...',
+          allowOutsideClick: false,
+          background: '#121420',
+          color: '#f1f5f9',
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+        const dateToClose = active.dataDestaque;
+        const success = await this.db.consolidarLeilaoDia(dateToClose);
+        Swal.close();
+        if (success) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Leilão Consolidado!',
+            text: `O leilão da data ${dateToClose} foi consolidado. O topo do feed foi atualizado.`,
+            background: '#121420',
+            color: '#f1f5f9'
+          });
+        }
+      }
+    });
+  }
+
+  async triggerManualMigration() {
+    Swal.fire({
+      title: 'Executar Migração?',
+      text: 'Todos os usuários ausentes de Bits/XP serão inicializados com 0.',
+      icon: 'info',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Executar',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        cancelButton: 'guiik-swal-confirm-btn'
+      },
+      buttonsStyling: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await this.db.runGamificationMigration();
+        Swal.fire({
+          icon: 'success',
+          title: 'Migração Concluída!',
+          text: 'Os dados foram migrados com sucesso.',
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      }
+    });
+  }
+
+  getArticleTitle(id: string): string {
+    return this.db.articles().find(a => a.id === id)?.title || 'Matéria do Criador';
+  }
+
+  async onBadgeIconSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+    
+    if (file.size > 2 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'A imagem do emblema deve ter no máximo 2MB.', 'error');
+      return;
+    }
+
+    this.isUploadingBadgeIcon = true;
+    const filename = `badge_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    try {
+      const s3 = new S3Client({
+        endpoint: 'https://s3.tebi.io',
+        region: 'us-east-1',
+        credentials: {
+          accessKeyId: 'ztWbSlXugHK1EYjV',
+          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
+        }
+      });
+
+      const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+      const cmd = new PutObjectCommand({
+        Bucket: 'guiikhub',
+        Key: filename,
+        Body: fileBuffer,
+        ContentType: file.type,
+        ACL: 'public-read'
+      });
+
+      await s3.send(cmd);
+
+      this.badgeIconUrl = uploadUrl;
+      Swal.fire({
+        icon: 'success',
+        title: 'Ícone Enviado!',
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } catch (err) {
+      console.error('Erro ao enviar ícone de badge:', err);
+      Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
+    } finally {
+      this.isUploadingBadgeIcon = false;
+      input.value = '';
+    }
+  }
+
+  async saveBadge() {
+    if (!this.badgeName || !this.badgeDescription || this.badgeXpRequirement <= 0) {
+      Swal.fire('Campos inválidos', 'Preencha o nome, descrição e um marco de XP válido.', 'warning');
+      return;
+    }
+    const success = await this.db.createBadge(
+      this.badgeName,
+      this.badgeDescription,
+      this.badgeXpRequirement,
+      this.badgeIconUrl
+    );
+    if (success) {
+      this.badgeName = '';
+      this.badgeDescription = '';
+      this.badgeXpRequirement = 100;
+      this.badgeIconUrl = '';
+    }
+  }
+
+  async deleteBadge(id: string) {
+    Swal.fire({
+      title: 'Excluir Emblema?',
+      text: 'Tem certeza que deseja apagar este emblema? Isso removerá o emblema do sistema.',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Apagar',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        cancelButton: 'guiik-swal-confirm-btn'
+      },
+      buttonsStyling: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await this.db.deleteBadge(id);
+      }
+    });
+  }
+
+  getUserBadges(user: any): any[] {
+    if (!user || !user.unlockedBadges) return [];
+    return this.db.badges().filter(b => user.unlockedBadges.includes(b.id));
   }
 }

@@ -1,7 +1,7 @@
-import { Injectable, signal, computed, inject } from '@angular/core';
+import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
-import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge } from '../models/interfaces';
 import { 
   Firestore, 
   collection, 
@@ -13,7 +13,9 @@ import {
   updateDoc, 
   deleteDoc, 
   query, 
-  orderBy 
+  orderBy,
+  runTransaction,
+  where
 } from '@angular/fire/firestore';
 import { 
   Auth, 
@@ -52,6 +54,40 @@ export class DbService {
   readonly isUsersLoading = signal<boolean>(true);
   readonly isArticlesLoading = signal<boolean>(true);
 
+  // Gamification Signals and Computeds
+  readonly gamificationLogs = signal<GamificationLog[]>([]);
+  readonly badges = signal<Badge[]>([]);
+
+  readonly currentUserLevel = computed(() => {
+    const user = this.currentUser();
+    if (!user) return 1;
+    const xp = user.xp_points || 0;
+    return Math.floor((1 + Math.sqrt(1 + 0.08 * xp)) / 2) || 1;
+  });
+
+  readonly currentUserXpInLevel = computed(() => {
+    const user = this.currentUser();
+    if (!user) return 0;
+    const xp = user.xp_points || 0;
+    const level = this.currentUserLevel();
+    return xp - (50 * level * (level - 1));
+  });
+
+  readonly currentUserXpRequiredForNext = computed(() => {
+    return this.currentUserLevel() * 100;
+  });
+
+  readonly currentUserXpProgress = computed(() => {
+    const xpInLevel = this.currentUserXpInLevel();
+    const required = this.currentUserXpRequiredForNext();
+    if (required <= 0) return 0;
+    return Math.max(0, Math.min(100, Math.floor((xpInLevel / required) * 100)));
+  });
+
+  // Spotlight / Leilão Signals
+  readonly leilaoDiaAtual = signal<LeilaoDia | null>(null);
+  readonly holofoteAtivo = signal<ConfiguracaoHolofote | null>(null);
+
   // Blogs the current user is a collaborator on
   readonly collaboratingBlogs = computed(() => {
     const me = this.currentUser();
@@ -71,6 +107,21 @@ export class DbService {
       window.addEventListener('offline', () => this.isOffline.set(true));
     }
     this.initFirebaseSync();
+
+    // Retroactive badge check for logged-in user whenever their XP or badges change
+    effect(() => {
+      const user = this.currentUser();
+      const badgesList = this.badges();
+      if (user && badgesList.length > 0) {
+        const currentXp = user.xp_points || 0;
+        const unlocked = user.unlockedBadges || [];
+        const eligibleButLocked = badgesList.filter(b => b.xpRequirement <= currentXp && !unlocked.includes(b.id));
+        
+        if (eligibleButLocked.length > 0) {
+          this.unlockBadgesRetroactively(user.id, eligibleButLocked);
+        }
+      }
+    });
   }
 
   private initFirebaseSync() {
@@ -88,6 +139,7 @@ export class DbService {
     });
 
     // 2. Sync Auth State
+    let logsSubscription: any = null;
     authState(this.auth).subscribe(fbUser => {
       if (fbUser) {
         this.isAuthenticated.set(true);
@@ -97,11 +149,36 @@ export class DbService {
           next: userData => {
             if (userData) {
               const u = userData as User;
+              let hasChanges = false;
+              const updates: any = {};
+              
               if (!u.email && fbUser.email) {
-                updateDoc(userRef, { email: fbUser.email });
+                updates.email = fbUser.email;
                 u.email = fbUser.email;
+                hasChanges = true;
+              }
+              
+              if (u.bits_balance === undefined) {
+                updates.bits_balance = 0;
+                u.bits_balance = 0;
+                hasChanges = true;
+              }
+              if (u.xp_points === undefined) {
+                updates.xp_points = 0;
+                u.xp_points = 0;
+                hasChanges = true;
+              }
+
+              if (hasChanges) {
+                updateDoc(userRef, updates);
               }
               this.currentUser.set(u);
+
+              // Daily Reward Bonus Check
+              const todayStr = new Date().toISOString().split('T')[0];
+              if (u.lastDailyRewardAt !== todayStr) {
+                this.claimDailyReward(u.id, todayStr);
+              }
             }
             this.isAuthLoading.set(false);
           },
@@ -110,9 +187,24 @@ export class DbService {
             this.isAuthLoading.set(false);
           }
         });
+
+        // Sync user's gamification logs
+        if (logsSubscription) logsSubscription.unsubscribe();
+        const logsCol = collection(this.firestore, 'gamification_logs');
+        const logsQuery = query(logsCol, where('userId', '==', fbUser.uid), orderBy('createdAt', 'desc'));
+        logsSubscription = collectionData(logsQuery, { idField: 'id' }).subscribe(data => {
+          if (data) {
+            this.gamificationLogs.set(data as GamificationLog[]);
+          }
+        });
       } else {
         this.isAuthenticated.set(false);
         this.currentUser.set(null);
+        this.gamificationLogs.set([]);
+        if (logsSubscription) {
+          logsSubscription.unsubscribe();
+          logsSubscription = null;
+        }
         this.isAuthLoading.set(false);
       }
     });
@@ -168,6 +260,51 @@ export class DbService {
     collectionData(versionsQuery, { idField: 'id' }).subscribe(data => {
       if (data) {
         this.articleVersions.set(data as ArticleVersion[]);
+      }
+    });
+
+    // 10. Sync Spotlight Feed Configuration
+    const spotlightRef = doc(this.firestore, 'configuracoes/feed_spotlight');
+    docData(spotlightRef).subscribe(data => {
+      if (data) {
+        const spotlight = data as ConfiguracaoHolofote;
+        this.holofoteAtivo.set(spotlight);
+        this.checkLazyConsolidation(spotlight);
+      } else {
+        setDoc(spotlightRef, {
+          id: 'feed_spotlight',
+          postDestaqueId: '',
+          autorUsername: '',
+          maiorLanceVencedor: 0,
+          dataDestaque: new Date().toISOString().split('T')[0]
+        });
+      }
+    });
+
+    // 11. Sync Current Day's Auction Document
+    const todayStr = new Date().toISOString().split('T')[0];
+    const leilaoRef = doc(this.firestore, `leilao_holofote/${todayStr}`);
+    docData(leilaoRef).subscribe(data => {
+      if (data) {
+        this.leilaoDiaAtual.set(data as LeilaoDia);
+      } else {
+        setDoc(leilaoRef, {
+          id: todayStr,
+          maiorLanceAtual: 0,
+          usuarioLiderId: '',
+          usuarioLiderDisplayName: '',
+          postLiderId: '',
+          postLiderTitle: '',
+          finalizado: false,
+          historicoLances: []
+        });
+      }
+    });
+
+    // 12. Sync Badges Collection
+    collectionData(collection(this.firestore, 'badges'), { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.badges.set(data as Badge[]);
       }
     });
   }
@@ -464,11 +601,22 @@ export class DbService {
     };
 
     await setDoc(doc(this.firestore, `articles/${id}`), newArticle);
+    if (status !== 'draft') {
+      await this.addXpToUser(user.id, 50, `Escreveu a matéria "${title}"`);
+    }
     return newArticle;
   }
 
   async updateArticle(id: string, data: Partial<Article>) {
-    await updateDoc(doc(this.firestore, `articles/${id}`), data);
+    const artDocRef = doc(this.firestore, `articles/${id}`);
+    const snap = await getDoc(artDocRef);
+    const oldData = snap.exists() ? (snap.data() as Article) : null;
+    
+    await updateDoc(artDocRef, data);
+    
+    if (oldData && oldData.status === 'draft' && data.status && data.status !== 'draft') {
+      await this.addXpToUser(oldData.authorId, 50, `Publicou a matéria "${data.title || oldData.title}"`);
+    }
   }
 
   async saveArticleVersion(article: Article) {
@@ -548,6 +696,9 @@ export class DbService {
       await updateDoc(doc(this.firestore, `articles/${articleId}`), {
         commentsCount: art.commentsCount + 1
       });
+      if (art.authorId !== user.id) {
+        await this.addXpToUser(art.authorId, 10, `Recebeu comentário na matéria "${art.title}"`);
+      }
     }
 
     return newComment;
@@ -895,10 +1046,12 @@ export class DbService {
   }
 
   async stumbleUpon() {
+    const user = this.currentUser();
     const candidates = this.articles().filter(art => {
       const isPublished = (!art.status || art.status === 'published') &&
                           (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now());
       if (!isPublished) return false;
+      if (user && art.authorId === user.id) return false;
       const engagementScore = (art.likesCount || 0) * 2 + (art.commentsCount || 0) * 3;
       const hasEngagement = engagementScore >= 2;
       const isNotEmpty = art.content && art.content.replace(/<[^>]*>/g, '').trim().length > 200;
@@ -912,7 +1065,8 @@ export class DbService {
     } else {
       const fallbackArticles = this.articles().filter(art => 
         (!art.status || art.status === 'published') &&
-        (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
+        (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now()) &&
+        (!user || art.authorId !== user.id)
       );
       if (fallbackArticles.length > 0) {
         const randomIndex = Math.floor(Math.random() * fallbackArticles.length);
@@ -966,5 +1120,803 @@ export class DbService {
       Swal.close();
       this.router.navigate(['/b', selectedArticle!.authorUsername, 'post', selectedArticle!.slug]);
     }, 1000);
+  }
+
+  async handleUserRewardOrSpend(
+    userId: string,
+    amount: number,
+    actionType: 'earn' | 'spend' | 'transfer',
+    description: string
+  ): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const logId = 'glog_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error('Usuário não encontrado');
+        }
+
+        const userData = userDoc.data() as User;
+        const currentBalance = userData.bits_balance || 0;
+        const currentXp = userData.xp_points || 0;
+
+        let newBalance = currentBalance;
+        let newXp = currentXp;
+
+        if (actionType === 'earn') {
+          newBalance += amount;
+          newXp += amount; // Ganhar bits também concede XP
+        } else if (actionType === 'spend') {
+          if (currentBalance < amount) {
+            throw new Error('Saldo insuficiente de bits');
+          }
+          newBalance -= amount;
+        } else if (actionType === 'transfer') {
+          // Se amount for negativo, é transferência de saída; se positivo, entrada.
+          if (amount < 0) {
+            const absAmount = Math.abs(amount);
+            if (currentBalance < absAmount) {
+              throw new Error('Saldo insuficiente para transferência');
+            }
+            newBalance -= absAmount;
+          } else {
+            newBalance += amount;
+          }
+        }
+
+        // Atualizar documento do usuário
+        transaction.update(userRef, {
+          bits_balance: newBalance,
+          xp_points: newXp
+        });
+
+        let unlockedBadgesText = '';
+        if (newXp !== currentXp) {
+          const badgeResult = this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef);
+          unlockedBadgesText = badgeResult.unlockedBadgesText;
+        }
+
+        // Registrar log da ação
+        const newLog: GamificationLog = {
+          id: logId,
+          userId,
+          typeAction: actionType,
+          amount,
+          description: description + (unlockedBadgesText ? `. Conquistas desbloqueadas: ${unlockedBadgesText}` : ''),
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, newLog);
+      });
+
+      return true;
+    } catch (err: any) {
+      console.error('Erro na transação de gamificação:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Operação Neural Falhou',
+        text: err.message || 'Erro ao processar transação de gamificação.',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return false;
+    }
+  }
+
+  async runGamificationMigration(): Promise<void> {
+    const userList = this.users();
+    const badgesList = this.badges();
+    for (const u of userList) {
+      const currentXp = u.xp_points ?? 0;
+      const currentBits = u.bits_balance ?? 0;
+      const unlocked = u.unlockedBadges || [];
+      const eligibleBadges = badgesList.filter(b => b.xpRequirement <= currentXp && !unlocked.includes(b.id));
+
+      const updates: any = {};
+      let needsUpdate = false;
+
+      if (u.bits_balance === undefined || u.xp_points === undefined) {
+        updates.bits_balance = currentBits;
+        updates.xp_points = currentXp;
+        needsUpdate = true;
+      }
+
+      if (eligibleBadges.length > 0) {
+        const newUnlocked = [...unlocked, ...eligibleBadges.map(b => b.id)];
+        updates.unlockedBadges = newUnlocked;
+        needsUpdate = true;
+      }
+
+      if (needsUpdate) {
+        const userRef = doc(this.firestore, `users/${u.id}`);
+        await updateDoc(userRef, updates);
+      }
+    }
+  }
+
+  async claimDailyReward(userId: string, todayStr: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const logId = 'glog_' + Date.now() + '_daily';
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error('Usuário não encontrado');
+        }
+
+        const userData = userDoc.data() as User;
+        if (userData.lastDailyRewardAt === todayStr) {
+          return;
+        }
+
+        const currentBalance = userData.bits_balance || 0;
+        const currentXp = userData.xp_points || 0;
+        const newXp = currentXp + 10;
+        
+        transaction.update(userRef, {
+          bits_balance: currentBalance + 10,
+          xp_points: newXp,
+          lastDailyRewardAt: todayStr
+        });
+
+        this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef);
+
+        const rewardLog: GamificationLog = {
+          id: logId,
+          userId,
+          typeAction: 'earn',
+          amount: 10,
+          description: 'Recompensa de Login Diário GuiikHub',
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, rewardLog);
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: '⚡ BÔNUS DIÁRIO RECEBIDO!',
+        html: `Você ganhou <b style="color: #ffd700;">+10 Bits</b> e <b style="color: #00f0ff;">+10 XP</b> por entrar hoje no GuiikHub!`,
+        background: '#121420',
+        color: '#f1f5f9',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+        customClass: {
+          popup: 'guiik-swal-toast-popup'
+        }
+      });
+      return true;
+    } catch (err) {
+      console.error('Erro ao conceder bônus diário:', err);
+      return false;
+    }
+  }
+
+  async applaudArticle(
+    articleId: string,
+    authorId: string,
+    amount: number
+  ): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    if (user.id === authorId) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Auto-Aplauso Bloqueado',
+        text: 'Você não pode gastar Bits aplaudindo seu próprio artigo!',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return false;
+    }
+
+    try {
+      const readerRef = doc(this.firestore, `users/${user.id}`);
+      const authorRef = doc(this.firestore, `users/${authorId}`);
+      const articleRef = doc(this.firestore, `articles/${articleId}`);
+      
+      const logIdReader = 'glog_' + Date.now() + '_clap_spend';
+      const logIdAuthor = 'glog_' + Date.now() + '_clap_earn';
+      
+      const logReaderRef = doc(this.firestore, `gamification_logs/${logIdReader}`);
+      const logAuthorRef = doc(this.firestore, `gamification_logs/${logIdAuthor}`);
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const readerDoc = await transaction.get(readerRef);
+        const authorDoc = await transaction.get(authorRef);
+        const articleDoc = await transaction.get(articleRef);
+
+        if (!readerDoc.exists() || !authorDoc.exists() || !articleDoc.exists()) {
+          throw new Error('Leitor, autor ou artigo não encontrado');
+        }
+
+        const readerData = readerDoc.data() as User;
+        const authorData = authorDoc.data() as User;
+        const articleData = articleDoc.data() as Article;
+
+        const readerBalance = readerData.bits_balance || 0;
+        if (readerBalance < amount) {
+          throw new Error('Saldo de Bits insuficiente');
+        }
+
+        // Deduct from reader
+        transaction.update(readerRef, {
+          bits_balance: readerBalance - amount
+        });
+
+        // Add to author (Bits + XP)
+        const authorBalance = authorData.bits_balance || 0;
+        const authorXp = authorData.xp_points || 0;
+        const newXp = authorXp + amount;
+        transaction.update(authorRef, {
+          bits_balance: authorBalance + amount,
+          xp_points: newXp
+        });
+
+        this.checkAndUnlockBadgesInTransaction(authorData, newXp, transaction, authorRef);
+
+        // Increment applauseCount in article
+        const currentClaps = articleData.applauseCount || 0;
+        transaction.update(articleRef, {
+          applauseCount: currentClaps + amount
+        });
+
+        // Logs
+        const readerLog: GamificationLog = {
+          id: logIdReader,
+          userId: user.id,
+          typeAction: 'spend',
+          amount: amount,
+          description: `Aplaudiu o artigo "${articleData.title}"`,
+          createdAt: new Date().toISOString()
+        };
+
+        const authorLog: GamificationLog = {
+          id: logIdAuthor,
+          userId: authorId,
+          typeAction: 'earn',
+          amount: amount,
+          description: `Recebeu aplausos no artigo "${articleData.title}"`,
+          createdAt: new Date().toISOString()
+        };
+
+        transaction.set(logReaderRef, readerLog);
+        transaction.set(logAuthorRef, authorLog);
+      });
+
+      return true;
+    } catch (err: any) {
+      console.error('Erro ao processar aplausos:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Falha ao Aplaudir',
+        text: err.message || 'Erro transacional ao transferir Bits.',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return false;
+    }
+  }
+
+  private async checkLazyConsolidation(spotlight: ConfiguracaoHolofote) {
+    if (typeof window === 'undefined') return;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (spotlight.dataDestaque < todayStr) {
+      const yesterdayStr = spotlight.dataDestaque;
+      console.log(`[Spotlight] Fechamento automático pendente detectado para: ${yesterdayStr}. Consolidando...`);
+      await this.consolidarLeilaoDia(yesterdayStr);
+    }
+  }
+
+  async placeBid(articleId: string, amount: number): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const leilaoRef = doc(this.firestore, `leilao_holofote/${todayStr}`);
+    const userRef = doc(this.firestore, `users/${user.id}`);
+    const articleRef = doc(this.firestore, `articles/${articleId}`);
+
+    try {
+      await runTransaction(this.firestore, async (transaction) => {
+        const leilaoDoc = await transaction.get(leilaoRef);
+        const userDoc = await transaction.get(userRef);
+        const articleDoc = await transaction.get(articleRef);
+
+        if (!userDoc.exists() || !articleDoc.exists()) {
+          throw new Error('Usuário ou artigo não encontrado');
+        }
+
+        const userData = userDoc.data() as User;
+        const articleData = articleDoc.data() as Article;
+        const leilaoData = leilaoDoc.exists() ? (leilaoDoc.data() as LeilaoDia) : {
+          id: todayStr,
+          maiorLanceAtual: 0,
+          usuarioLiderId: '',
+          usuarioLiderDisplayName: '',
+          postLiderId: '',
+          postLiderTitle: '',
+          finalizado: false,
+          historicoLances: []
+        };
+
+        if (leilaoData.finalizado) {
+          throw new Error('O leilão de hoje já foi encerrado');
+        }
+
+        const currentHighest = leilaoData.maiorLanceAtual;
+        const minRequired = currentHighest === 0 ? 10 : currentHighest + 10;
+        if (amount < minRequired) {
+          throw new Error(`O lance mínimo exigido é ${minRequired} Bits`);
+        }
+
+        let userBalance = userData.bits_balance || 0;
+        const isAlreadyLeader = leilaoData.usuarioLiderId === user.id;
+        
+        if (isAlreadyLeader) {
+          userBalance += leilaoData.maiorLanceAtual;
+        }
+
+        if (userBalance < amount) {
+          throw new Error(`Saldo insuficiente de Bits. Você possui ${userBalance} Bits disponíveis.`);
+        }
+
+        if (leilaoData.usuarioLiderId && !isAlreadyLeader) {
+          const prevLeaderRef = doc(this.firestore, `users/${leilaoData.usuarioLiderId}`);
+          const prevLeaderSnap = await transaction.get(prevLeaderRef);
+          if (prevLeaderSnap.exists()) {
+            const prevLeaderData = prevLeaderSnap.data() as User;
+            transaction.update(prevLeaderRef, {
+              bits_balance: (prevLeaderData.bits_balance || 0) + leilaoData.maiorLanceAtual
+            });
+          }
+        }
+
+        transaction.update(userRef, {
+          bits_balance: userBalance - amount
+        });
+
+        const newHistory = [
+          ...leilaoData.historicoLances,
+          {
+            usuarioId: user.id,
+            displayName: user.displayName,
+            postId: articleId,
+            amount: amount,
+            timestamp: new Date().toISOString()
+          }
+        ];
+
+        transaction.set(leilaoRef, {
+          id: todayStr,
+          maiorLanceAtual: amount,
+          usuarioLiderId: user.id,
+          usuarioLiderDisplayName: user.displayName,
+          postLiderId: articleId,
+          postLiderTitle: articleData.title,
+          finalizado: false,
+          historicoLances: newHistory
+        });
+      });
+
+      Swal.fire({
+        icon: 'success',
+        title: '⚡ LANCE CONFIRMADO!',
+        html: `Seu lance de <b style="color: #ffd700;">${amount} Bits</b> foi enviado com sucesso e você lidera o Holofote!`,
+        background: '#121420',
+        color: '#f1f5f9',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return true;
+    } catch (err: any) {
+      console.error('Erro ao enviar lance:', err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Lance Não Efetuado',
+        text: err.message || 'Erro transacional ao registrar lance.',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return false;
+    }
+  }
+
+  async consolidarLeilaoDia(dataOntem: string): Promise<boolean> {
+    const leilaoRef = doc(this.firestore, `leilao_holofote/${dataOntem}`);
+    const spotlightRef = doc(this.firestore, 'configuracoes/feed_spotlight');
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    try {
+      await runTransaction(this.firestore, async (transaction) => {
+        const leilaoSnap = await transaction.get(leilaoRef);
+
+        if (!leilaoSnap.exists()) {
+          transaction.set(spotlightRef, {
+            id: 'feed_spotlight',
+            postDestaqueId: '',
+            autorUsername: '',
+            maiorLanceVencedor: 0,
+            dataDestaque: todayStr
+          }, { merge: true });
+          return;
+        }
+
+        const leilaoData = leilaoSnap.data() as LeilaoDia;
+        if (leilaoData.finalizado) {
+          return;
+        }
+
+        transaction.update(leilaoRef, { finalizado: true });
+
+        if (leilaoData.usuarioLiderId) {
+          const logId = 'glog_' + Date.now() + '_burn';
+          const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+          const burnLog: GamificationLog = {
+            id: logId,
+            userId: leilaoData.usuarioLiderId,
+            typeAction: 'spend',
+            amount: leilaoData.maiorLanceAtual,
+            description: `Queima de Bits: Venceu o Holofote para a matéria "${leilaoData.postLiderTitle}"`,
+            createdAt: new Date().toISOString()
+          };
+          transaction.set(logRef, burnLog);
+
+          const winnerRef = doc(this.firestore, `users/${leilaoData.usuarioLiderId}`);
+          const winnerSnap = await transaction.get(winnerRef);
+          const winnerData = winnerSnap.exists() ? (winnerSnap.data() as User) : null;
+          const winnerUsername = winnerData ? winnerData.username : '';
+
+          transaction.set(spotlightRef, {
+            id: 'feed_spotlight',
+            postDestaqueId: leilaoData.postLiderId,
+            autorUsername: winnerUsername,
+            maiorLanceVencedor: leilaoData.maiorLanceAtual,
+            dataDestaque: todayStr
+          });
+        } else {
+          transaction.set(spotlightRef, {
+            id: 'feed_spotlight',
+            postDestaqueId: '',
+            autorUsername: '',
+            maiorLanceVencedor: 0,
+            dataDestaque: todayStr
+          });
+        }
+      });
+
+      console.log(`[Spotlight] Leilão de ${dataOntem} consolidado com sucesso.`);
+      return true;
+    } catch (err) {
+      console.error('Erro ao consolidar leilão:', err);
+      return false;
+    }
+  }
+
+  async grantBitsToUser(targetUserId: string, amount: number, description: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${targetUserId}`);
+      const logId = 'glog_' + Date.now() + '_grant';
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error('Usuário não encontrado');
+        }
+
+        const userData = userDoc.data() as User;
+        const currentBalance = userData.bits_balance || 0;
+        const currentXp = userData.xp_points || 0;
+        const newXp = Math.max(0, currentXp + (amount > 0 ? amount : 0));
+
+        transaction.update(userRef, {
+          bits_balance: Math.max(0, currentBalance + amount),
+          xp_points: newXp
+        });
+
+        this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef);
+
+        const grantLog: GamificationLog = {
+          id: logId,
+          userId: targetUserId,
+          typeAction: amount >= 0 ? 'earn' : 'spend',
+          amount: Math.abs(amount),
+          description: description || 'Ajuste administrativo de saldo',
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, grantLog);
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao conceder bits:', err);
+      return false;
+    }
+  }
+
+  async updateUserRole(userId: string, role: 'admin' | 'creator'): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      await updateDoc(userRef, { role });
+      return true;
+    } catch (err) {
+      console.error('Erro ao atualizar cargo:', err);
+      return false;
+    }
+  }
+
+  async addXpToUser(userId: string, xpAmount: number, reason: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const logId = 'glog_' + Date.now() + '_xp_' + Math.random().toString(36).substring(2, 7);
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) {
+          throw new Error('Usuário não encontrado');
+        }
+
+        const userData = userDoc.data() as User;
+        const currentXp = userData.xp_points || 0;
+        const newXp = currentXp + xpAmount;
+        
+        const badgeResult = this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef);
+        const newUnlockedBadgesText = badgeResult.unlockedBadgesText;
+
+        transaction.update(userRef, {
+          xp_points: newXp
+        });
+
+        const xpLog: GamificationLog = {
+          id: logId,
+          userId,
+          typeAction: 'earn',
+          amount: xpAmount,
+          description: `Ganhou ${xpAmount} XP por: ${reason}` + (newUnlockedBadgesText ? `. Conquistas desbloqueadas: ${newUnlockedBadgesText}` : ''),
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, xpLog);
+      });
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao adicionar XP:', err);
+      return false;
+    }
+  }
+
+  private checkAndUnlockBadgesInTransaction(
+    userData: User,
+    newXp: number,
+    transaction: any,
+    userRef: any
+  ): { unlockedBadgesText: string; newUnlocked: string[] } {
+    const unlocked = userData.unlockedBadges || [];
+    const newUnlocked = [...unlocked];
+    const eligibleBadges = this.badges().filter(b => b.xpRequirement <= newXp && !unlocked.includes(b.id));
+    
+    let unlockedBadgesText = '';
+    if (eligibleBadges.length > 0) {
+      eligibleBadges.forEach(b => {
+        if (!newUnlocked.includes(b.id)) {
+          newUnlocked.push(b.id);
+          if (unlockedBadgesText) unlockedBadgesText += ', ';
+          unlockedBadgesText += b.name;
+        }
+      });
+      transaction.update(userRef, {
+        unlockedBadges: newUnlocked
+      });
+      
+      // Celebrate badge unlocking!
+      if (userData.id === this.currentUser()?.id) {
+        setTimeout(() => {
+          eligibleBadges.forEach(badge => {
+            Swal.fire({
+              title: '🏆 NOVO EMBLEMA DESBLOQUEADO!',
+              text: `Parabéns! Você alcançou o marco de ${badge.xpRequirement} XP e ganhou o emblema: ${badge.name}!`,
+              imageUrl: badge.iconUrl || '/images/default-badge.png',
+              imageWidth: 100,
+              imageHeight: 100,
+              imageAlt: badge.name,
+              background: '#121420',
+              color: '#f1f5f9',
+              confirmButtonText: 'Sensacional!',
+              customClass: {
+                popup: 'guiik-swal-popup',
+                title: 'guiik-swal-title',
+                confirmButton: 'guiik-swal-confirm-btn'
+              },
+              buttonsStyling: false
+            });
+          });
+        }, 500);
+      }
+    }
+    return { unlockedBadgesText, newUnlocked };
+  }
+
+  async unlockBadgesRetroactively(userId: string, badgesToUnlock: Badge[]): Promise<void> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const logId = 'glog_' + Date.now() + '_retro_' + Math.random().toString(36).substring(2, 7);
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) return;
+
+        const userData = userDoc.data() as User;
+        const unlocked = userData.unlockedBadges || [];
+        const newUnlocked = [...unlocked];
+        
+        let newUnlockedBadgesText = '';
+        badgesToUnlock.forEach(b => {
+          if (!newUnlocked.includes(b.id)) {
+            newUnlocked.push(b.id);
+            if (newUnlockedBadgesText) newUnlockedBadgesText += ', ';
+            newUnlockedBadgesText += b.name;
+          }
+        });
+
+        if (newUnlockedBadgesText) {
+          transaction.update(userRef, {
+            unlockedBadges: newUnlocked
+          });
+
+          const xpLog: GamificationLog = {
+            id: logId,
+            userId,
+            typeAction: 'earn',
+            amount: 0,
+            description: `Desbloqueou conquistas retroativamente: ${newUnlockedBadgesText}`,
+            createdAt: new Date().toISOString()
+          };
+          transaction.set(logRef, xpLog);
+          
+          // Celebrate!
+          if (userId === this.currentUser()?.id) {
+            setTimeout(() => {
+              badgesToUnlock.forEach(badge => {
+                Swal.fire({
+                  title: '🏆 NOVO EMBLEMA DESBLOQUEADO!',
+                  text: `Parabéns! Você alcançou o marco de ${badge.xpRequirement} XP e ganhou o emblema: ${badge.name}!`,
+                  imageUrl: badge.iconUrl || '/images/default-badge.png',
+                  imageWidth: 100,
+                  imageHeight: 100,
+                  imageAlt: badge.name,
+                  background: '#121420',
+                  color: '#f1f5f9',
+                  confirmButtonText: 'Sensacional!',
+                  customClass: {
+                    popup: 'guiik-swal-popup',
+                    title: 'guiik-swal-title',
+                    confirmButton: 'guiik-swal-confirm-btn'
+                  },
+                  buttonsStyling: false
+                });
+              });
+            }, 500);
+          }
+        }
+      });
+    } catch (err) {
+      console.error('Erro ao desbloquear emblemas retroativamente:', err);
+    }
+  }
+
+  async createBadge(name: string, description: string, xpRequirement: number, iconUrl: string): Promise<boolean> {
+    try {
+      const id = 'badge_' + Date.now();
+      const newBadge: Badge = {
+        id,
+        name,
+        description,
+        xpRequirement,
+        iconUrl: iconUrl || '/images/default-badge.png',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.firestore, `badges/${id}`), newBadge);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Emblema Criado!',
+        text: `O emblema "${name}" foi cadastrado no sistema com sucesso.`,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return true;
+    } catch (err) {
+      console.error('Erro ao criar emblema:', err);
+      Swal.fire('Erro', 'Não foi possível cadastrar o emblema.', 'error');
+      return false;
+    }
+  }
+
+  async deleteBadge(badgeId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(this.firestore, `badges/${badgeId}`));
+      Swal.fire({
+        icon: 'success',
+        title: 'Emblema Excluído',
+        text: 'O emblema foi removido do sistema.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return true;
+    } catch (err) {
+      console.error('Erro ao excluir emblema:', err);
+      Swal.fire('Erro', 'Não foi possível excluir o emblema.', 'error');
+      return false;
+    }
+  }
+
+  async rewardPostReading(articleId: string, articleTitle: string): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    // Check if user has already read this article using synced logs
+    const alreadyRewarded = this.gamificationLogs().some(
+      log => log.typeAction === 'earn' && log.description.includes(`Leitura completa do artigo: ${articleId}`)
+    );
+
+    if (alreadyRewarded) {
+      return false;
+    }
+
+    const success = await this.addXpToUser(user.id, 5, `Leitura completa do artigo: ${articleId}`);
+    if (success) {
+      Swal.fire({
+        icon: 'success',
+        title: '⚡ CONHECIMENTO ADQUIRIDO!',
+        html: `Você ganhou <b style="color: #ff007f;">+5 XP</b> por concluir a leitura de: <b>"${articleTitle}"</b>!`,
+        background: '#121420',
+        color: '#f1f5f9',
+        timer: 3000,
+        showConfirmButton: false,
+        toast: true,
+        position: 'bottom-end'
+      });
+      return true;
+    }
+    return false;
   }
 }

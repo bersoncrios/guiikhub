@@ -17,6 +17,13 @@ export class FeedComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly seo = inject(SeoService);
   readonly searchQuery = signal('');
+  
+  // Spotlight Article computation
+  readonly spotlightArticle = computed(() => {
+    const spotlight = this.db.holofoteAtivo();
+    if (!spotlight || !spotlight.postDestaqueId) return null;
+    return this.db.articles().find(art => art.id === spotlight.postDestaqueId) || null;
+  });
   readonly selectedTag = signal<string | null>(null);
   readonly mobileNavOpen = signal(false);
 
@@ -212,5 +219,10 @@ export class FeedComponent implements OnInit {
       return;
     }
     this.db.toggleFollow(creatorId);
+  }
+
+  getUserBadges(user: any): any[] {
+    if (!user || !user.unlockedBadges) return [];
+    return this.db.badges().filter(b => user.unlockedBadges.includes(b.id));
   }
 }
