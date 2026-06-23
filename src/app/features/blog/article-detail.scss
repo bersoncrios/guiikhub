@@ -443,3 +443,14 @@
     background: rgba(255, 255, 255, 0.08);
   }
 }
+
+.scroll-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: linear-gradient(to right, var(--blog-primary, #00f0ff), var(--blog-accent, #ff007f));
+  z-index: 99999;
+  transition: width 0.1s ease;
+  box-shadow: 0 0 8px var(--blog-primary, #00f0ff);
+}

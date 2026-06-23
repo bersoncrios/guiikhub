@@ -23,6 +23,9 @@
   @if (blogUser(); as user) {
     <!-- Wrap in custom style container to apply theme variables -->
     <div class="blog-wrapper" [ngStyle]="customStyleVariables()">
+      <!-- Scroll progress bar -->
+      <div class="scroll-progress-bar" [style.width.%]="scrollPercent()"></div>
+      
       <!-- Minimal Header Navigation -->
       <header class="blog-header-nav">
         <div class="nav-content">
@@ -48,11 +51,14 @@
                 </div>
               </div>
               
-              <div class="date-info" style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+              <div class="date-info" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
                 <span>Publicado em {{ art.createdAt | date:'dd/MM/yyyy \'às\' HH:mm' }}</span>
                 @if (art.updatedAt) {
                   <span class="edited-date" style="opacity: 0.8; font-style: italic; font-size: 0.85em;">(Editado em {{ art.updatedAt | date:'dd/MM/yyyy \'às\' HH:mm' }})</span>
                 }
+                <span class="reading-time-info" style="color: var(--blog-primary, #00f0ff); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-left: 0.25rem;">
+                  ⏱️ {{ estimatedReadingTime() }} {{ estimatedReadingTime() === 1 ? 'min' : 'mins' }} de leitura
+                </span>
               </div>
             </div>
 

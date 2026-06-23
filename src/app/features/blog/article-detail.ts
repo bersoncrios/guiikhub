@@ -1,4 +1,4 @@
-import { Component, computed, inject, signal, effect } from '@angular/core';
+import { Component, computed, inject, signal, effect, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -20,6 +20,34 @@ export class ArticleDetailComponent {
   private readonly titleService = inject(Title);
   private readonly metaService = inject(Meta);
   public readonly db = inject(DbService);
+
+  readonly scrollPercent = signal(0);
+
+  @HostListener('window:scroll')
+  onWindowScroll() {
+    if (typeof window === 'undefined') return;
+    const docElement = document.documentElement;
+    const docBody = document.body;
+    const scrollTop = docElement.scrollTop || docBody.scrollTop;
+    const scrollHeight = docElement.scrollHeight || docBody.scrollHeight;
+    const clientHeight = docElement.clientHeight;
+    const totalScroll = scrollHeight - clientHeight;
+    if (totalScroll <= 0) {
+      this.scrollPercent.set(0);
+    } else {
+      const percentage = (scrollTop / totalScroll) * 100;
+      this.scrollPercent.set(percentage);
+    }
+  }
+
+  readonly estimatedReadingTime = computed(() => {
+    const art = this.article();
+    if (!art || !art.content) return 0;
+    const text = art.content.replace(/<[^>]*>/g, ' ');
+    const words = text.trim().split(/\s+/).filter(w => w.length > 0);
+    const wordCount = words.length;
+    return Math.ceil(wordCount / 200);
+  });
 
   // Convert route params to a Signal
   private readonly params = toSignal(this.route.params);
