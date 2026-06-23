@@ -324,21 +324,18 @@
                 </div>
 
                 <div class="banner-picker-right">
-                  <!-- URL Input -->
+                  <!-- Upload Banner Option -->
                   <div class="banner-url-input-group">
-                    <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
+                    <label class="banner-url-label">📷 Capa da Matéria</label>
                     <div style="display: flex; gap: 0.5rem; width: 100%;">
-                      <input type="url" id="postCoverUrl" name="postCoverUrl" [(ngModel)]="newPostCoverUrl"
-                        class="form-control" placeholder="https://exemplo.com/imagem-da-materia.jpg" style="flex: 1;">
-
                       <input type="file" id="coverFileInput" class="file-input-hidden" accept="image/*"
                         (change)="onCoverFileSelected($event)" style="display: none;">
                       <label for="coverFileInput" class="btn btn-secondary"
-                        style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                        style="margin: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; width: 100%;">
                         @if (isUploadingCover) {
-                        ⏳ Enviando...
+                          ⏳ Enviando...
                         } @else {
-                        📁 Enviar Imagem
+                          📁 {{ newPostCoverUrl ? 'Alterar Imagem Enviada' : 'Enviar Imagem de Capa' }}
                         }
                       </label>
                     </div>
@@ -690,26 +687,22 @@
               </div>
             </div>
 
-            <!-- URL Input -->
+            <!-- Upload Banner Option -->
             <div class="banner-url-input-group">
-              <label class="banner-url-label">🔗 Link da capa ou envie uma foto</label>
+              <label class="banner-url-label">📷 Capa / Banner do Blog</label>
               <div style="display: flex; gap: 0.5rem; width: 100%;">
-                <input type="url" id="blogBannerUrl" name="blogBannerUrl" [(ngModel)]="blogBannerUrl"
-                  class="form-control" placeholder="https://exemplo.com/minha-imagem.jpg" style="flex: 1;">
-
                 <input type="file" id="blogBannerFileInput" class="file-input-hidden" accept="image/*"
                   (change)="onBlogBannerSelected($event)" style="display: none;">
                 <label for="blogBannerFileInput" class="btn btn-secondary"
-                  style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                  style="margin: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; width: 100%;">
                   @if (isUploadingBlogBanner) {
-                  ⏳ Enviando...
+                    ⏳ Enviando...
                   } @else {
-                  📁 Enviar Imagem
+                    📁 {{ blogBannerUrl ? 'Alterar Imagem Enviada' : 'Enviar Imagem de Banner' }}
                   }
                 </label>
               </div>
-              <small class="form-help">Use imagens de alta resolução (mín. 1200px de largura). Formatos: JPG, PNG,
-                WebP.</small>
+              <small class="form-help">Use imagens de alta resolução (mín. 1200px de largura). Formatos: JPG, PNG, WebP.</small>
             </div>
 
             <!-- Quick-pick presets -->
@@ -864,23 +857,31 @@
         </div>
 
         <div class="form-group">
-          <label for="profileAvatar">Link do Avatar ou envie uma foto</label>
-          <div style="display: flex; gap: 0.5rem; width: 100%;">
-            <input type="url" id="profileAvatar" name="profileAvatar" [(ngModel)]="profileAvatar" class="form-control"
-              placeholder="https://exemplo.com/meu-avatar.jpg" style="flex: 1;">
-
-            <input type="file" id="profileAvatarFileInput" class="file-input-hidden" accept="image/*"
-              (change)="onAvatarSelected($event)" style="display: none;">
-            <label for="profileAvatarFileInput" class="btn btn-secondary"
-              style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+          <label>Foto do Perfil (Avatar)</label>
+          <div class="avatar-upload-wrapper" style="display: flex; align-items: center; gap: 1.5rem; margin-top: 0.5rem;">
+            <div class="avatar-preview-box" style="position: relative; width: 80px; height: 80px; border-radius: 50%; overflow: hidden; border: 2px solid #00f0ff; box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); background: #121420;">
+              <img [src]="profileAvatar || '/images/default-avatar.svg'" alt="Avatar" style="width: 100%; height: 100%; object-fit: cover;">
               @if (isUploadingAvatar) {
-              ⏳ Enviando...
-              } @else {
-              📁 Enviar Imagem
+                <div style="position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; color: #00f0ff;">
+                  ⏳
+                </div>
               }
-            </label>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+              <input type="file" id="profileAvatarFileInput" class="file-input-hidden" accept="image/*"
+                (change)="onAvatarSelected($event)" style="display: none;">
+              <label for="profileAvatarFileInput" class="btn btn-secondary"
+                style="margin: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; white-space: nowrap; font-size: 0.85rem; padding: 0.5rem 1rem;">
+                @if (isUploadingAvatar) {
+                  ⏳ Enviando...
+                } @else {
+                  📁 Alterar Foto
+                }
+              </label>
+              <small class="form-help" style="margin: 0; display: block; color: var(--text-muted);">Para melhor visualização, use imagens quadradas (1:1).</small>
+            </div>
           </div>
-          <small class="form-help">Para melhor visualização, use imagens quadradas (1:1).</small>
         </div>
 
         <div class="form-group">
