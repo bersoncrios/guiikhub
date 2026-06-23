@@ -7,7 +7,9 @@
     
     <nav class="main-nav">
       <a routerLink="/" class="nav-item active">Feed</a>
-      <a routerLink="/admin" class="nav-item">Studio Criador</a>
+      @if (db.isAuthenticated()) {
+        <a routerLink="/admin" class="nav-item">Studio Criador</a>
+      }
     </nav>
 
     <div class="user-action-area">
@@ -51,7 +53,9 @@
     </div>
 
     <a routerLink="/" class="mobile-nav-item active" (click)="closeMobileNav()">🏠 Feed</a>
-    <a routerLink="/admin" class="mobile-nav-item" (click)="closeMobileNav()">🎛️ Studio Criador</a>
+    @if (db.isAuthenticated()) {
+      <a routerLink="/admin" class="mobile-nav-item" (click)="closeMobileNav()">🎛️ Studio Criador</a>
+    }
 
     <div class="mobile-nav-divider"></div>
 
@@ -255,7 +259,7 @@
     <div class="glass-card creators-card">
       <h4 class="card-title">Blogs Recomendados</h4>
       <div class="creators-list">
-        @for (creator of otherCreators(); track creator.id) {
+        @for (creator of recommendedCreators(); track creator.id) {
           <div class="creator-item">
             <div class="creator-info-wrapper" [routerLink]="['/b', creator.username]">
               <img [src]="creator.avatarUrl" [alt]="creator.displayName" class="avatar-md">
@@ -271,6 +275,10 @@
               (click)="toggleFollow($event, creator.id)">
               {{ db.isFollowing(creator.id) ? 'Seguindo' : 'Seguir' }}
             </button>
+          </div>
+        } @empty {
+          <div style="font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem 0; font-style: italic;">
+            Você já segue todos os criadores sugeridos! 🚀
           </div>
         }
       </div>

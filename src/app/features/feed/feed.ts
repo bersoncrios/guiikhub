@@ -130,10 +130,44 @@ export class FeedComponent implements OnInit {
     return Array.from(tags);
   });
 
-  // Creators list (excluding current user)
-  readonly otherCreators = computed(() => {
-    const current = this.db.currentUser();
-    return this.db.users().filter(u => !current || u.id !== current.id);
+  // Recommended creators list based on engagement (views, posts, likes, comments)
+  readonly recommendedCreators = computed(() => {
+    const me = this.db.currentUser();
+    const allUsers = this.db.users();
+    const allArticles = this.db.articles().filter(art => !art.status || art.status === 'published');
+
+    // Filter out: current user and creators the user already follows
+    const candidates = allUsers.filter(u => {
+      if (me && u.id === me.id) return false;
+      if (me && this.db.isFollowing(u.id)) return false;
+      return true;
+    });
+
+    // Score candidates based on engagement metrics
+    const scored = candidates.map(u => {
+      const creatorArticles = allArticles.filter(art => (art.blogId || art.authorId) === u.id);
+      const articleCount = creatorArticles.length;
+
+      let totalLikes = 0;
+      let totalComments = 0;
+      creatorArticles.forEach(art => {
+        totalLikes += art.likesCount || 0;
+        totalComments += art.commentsCount || 0;
+      });
+
+      const views = u.viewsCount || 0;
+
+      // Engagement scoring formula
+      const score = (views * 1) + (articleCount * 15) + (totalLikes * 8) + (totalComments * 12);
+
+      return { creator: u, score };
+    });
+
+    // Sort by score descending and take top 5
+    return scored
+      .sort((a, b) => b.score - a.score)
+      .map(item => item.creator)
+      .slice(0, 5);
   });
 
   constructor(public db: DbService) {}
