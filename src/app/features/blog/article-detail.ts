@@ -48,11 +48,18 @@ export class ArticleDetailComponent {
     const art = this.db.articles().find(art => art.slug === slugStr) || null;
     if (!art) return null;
     
+    const user = this.db.currentUser();
+    const isAuthor = user && (art.authorId === user.id || (art.blogId || art.authorId) === user.id);
+
     if (art.status === 'pending' || art.status === 'draft') {
-      const user = this.db.currentUser();
-      if (!user) return null;
-      if (art.authorId !== user.id && (art.blogId || art.authorId) !== user.id) {
+      if (!isAuthor) {
         return null; // Hide pending/draft article from public
+      }
+    }
+
+    if (art.scheduledAt && new Date(art.scheduledAt).getTime() > Date.now()) {
+      if (!isAuthor) {
+        return null; // Hide scheduled article from public before release time
       }
     }
     return art;

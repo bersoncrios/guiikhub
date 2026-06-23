@@ -189,6 +189,9 @@
                           @if (art.status === 'draft') {
                             <span class="badge" style="background: #94a3b8; color: #000; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">Rascunho</span>
                           }
+                          @if (art.status === 'published' && art.scheduledAt && isFutureDate(art.scheduledAt)) {
+                            <span class="badge" style="background: #a855f7; color: #fff; font-size: 0.7rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; border: 1px solid rgba(168, 85, 247, 0.3);">Agendado ({{ art.scheduledAt | date:'short' }})</span>
+                          }
                         </span>
                         <span class="post-author" style="font-size: 0.75rem; color: #94a3b8; display: block; margin-top: 4px; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                           <img [src]="art.authorAvatarUrl" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;">
@@ -483,8 +486,41 @@
             </div>
           </div>
 
-          <!-- Newsletter Trigger Switch -->
+          <!-- Scheduling Post Option -->
           <div class="form-group" style="margin-top: 2rem;">
+            <div class="schedule-switch-card" style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(168, 85, 247, 0.03); border: 1px solid rgba(168, 85, 247, 0.15); padding: 1.25rem; border-radius: 12px;">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <input 
+                  type="checkbox" 
+                  id="isScheduled" 
+                  name="isScheduled" 
+                  [(ngModel)]="isScheduled" 
+                  style="width: 20px; height: 20px; cursor: pointer; accent-color: #a855f7;">
+                <label for="isScheduled" style="margin: 0; cursor: pointer; font-weight: 700; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; color: #c084fc;">
+                  📅 Agendar Publicação (Calendário de Conteúdo)
+                </label>
+              </div>
+              
+              @if (isScheduled) {
+                <div style="padding-left: 1.75rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                  <label for="scheduledDateTime" style="font-size: 0.85rem; color: #cbd5e1; font-weight: 600;">Escolha a data e hora de lançamento:</label>
+                  <input 
+                    type="datetime-local" 
+                    id="scheduledDateTime" 
+                    name="scheduledDateTime" 
+                    [(ngModel)]="scheduledDateTime"
+                    class="form-control" 
+                    style="max-width: 300px; background: #1e1b4b; color: #fff; border: 1px solid #4c1d95; border-radius: 6px; padding: 0.5rem;">
+                  <p style="margin: 0; font-size: 0.8rem; color: #a78bfa;">
+                    A matéria ficará oculta para leitores até a data/hora selecionada. Quando o horário chegar, ela aparecerá automaticamente em seu blog e feed.
+                  </p>
+                </div>
+              }
+            </div>
+          </div>
+
+          <!-- Newsletter Trigger Switch -->
+          <div class="form-group" style="margin-top: 1.5rem;">
             <div class="newsletter-switch-card" style="display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0, 240, 255, 0.03); border: 1px solid rgba(0, 240, 255, 0.1); padding: 1.25rem; border-radius: 12px;">
               <div style="display: flex; align-items: center; gap: 0.75rem;">
                 <input 
@@ -504,6 +540,8 @@
               <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; padding-left: 1.75rem; line-height: 1.4;">
                 @if (editingArticle()?.newsletterSent) {
                   A newsletter para esta matéria já foi disparada anteriormente para os seus seguidores.
+                } @else if (isScheduled) {
+                  A newsletter para esta matéria será **disparada automaticamente por e-mail** para todos os seus seguidores quando a publicação for lançada.
                 } @else {
                   Esta matéria será enviada automaticamente por e-mail para todos os <strong>{{ targetBlogFollowersCount() }} seguidores</strong> do blog assim que for publicada.
                 }

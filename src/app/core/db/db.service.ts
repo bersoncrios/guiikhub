@@ -413,7 +413,18 @@ export class DbService {
 
 
   // Mutator Actions linked to Firestore
-  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[], targetBlogId?: string, saveAsDraft: boolean = false, section?: string) {
+  async addArticle(
+    title: string, 
+    summary: string, 
+    content: string, 
+    coverUrl: string, 
+    tags: string[], 
+    targetBlogId?: string, 
+    saveAsDraft: boolean = false, 
+    section?: string,
+    scheduledAt?: string | null,
+    scheduledNewsletter?: boolean
+  ) {
     const user = this.currentUser();
     if (!user) return null;
 
@@ -445,7 +456,9 @@ export class DbService {
       tags,
       likesCount: 0,
       commentsCount: 0,
-      section: section || ''
+      section: section || '',
+      scheduledAt: scheduledAt || undefined,
+      scheduledNewsletter: scheduledNewsletter || false
     };
 
     await setDoc(doc(this.firestore, `articles/${id}`), newArticle);

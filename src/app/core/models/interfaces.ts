@@ -49,6 +49,8 @@ export interface Article {
   commentsCount: number;
   section?: string;
   newsletterSent?: boolean;
+  scheduledAt?: string;
+  scheduledNewsletter?: boolean;
 }
 
 export interface Comment {

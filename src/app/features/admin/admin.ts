@@ -32,6 +32,8 @@ export class AdminComponent {
   newPostSection = '';
   sendNewsletter = false;
   targetBlogId = '';
+  isScheduled = false;
+  scheduledDateTime = '';
 
   // Rich Text Editor
   @ViewChild('richEditor') richEditorRef!: ElementRef<HTMLDivElement>;
@@ -133,6 +135,26 @@ export class AdminComponent {
         this.router.navigate(['/auth']);
       }
     });
+
+    // Verificar e disparar automaticamente newsletters de posts agendados que foram lançados
+    effect(() => {
+      const articles = this.myArticles();
+      if (articles.length === 0) return;
+      
+      const now = Date.now();
+      const pendingScheduled = articles.filter(art => 
+        art.scheduledAt && 
+        new Date(art.scheduledAt).getTime() <= now && 
+        art.scheduledNewsletter === true && 
+        art.newsletterSent !== true
+      );
+
+      if (pendingScheduled.length > 0) {
+        for (const art of pendingScheduled) {
+          this.triggerScheduledNewsletter(art);
+        }
+      }
+    });
   }
 
   resetForms() {
@@ -226,6 +248,9 @@ export class AdminComponent {
       this.newPostTags = 'Gamer, Geek, Tech';
       this.newPostSection = '';
       this.targetBlogId = '';
+      this.isScheduled = false;
+      this.scheduledDateTime = '';
+      this.sendNewsletter = false;
     } else if (tab !== 'new-post') {
       this.editingArticleId.set(null);
     }
@@ -604,6 +629,21 @@ export class AdminComponent {
       status = 'pending';
     }
 
+    const scheduledAt = !isDraft && this.isScheduled && this.scheduledDateTime ? new Date(this.scheduledDateTime).toISOString() : null;
+    const scheduledNewsletter = !isDraft && this.isScheduled ? this.sendNewsletter : false;
+
+    // Se estiver agendado para o futuro, validamos se a data é realmente no futuro
+    if (scheduledAt && new Date(scheduledAt).getTime() <= Date.now()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Data Inválida',
+        text: 'A data de agendamento deve ser no futuro.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
     const editId = this.editingArticleId();
     if (editId) {
       await this.db.updateArticle(editId, {
@@ -615,16 +655,20 @@ export class AdminComponent {
         blogId: this.targetBlogId || user.id,
         status,
         updatedAt: new Date().toISOString(),
-        section: this.newPostSection || ''
+        section: this.newPostSection || '',
+        scheduledAt: scheduledAt || undefined,
+        scheduledNewsletter
       });
 
-      if (this.sendNewsletter && status === 'published') {
+      // Dispara imediatamente se for publicação imediata (não agendada ou agendamento expirado)
+      const isPostReleasedNow = !scheduledAt || new Date(scheduledAt).getTime() <= Date.now();
+      if (this.sendNewsletter && status === 'published' && isPostReleasedNow && !this.editingArticle()?.newsletterSent) {
         await this.db.sendNewsletter(editId, this.targetBlogId || user.id);
       }
       
       Swal.fire({
         icon: 'success',
-        title: isDraft ? 'Rascunho Atualizado!' : 'Alterações Publicadas!',
+        title: isDraft ? 'Rascunho Atualizado!' : (scheduledAt ? 'Postagem Agendada!' : 'Alterações Publicadas!'),
         timer: 1500,
         showConfirmButton: false,
         background: '#121420',
@@ -639,10 +683,14 @@ export class AdminComponent {
         tags,
         this.targetBlogId,
         isDraft,
-        this.newPostSection || ''
+        this.newPostSection || '',
+        scheduledAt,
+        scheduledNewsletter
       );
 
-      if (createdArticle && this.sendNewsletter && !isDraft) {
+      // Dispara imediatamente se for publicação imediata
+      const isPostReleasedNow = !scheduledAt || new Date(scheduledAt).getTime() <= Date.now();
+      if (createdArticle && this.sendNewsletter && !isDraft && isPostReleasedNow) {
         await this.db.sendNewsletter(createdArticle.id, createdArticle.blogId || createdArticle.authorId);
       }
 
@@ -659,10 +707,12 @@ export class AdminComponent {
       } else {
         const result = await Swal.fire({
           icon: 'success',
-          title: isDraft ? 'Rascunho Salvo!' : 'Publicado!',
-          text: isDraft ? 'Sua matéria foi salva como rascunho.' : 'Sua nova matéria foi publicada com sucesso! Deseja gerar uma arte para suas redes sociais?',
-          showCancelButton: !isDraft,
-          confirmButtonText: isDraft ? 'OK' : '📸 Gerar Arte',
+          title: scheduledAt ? 'Matéria Agendada!' : 'Matéria Publicada!',
+          text: scheduledAt 
+            ? 'Sua postagem foi agendada e será lançada no horário configurado.' 
+            : 'Sua matéria foi postada no seu blog e enviada para o feed do GuiikHub!',
+          showCancelButton: true,
+          confirmButtonText: 'Ver meu Blog',
           cancelButtonText: 'Fechar',
           background: '#121420',
           color: '#f1f5f9',
@@ -676,8 +726,11 @@ export class AdminComponent {
           buttonsStyling: false
         });
 
-        if (!isDraft && result.isConfirmed && createdArticle) {
-          this.generateSocialImage(createdArticle);
+        if (result.isConfirmed) {
+          const authorUser = this.db.currentUser();
+          if (authorUser) {
+            this.router.navigate(['/b', authorUser.username]);
+          }
         }
       }
     }
@@ -691,6 +744,8 @@ export class AdminComponent {
     this.newPostSection = '';
     this.sendNewsletter = false;
     this.targetBlogId = '';
+    this.isScheduled = false;
+    this.scheduledDateTime = '';
     this.clearEditorContent();
     this.editingArticleId.set(null);
     
@@ -707,6 +762,19 @@ export class AdminComponent {
     this.newPostSection = art.section || '';
     this.targetBlogId = art.blogId !== art.authorId ? art.blogId : '';
     
+    if (art.scheduledAt) {
+      this.isScheduled = new Date(art.scheduledAt).getTime() > Date.now();
+      const date = new Date(art.scheduledAt);
+      const tzOffset = date.getTimezoneOffset() * 60000;
+      const localISOTime = (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
+      this.scheduledDateTime = localISOTime;
+    } else {
+      this.isScheduled = false;
+      this.scheduledDateTime = '';
+    }
+
+    this.sendNewsletter = art.scheduledNewsletter || art.newsletterSent || false;
+
     this.setTab('new-post');
     
     // Set editor content
@@ -716,6 +784,30 @@ export class AdminComponent {
         this.editorHasContent.set(this.newPostContent.trim().length > 0);
       }
     }, 100);
+  }
+
+  isFutureDate(dateStr?: string): boolean {
+    if (!dateStr) return false;
+    return new Date(dateStr).getTime() > Date.now();
+  }
+
+  async triggerScheduledNewsletter(art: any) {
+    // Evitar disparos repetidos marcando localmente
+    art.newsletterSent = true;
+    
+    Swal.fire({
+      title: 'Disparando Newsletter Agendada',
+      text: `O post agendado "${art.title}" já está público. Enviando newsletter aos seguidores...`,
+      icon: 'info',
+      toast: true,
+      position: 'top-end',
+      showConfirmButton: false,
+      timer: 4500,
+      background: '#121420',
+      color: '#f1f5f9'
+    });
+
+    await this.db.sendNewsletter(art.id, art.blogId || art.authorId);
   }
 
   async onCoverFileSelected(event: Event) {

@@ -50,7 +50,11 @@ export class BlogComponent {
   readonly blogArticles = computed(() => {
     const user = this.blogUser();
     if (!user) return [];
-    const allArticles = this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && (!art.status || art.status === 'published'));
+    const allArticles = this.db.articles().filter(art => 
+      (art.blogId || art.authorId) === user.id && 
+      (!art.status || art.status === 'published') &&
+      (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
+    );
     
     const filter = this.selectedSection();
     if (filter === 'Tudo') {

@@ -28,7 +28,10 @@ export class FeedComponent implements OnInit {
   // Recommendation algorithm for "Descobrir" feed
   readonly discoverArticles = computed(() => {
     const me = this.db.currentUser();
-    const allArticles = this.db.articles().filter(art => !art.status || art.status === 'published');
+    const allArticles = this.db.articles().filter(art => 
+      (!art.status || art.status === 'published') && 
+      (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
+    );
     
     if (!me) {
       // Guest users: sort by popularity and time decay
@@ -92,7 +95,8 @@ export class FeedComponent implements OnInit {
     const me = this.db.currentUser();
     if (!me) return [];
     return this.db.articles().filter(art => {
-      const isPublished = !art.status || art.status === 'published';
+      const isPublished = (!art.status || art.status === 'published') && 
+        (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now());
       const isFollowed = this.db.isFollowing(art.blogId || art.authorId);
       return isPublished && isFollowed;
     });
@@ -123,7 +127,10 @@ export class FeedComponent implements OnInit {
   readonly allTags = computed(() => {
     const tags = new Set<string>();
     this.db.articles()
-      .filter(art => !art.status || art.status === 'published')
+      .filter(art => 
+        (!art.status || art.status === 'published') && 
+        (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
+      )
       .forEach(art => {
         art.tags.forEach(t => tags.add(t));
       });
@@ -134,7 +141,10 @@ export class FeedComponent implements OnInit {
   readonly recommendedCreators = computed(() => {
     const me = this.db.currentUser();
     const allUsers = this.db.users();
-    const allArticles = this.db.articles().filter(art => !art.status || art.status === 'published');
+    const allArticles = this.db.articles().filter(art => 
+      (!art.status || art.status === 'published') && 
+      (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
+    );
 
     // Filter out: current user and creators the user already follows
     const candidates = allUsers.filter(u => {
