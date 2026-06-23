@@ -183,7 +183,8 @@ export class DbService {
           textColor: '#f1f5f9',
           fontFamily: 'Space Grotesk',
           layoutType: 'grid',
-          bannerUrl: '/images/cyberpunk_cover.png'
+          bannerUrl: '/images/cyberpunk_cover.png',
+          sections: ['Geral', 'Tech', 'Quadrinhos']
         };
         
         const userProfile: User = {
@@ -280,7 +281,8 @@ export class DbService {
         textColor: '#f1f5f9',
         fontFamily: 'Outfit',
         layoutType: 'grid',
-        bannerUrl: '/images/cyberpunk_cover.png'
+        bannerUrl: '/images/cyberpunk_cover.png',
+        sections: ['Geral', 'Tech', 'Quadrinhos']
       };
       
       const userProfile: User = {
@@ -394,7 +396,7 @@ export class DbService {
 
 
   // Mutator Actions linked to Firestore
-  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[], targetBlogId?: string, saveAsDraft: boolean = false) {
+  async addArticle(title: string, summary: string, content: string, coverUrl: string, tags: string[], targetBlogId?: string, saveAsDraft: boolean = false, section?: string) {
     const user = this.currentUser();
     if (!user) return null;
 
@@ -425,7 +427,8 @@ export class DbService {
       createdAt: new Date().toISOString(),
       tags,
       likesCount: 0,
-      commentsCount: 0
+      commentsCount: 0,
+      section: section || ''
     };
 
     await setDoc(doc(this.firestore, `articles/${id}`), newArticle);

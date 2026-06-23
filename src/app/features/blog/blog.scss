@@ -634,3 +634,63 @@
   50% { transform: translateY(-15px); }
   100% { transform: translateY(0px); }
 }
+
+/* Section Filter Navigation */
+.blog-sections-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 2.5rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--blog-border);
+
+  .section-nav-btn {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--blog-border);
+    color: var(--blog-text-muted, #94a3b8);
+    padding: 0.5rem 1.25rem;
+    border-radius: 9999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--blog-text);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    &.active {
+      background: var(--blog-primary);
+      color: var(--blog-bg, #08090d);
+      border-color: var(--blog-primary);
+      box-shadow: var(--blog-glow);
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/* Section badge inside card layouts */
+.section-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--blog-primary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--blog-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+}

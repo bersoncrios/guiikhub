@@ -280,6 +280,20 @@
               placeholder="Ex: RPG, Games, Xbox">
           </div>
 
+          <div class="form-group">
+            <label for="postSection">Seção do Blog</label>
+            <select 
+              id="postSection" 
+              name="postSection" 
+              [(ngModel)]="newPostSection" 
+              class="form-control">
+              <option value="">Nenhuma (Geral)</option>
+              @for (sec of availableSections(); track sec) {
+                <option [value]="sec">{{ sec }}</option>
+              }
+            </select>
+          </div>
+
           <!-- Cover Image Picker -->
           <div class="form-group">
             <label>Imagem de Capa da Matéria</label>
@@ -720,6 +734,50 @@
                   <input type="text" name="blogTextText" [(ngModel)]="blogText" class="color-hex">
                 </div>
               </div>
+            </div>
+          </div>
+
+          <!-- Customizable Sections Management -->
+          <div class="color-picker-grid" style="margin-top: 2rem; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 2rem;">
+            <h4 class="grid-title" style="margin-bottom: 0.5rem;">Seções do Blog</h4>
+            <p class="form-help" style="margin-bottom: 1.5rem; opacity: 0.8; font-size: 0.85rem;">Crie e gerencie as seções temáticas do seu blog (ex: Quadrinhos, Tech, Resenhas).</p>
+            
+            <div class="form-group">
+              <label>Adicionar Nova Seção</label>
+              <div style="display: flex; gap: 0.5rem; width: 100%;">
+                <input 
+                  type="text" 
+                  name="newSectionName" 
+                  [(ngModel)]="newSectionName" 
+                  class="form-control" 
+                  placeholder="Nome da seção (ex: RPG)"
+                  style="flex: 1;"
+                  (keyup.enter)="$event.preventDefault(); addSection()">
+                <button type="button" class="btn btn-primary" (click)="addSection()">Adicionar</button>
+              </div>
+            </div>
+
+            <!-- List of current sections -->
+            <div style="margin-top: 1.5rem;">
+              <label style="display: block; margin-bottom: 0.75rem;">Seções Ativas</label>
+              @if (blogSections.length > 0) {
+                <div style="display: flex; flex-wrap: wrap; gap: 0.75rem;">
+                  @for (sec of blogSections; track sec) {
+                    <div style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.05); padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
+                      <span>{{ sec }}</span>
+                      <button 
+                        type="button" 
+                        style="background: transparent; border: none; color: #ef4444; cursor: pointer; padding: 0; font-size: 0.9rem; line-height: 1;" 
+                        (click)="removeSection(sec)"
+                        title="Remover Seção">
+                        ✕
+                      </button>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p style="font-size: 0.9rem; color: #94a3b8; font-style: italic;">Nenhuma seção cadastrada. Crie uma acima!</p>
+              }
             </div>
           </div>
 

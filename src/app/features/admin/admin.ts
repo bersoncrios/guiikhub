@@ -29,6 +29,7 @@ export class AdminComponent {
   newPostCoverUrl = '/images/cyberpunk_cover.png';
   isUploadingCover = false;
   newPostTags = 'Gamer, Geek, Tech';
+  newPostSection = '';
   targetBlogId = '';
 
   // Rich Text Editor
@@ -69,6 +70,8 @@ export class AdminComponent {
   blogLayout: 'grid' | 'list' | 'magazine' = 'grid';
   blogBannerUrl = '';
   isUploadingBlogBanner = false;
+  blogSections: string[] = [];
+  newSectionName = '';
 
   // Sponsor Banners
   blogSponsorUrl1 = '';
@@ -153,11 +156,50 @@ export class AdminComponent {
     this.blogFont = s.fontFamily;
     this.blogLayout = s.layoutType;
     this.blogBannerUrl = s.bannerUrl || '';
+    this.blogSections = s.sections ? [...s.sections] : ['Geral', 'Tech', 'Quadrinhos'];
     
     this.blogSponsorUrl1 = s.sponsorBannerUrl1 || '';
     this.blogSponsorLink1 = s.sponsorBannerLink1 || '';
     this.blogSponsorUrl2 = s.sponsorBannerUrl2 || '';
     this.blogSponsorLink2 = s.sponsorBannerLink2 || '';
+  }
+
+  readonly availableSections = computed(() => {
+    const targetId = this.targetBlogId;
+    const user = this.db.currentUser();
+    if (!targetId || targetId === user?.id) {
+      return this.blogSections;
+    }
+    const blogOwner = this.db.users().find(u => u.id === targetId);
+    return blogOwner?.blogSettings?.sections || ['Geral', 'Tech', 'Quadrinhos'];
+  });
+
+  addSection() {
+    const name = this.newSectionName.trim();
+    if (!name) return;
+    if (this.blogSections.includes(name)) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Seção Duplicada',
+        text: 'Esta seção já existe no seu blog.',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'OK',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return;
+    }
+    this.blogSections.push(name);
+    this.newSectionName = '';
+  }
+
+  removeSection(name: string) {
+    this.blogSections = this.blogSections.filter(s => s !== name);
   }
 
   setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization') {
@@ -169,6 +211,7 @@ export class AdminComponent {
       this.newPostSummary = '';
       this.newPostCoverUrl = '/images/cyberpunk_cover.png';
       this.newPostTags = 'Gamer, Geek, Tech';
+      this.newPostSection = '';
       this.targetBlogId = '';
     } else if (tab !== 'new-post') {
       this.editingArticleId.set(null);
@@ -454,7 +497,8 @@ export class AdminComponent {
       sponsorBannerUrl1: this.blogSponsorUrl1,
       sponsorBannerLink1: this.blogSponsorLink1,
       sponsorBannerUrl2: this.blogSponsorUrl2,
-      sponsorBannerLink2: this.blogSponsorLink2
+      sponsorBannerLink2: this.blogSponsorLink2,
+      sections: this.blogSections
     };
 
     this.db.updateBlogSettings(settings);
@@ -557,7 +601,8 @@ export class AdminComponent {
         tags,
         blogId: this.targetBlogId || user.id,
         status,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
+        section: this.newPostSection || ''
       });
       
       Swal.fire({
@@ -576,7 +621,8 @@ export class AdminComponent {
         this.newPostCoverUrl,
         tags,
         this.targetBlogId,
-        isDraft
+        isDraft,
+        this.newPostSection || ''
       );
 
       if (createdArticle && createdArticle.status === 'pending') {
@@ -621,6 +667,7 @@ export class AdminComponent {
     this.newPostContent = '';
     this.newPostCoverUrl = '/images/cyberpunk_cover.png';
     this.newPostTags = 'Gamer, Geek, Tech';
+    this.newPostSection = '';
     this.targetBlogId = '';
     this.clearEditorContent();
     this.editingArticleId.set(null);
@@ -635,6 +682,7 @@ export class AdminComponent {
     this.newPostContent = art.content;
     this.newPostCoverUrl = art.coverUrl;
     this.newPostTags = art.tags.join(', ');
+    this.newPostSection = art.section || '';
     this.targetBlogId = art.blogId !== art.authorId ? art.blogId : '';
     
     this.setTab('new-post');

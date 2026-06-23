@@ -59,11 +59,16 @@
             <!-- Title -->
             <h1 class="article-title">{{ art.title }}</h1>
 
-            <!-- Tags -->
-            <div class="article-tags">
-              @for (tag of art.tags; track tag) {
-                <span class="tag">#{{ tag }}</span>
+            <!-- Section & Tags -->
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
+              @if (art.section) {
+                <span class="section-badge">{{ art.section }}</span>
               }
+              <div class="article-tags" style="margin-bottom: 0;">
+                @for (tag of art.tags; track tag) {
+                  <span class="tag">#{{ tag }}</span>
+                }
+              </div>
             </div>
 
             <!-- Divider -->

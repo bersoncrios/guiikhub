@@ -1,4 +1,4 @@
-import { Component, computed, inject, effect } from '@angular/core';
+import { Component, computed, inject, effect, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -36,11 +36,32 @@ export class BlogComponent {
     return this.db.users().find(u => u.username === name) || null;
   });
 
+  // Selected Section Filter state
+  readonly selectedSection = signal<string>('Tudo');
+
+  // List of sections defined by the user
+  readonly blogSections = computed(() => {
+    const user = this.blogUser();
+    if (!user) return [];
+    return user.blogSettings?.sections || ['Geral', 'Tech', 'Quadrinhos'];
+  });
+
   // Get articles of the user's blog
   readonly blogArticles = computed(() => {
     const user = this.blogUser();
     if (!user) return [];
-    return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && (!art.status || art.status === 'published'));
+    const allArticles = this.db.articles().filter(art => (art.blogId || art.authorId) === user.id && (!art.status || art.status === 'published'));
+    
+    const filter = this.selectedSection();
+    if (filter === 'Tudo') {
+      return allArticles;
+    }
+    return allArticles.filter(art => {
+      if (filter === 'Geral') {
+        return art.section === 'Geral' || !art.section;
+      }
+      return art.section === filter;
+    });
   });
 
   readonly activeStatus = computed(() => {

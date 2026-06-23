@@ -422,3 +422,24 @@
   50% { transform: translateY(-15px); }
   100% { transform: translateY(0px); }
 }
+
+/* Section badge inside article view header */
+.section-badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--blog-primary);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: var(--blog-primary);
+    background: rgba(255, 255, 255, 0.08);
+  }
+}

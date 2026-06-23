@@ -13,6 +13,7 @@ export interface BlogSettings {
   sponsorBannerLink1?: string;
   sponsorBannerUrl2?: string;
   sponsorBannerLink2?: string;
+  sections?: string[];
 }
 
 export interface User {
@@ -45,6 +46,7 @@ export interface Article {
   tags: string[];
   likesCount: number;
   commentsCount: number;
+  section?: string;
 }
 
 export interface Comment {

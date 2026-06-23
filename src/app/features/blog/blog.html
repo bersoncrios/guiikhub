@@ -130,6 +130,26 @@
 
         <!-- Articles Feed Section -->
         <main class="blog-articles-container">
+          <!-- Section Filter Tabs -->
+          @if (blogSections().length > 0) {
+            <div class="blog-sections-nav">
+              <button 
+                class="section-nav-btn" 
+                [class.active]="selectedSection() === 'Tudo'" 
+                (click)="selectedSection.set('Tudo')">
+                Tudo
+              </button>
+              @for (sec of blogSections(); track sec) {
+                <button 
+                  class="section-nav-btn" 
+                  [class.active]="selectedSection() === sec" 
+                  (click)="selectedSection.set(sec)">
+                  {{ sec }}
+                </button>
+              }
+            </div>
+          }
+
           <!-- Layout: Grid -->
       @if (user.blogSettings.layoutType === 'grid') {
         <div class="layout-grid">
@@ -137,7 +157,12 @@
             <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
               <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
               <div class="card-body">
-                <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                  @if (art.section) {
+                    <span class="section-badge">{{ art.section }}</span>
+                  }
+                </div>
                 <h3 class="card-title">{{ art.title }}</h3>
                 <p class="card-summary">{{ art.summary }}</p>
                 <div class="card-footer">
@@ -163,6 +188,9 @@
               <div class="list-item-body">
                 <div class="list-item-meta">
                   <span>{{ art.createdAt | date:'mediumDate' }}</span>
+                  @if (art.section) {
+                    <span class="section-badge" style="margin-left: auto; margin-right: 1rem;">{{ art.section }}</span>
+                  }
                   <span class="likes-count">⚡ {{ art.likesCount }}</span>
                 </div>
                 <h3 class="card-title">{{ art.title }}</h3>
@@ -186,7 +214,12 @@
             <article class="custom-card hero-magazine-article" [routerLink]="['post', heroArt.slug]">
               <div class="magazine-hero-cover" [style.background-image]="'url(' + heroArt.coverUrl + ')'"></div>
               <div class="magazine-hero-body">
-                <span class="card-date">{{ heroArt.createdAt | date:'longDate' }}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                  <span class="card-date">{{ heroArt.createdAt | date:'longDate' }}</span>
+                  @if (heroArt.section) {
+                    <span class="section-badge">{{ heroArt.section }}</span>
+                  }
+                </div>
                 <h2 class="hero-title">{{ heroArt.title }}</h2>
                 <p class="hero-summary">{{ heroArt.summary }}</p>
                 <div class="card-footer">
@@ -207,7 +240,12 @@
               <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
                 <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
                 <div class="card-body">
-                  <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                    <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                    @if (art.section) {
+                      <span class="section-badge">{{ art.section }}</span>
+                    }
+                  </div>
                   <h3 class="card-title">{{ art.title }}</h3>
                   <p class="card-summary">{{ art.summary }}</p>
                   <div class="card-footer">
