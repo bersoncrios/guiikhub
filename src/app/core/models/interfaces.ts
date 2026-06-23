@@ -49,7 +49,7 @@ export interface Article {
   commentsCount: number;
   section?: string;
   newsletterSent?: boolean;
-  scheduledAt?: string;
+  scheduledAt?: string | null;
   scheduledNewsletter?: boolean;
 }
 

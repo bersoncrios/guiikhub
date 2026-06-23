@@ -1,4 +1,4 @@
-import { Component, signal, computed, effect, inject, ElementRef, ViewChild } from '@angular/core';
+import { Component, signal, computed, effect, inject, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import Swal from 'sweetalert2';
@@ -34,6 +34,12 @@ export class AdminComponent {
   targetBlogId = '';
   isScheduled = false;
   scheduledDateTime = '';
+
+  // Link selector autocomplete
+  showLinkSelector = false;
+  linkSearchQuery = signal('');
+  linkSelectorSelectedIndex = signal(0);
+  linkSelectorPosition = { top: 0, left: 0 };
 
   // Rich Text Editor
   @ViewChild('richEditor') richEditorRef!: ElementRef<HTMLDivElement>;
@@ -209,6 +215,17 @@ export class AdminComponent {
     return this.db.articles().find(a => a.id === id) || null;
   });
 
+  readonly filteredLinkArticles = computed(() => {
+    const query = this.linkSearchQuery().toLowerCase().trim();
+    const currentId = this.editingArticleId();
+    const list = this.myArticles().filter(art => art.id !== currentId && (!art.status || art.status === 'published'));
+    if (!query) return list;
+    return list.filter(art => 
+      art.title.toLowerCase().includes(query) || 
+      art.summary.toLowerCase().includes(query)
+    );
+  });
+
   addSection() {
     const name = this.newSectionName.trim();
     if (!name) return;
@@ -262,6 +279,7 @@ export class AdminComponent {
     const el = event.target as HTMLDivElement;
     this.newPostContent = el.innerHTML;
     this.editorHasContent.set(el.innerText.trim().length > 0);
+    this.checkLinkTrigger();
   }
 
   execFormat(command: string, value?: string) {
@@ -656,7 +674,7 @@ export class AdminComponent {
         status,
         updatedAt: new Date().toISOString(),
         section: this.newPostSection || '',
-        scheduledAt: scheduledAt || undefined,
+        scheduledAt: scheduledAt || null,
         scheduledNewsletter
       });
 
@@ -808,6 +826,181 @@ export class AdminComponent {
     });
 
     await this.db.sendNewsletter(art.id, art.blogId || art.authorId);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onClickOutside(event: MouseEvent) {
+    if (this.showLinkSelector) {
+      const target = event.target as HTMLElement;
+      const clickedInsideEditor = this.richEditorRef?.nativeElement?.contains(target);
+      const clickedInsideDropdown = target.closest('.internal-link-dropdown');
+      if (!clickedInsideEditor && !clickedInsideDropdown) {
+        this.showLinkSelector = false;
+      }
+    }
+  }
+
+  checkLinkTrigger() {
+    if (typeof window === 'undefined') return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      this.showLinkSelector = false;
+      return;
+    }
+    
+    const editorEl = this.richEditorRef.nativeElement;
+    const cursorRange = selection.getRangeAt(0);
+    
+    // Garantir que a seleção está dentro do editor
+    if (!editorEl.contains(cursorRange.commonAncestorContainer)) {
+      this.showLinkSelector = false;
+      return;
+    }
+
+    try {
+      // Obter o bloco/parágrafo atual para escanear localmente
+      const preCaretRange = cursorRange.cloneRange();
+      let blockNode = cursorRange.startContainer;
+      while (blockNode && blockNode.parentNode && blockNode.parentNode !== editorEl) {
+        blockNode = blockNode.parentNode;
+      }
+      preCaretRange.setStart(blockNode, 0);
+      
+      const textBeforeCursor = preCaretRange.toString();
+      const index = textBeforeCursor.lastIndexOf('[[');
+      
+      if (index !== -1) {
+        const queryText = textBeforeCursor.substring(index + 2);
+        // O gatilho fecha se houver um fecho ']]' no meio ou quebra de linha
+        if (!queryText.includes(']]') && !queryText.includes('\n')) {
+          this.showLinkSelector = true;
+          const prevQuery = this.linkSearchQuery();
+          this.linkSearchQuery.set(queryText);
+          if (prevQuery !== queryText) {
+            this.linkSelectorSelectedIndex.set(0);
+          }
+
+          // Obter coordenadas absolutas em relação à página (scrollY + scrollX)
+          const clonedRange = cursorRange.cloneRange();
+          const textNode = cursorRange.startContainer;
+          const cursorOffset = cursorRange.startOffset;
+          const scrollY = window.scrollY || window.pageYOffset;
+          const scrollX = window.scrollX || window.pageXOffset;
+
+          if (textNode.nodeType === Node.TEXT_NODE && cursorOffset > 0) {
+            clonedRange.setStart(textNode, cursorOffset - 1);
+            clonedRange.setEnd(textNode, cursorOffset);
+            const rect = clonedRange.getBoundingClientRect();
+            if (rect.top !== 0 || rect.left !== 0) {
+              this.linkSelectorPosition = {
+                top: rect.bottom + scrollY + 5,
+                left: rect.right + scrollX
+              };
+            } else {
+              const editorRect = editorEl.getBoundingClientRect();
+              this.linkSelectorPosition = {
+                top: editorRect.top + scrollY + 40,
+                left: editorRect.left + scrollX + 20
+              };
+            }
+          } else {
+            const rect = cursorRange.getBoundingClientRect();
+            if (rect.left !== 0 || rect.top !== 0) {
+              this.linkSelectorPosition = {
+                top: rect.bottom + scrollY + 5,
+                left: rect.left + scrollX
+              };
+            } else {
+              const editorRect = editorEl.getBoundingClientRect();
+              this.linkSelectorPosition = {
+                top: editorRect.top + scrollY + 40,
+                left: editorRect.left + scrollX + 20
+              };
+            }
+          }
+          return;
+        }
+      }
+    } catch (err) {
+      console.error('Erro ao calcular gatilho de linkagem:', err);
+    }
+    
+    this.showLinkSelector = false;
+  }
+
+  onEditorKeydown(event: KeyboardEvent) {
+    if (this.showLinkSelector) {
+      const articles = this.filteredLinkArticles();
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.linkSelectorSelectedIndex.update(idx => (idx + 1) % (articles.length || 1));
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.linkSelectorSelectedIndex.update(idx => (idx - 1 + articles.length) % (articles.length || 1));
+      } else if (event.key === 'Enter') {
+        event.preventDefault();
+        if (articles.length > 0) {
+          this.insertInternalLink(articles[this.linkSelectorSelectedIndex()]);
+        } else {
+          this.showLinkSelector = false;
+        }
+      } else if (event.key === 'Escape') {
+        event.preventDefault();
+        this.showLinkSelector = false;
+      }
+    }
+  }
+
+  insertInternalLink(art: any) {
+    if (typeof window === 'undefined') return;
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+    const range = selection.getRangeAt(0);
+    
+    const textNode = range.startContainer;
+    if (textNode.nodeType !== Node.TEXT_NODE) return;
+    
+    const textContent = textNode.textContent || '';
+    const cursorOffset = range.startOffset;
+    const textBeforeCursor = textContent.substring(0, cursorOffset);
+    
+    const index = textBeforeCursor.lastIndexOf('[[');
+    if (index !== -1) {
+      // Definir a seleção do início do [[ até o cursor
+      range.setStart(textNode, index);
+      range.setEnd(textNode, cursorOffset);
+      range.deleteContents();
+      
+      // Criar nó do link
+      const link = document.createElement('a');
+      link.href = `/b/${art.authorUsername}/post/${art.slug}`;
+      link.className = 'internal-link';
+      link.innerText = art.title;
+      // Estilos customizados elegantes cyberpunk
+      link.style.color = '#00f0ff';
+      link.style.textDecoration = 'underline';
+      link.style.fontWeight = 'bold';
+      
+      range.insertNode(link);
+      
+      // Inserir espaço pós link
+      const space = document.createTextNode('\u00A0');
+      range.collapse(false);
+      range.insertNode(space);
+      
+      // Colocar o cursor depois do espaço
+      const newRange = document.createRange();
+      newRange.setStartAfter(space);
+      newRange.setEndAfter(space);
+      selection.removeAllRanges();
+      selection.addRange(newRange);
+      
+      this.syncEditorContent();
+    }
+    
+    this.showLinkSelector = false;
+    this.linkSearchQuery.set('');
+    this.richEditorRef.nativeElement.focus();
   }
 
   async onCoverFileSelected(event: Event) {

@@ -474,13 +474,14 @@
                 class="rich-editor-content"
                 contenteditable="true"
                 (input)="onEditorInput($event)"
-                data-placeholder="Escreva sua matéria aqui... Use a barra de ferramentas acima para formatar o texto.">
+                (keydown)="onEditorKeydown($event)"
+                data-placeholder="Escreva sua matéria aqui... Digite [[ para buscar e linkar posts anteriores.">
               </div>
 
               <!-- Word count / hint -->
               @if (!editorHasContent()) {
                 <div class="editor-hint">
-                  💡 Dica: selecione o texto e use a barra de ferramentas para formatar. Suporta títulos, negrito, listas e muito mais!
+                  💡 Dica: selecione o texto para formatar. Digite [[ a qualquer momento para buscar e linkar suas matérias anteriores!
                 </div>
               }
             </div>
@@ -1146,5 +1147,43 @@
         Powered by <span class="logo-geek">GUIIK</span><span class="logo-hub">HUB</span>
       </div>
     </div>
+  </div>
+}
+
+<!-- Floating Autocomplete dropdown for WikiLinks (viewport-fixed position) -->
+@if (showLinkSelector) {
+  <div 
+    class="internal-link-dropdown" 
+    [style.top.px]="linkSelectorPosition.top" 
+    [style.left.px]="linkSelectorPosition.left"
+    style="position: absolute; z-index: 100000; min-width: 280px; max-width: 400px; max-height: 250px; overflow-y: auto; background: #0c0e14; border: 1px solid rgba(0, 240, 255, 0.25); border-radius: 8px; box-shadow: 0 4px 20px rgba(0, 240, 255, 0.15); padding: 0.5rem 0; display: flex; flex-direction: column; gap: 0.25rem;"
+    (mousedown)="$event.preventDefault()">
+    
+    <div style="font-size: 0.7rem; color: #94a3b8; padding: 0.25rem 0.75rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; gap: 1rem; align-items: center; font-family: 'Space Grotesk', sans-serif; letter-spacing: 0.5px;">
+      <span style="font-weight: 700; color: #00f0ff;">🔗 LINKAR ANTERIOR</span>
+      <span style="font-size: 0.65rem; background: rgba(255,255,255,0.06); padding: 1px 4px; border-radius: 3px;">Navegue com ↑↓ Enter</span>
+    </div>
+    
+    @for (art of filteredLinkArticles(); track art.id; let idx = $index) {
+      <div 
+        (click)="insertInternalLink(art)"
+        (mouseenter)="linkSelectorSelectedIndex.set(idx)"
+        [class.active]="idx === linkSelectorSelectedIndex()"
+        class="dropdown-item"
+        style="padding: 0.5rem 0.75rem; cursor: pointer; display: flex; align-items: center; gap: 0.75rem; transition: background 0.15s; border-left: 2px solid transparent;"
+        [style.background]="idx === linkSelectorSelectedIndex() ? 'rgba(0, 240, 255, 0.08)' : 'transparent'"
+        [style.border-left-color]="idx === linkSelectorSelectedIndex() ? '#00f0ff' : 'transparent'">
+        
+        <img [src]="art.coverUrl" style="width: 32px; height: 32px; border-radius: 4px; object-fit: cover; border: 1px solid rgba(255,255,255,0.08);">
+        <div style="flex: 1; min-width: 0;">
+          <div style="font-size: 0.8rem; font-weight: bold; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px;">{{ art.title }}</div>
+          <div style="font-size: 0.68rem; color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ art.summary }}</div>
+        </div>
+      </div>
+    } @empty {
+      <div style="padding: 1rem 0.75rem; text-align: center; color: #94a3b8; font-size: 0.78rem;">
+        Nenhuma postagem publicada encontrada.
+      </div>
+    }
   </div>
 }

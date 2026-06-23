@@ -457,7 +457,7 @@ export class DbService {
       likesCount: 0,
       commentsCount: 0,
       section: section || '',
-      scheduledAt: scheduledAt || undefined,
+      scheduledAt: scheduledAt || null,
       scheduledNewsletter: scheduledNewsletter || false
     };
 
