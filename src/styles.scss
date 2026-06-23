@@ -342,6 +342,36 @@ textarea.form-control {
         box-shadow: 0 0 10px rgba(0, 240, 255, 0.05);
       }
     }
+
+    .nav-item-stumble {
+      color: #fff;
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: var(--radius-md);
+      background: linear-gradient(135deg, rgba(255, 0, 127, 0.15), rgba(0, 240, 255, 0.15));
+      border: 1px solid rgba(0, 240, 255, 0.4);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: var(--transition-normal);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      
+      &:hover {
+        transform: translateY(-1px);
+        background: linear-gradient(135deg, rgba(255, 0, 127, 0.3), rgba(0, 240, 255, 0.3));
+        border-color: #00f0ff;
+        box-shadow: 0 0 15px rgba(0, 240, 255, 0.4), 0 0 5px rgba(255, 0, 127, 0.3);
+        color: #fff;
+      }
+
+      &:active {
+        transform: translateY(0);
+      }
+    }
   }
 
   // Hamburger button — visible only on mobile
@@ -560,6 +590,33 @@ textarea.form-control {
         color: var(--secondary);
         background: rgba(0, 240, 255, 0.05);
         border-color: rgba(0, 240, 255, 0.15);
+      }
+    }
+
+    .nav-item-stumble-mobile {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.85rem 1rem;
+      border-radius: var(--radius-md);
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1rem;
+      text-decoration: none;
+      transition: var(--transition-fast);
+      cursor: pointer;
+      background: linear-gradient(135deg, rgba(255, 0, 127, 0.08), rgba(0, 240, 255, 0.08)) !important;
+      border: 1px solid rgba(0, 240, 255, 0.25) !important;
+      color: #00f0ff !important;
+      width: 100%;
+      text-align: left;
+      margin-top: 0.5rem;
+      
+      &:hover {
+        background: linear-gradient(135deg, rgba(255, 0, 127, 0.15), rgba(0, 240, 255, 0.15)) !important;
+        border-color: #00f0ff !important;
+        box-shadow: 0 0 10px rgba(0, 240, 255, 0.2) !important;
+        color: #fff !important;
       }
     }
 

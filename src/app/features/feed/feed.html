@@ -10,6 +10,7 @@
       @if (db.isAuthenticated()) {
         <a routerLink="/admin" class="nav-item">Studio Criador</a>
       }
+      <button class="nav-item-stumble" (click)="db.stumbleUpon()">🎲 Estou com Sorte</button>
     </nav>
 
     <div class="user-action-area">
@@ -56,6 +57,7 @@
     @if (db.isAuthenticated()) {
       <a routerLink="/admin" class="mobile-nav-item" (click)="closeMobileNav()">🎛️ Studio Criador</a>
     }
+    <button class="nav-item-stumble-mobile" (click)="db.stumbleUpon(); closeMobileNav()">🎲 Estou com Sorte</button>
 
     <div class="mobile-nav-divider"></div>
 

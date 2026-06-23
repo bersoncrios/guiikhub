@@ -1,4 +1,5 @@
 import { Injectable, signal, computed, inject } from '@angular/core';
+import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion } from '../models/interfaces';
 import { 
@@ -31,6 +32,7 @@ import {
 export class DbService {
   private readonly firestore = inject(Firestore);
   private readonly auth = inject(Auth);
+  private readonly router = inject(Router);
 
   // EmailJS Configuration
   private readonly emailjsServiceId = 'service_8dyxl0t';
@@ -890,5 +892,79 @@ export class DbService {
       },
       buttonsStyling: false
     });
+  }
+
+  async stumbleUpon() {
+    const candidates = this.articles().filter(art => {
+      const isPublished = (!art.status || art.status === 'published') &&
+                          (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now());
+      if (!isPublished) return false;
+      const engagementScore = (art.likesCount || 0) * 2 + (art.commentsCount || 0) * 3;
+      const hasEngagement = engagementScore >= 2;
+      const isNotEmpty = art.content && art.content.replace(/<[^>]*>/g, '').trim().length > 200;
+      return hasEngagement || isNotEmpty;
+    });
+
+    let selectedArticle: Article | null = null;
+    if (candidates.length > 0) {
+      const randomIndex = Math.floor(Math.random() * candidates.length);
+      selectedArticle = candidates[randomIndex];
+    } else {
+      const fallbackArticles = this.articles().filter(art => 
+        (!art.status || art.status === 'published') &&
+        (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
+      );
+      if (fallbackArticles.length > 0) {
+        const randomIndex = Math.floor(Math.random() * fallbackArticles.length);
+        selectedArticle = fallbackArticles[randomIndex];
+      }
+    }
+
+    if (!selectedArticle) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Nenhuma matéria encontrada',
+        text: 'Ainda não existem matérias publicadas no GuiikHub para descobrir!',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: '⚡ SINTONIZANDO MATÉRIA...',
+      html: `
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 1rem;">
+          <div class="cyber-spinner" style="width: 50px; height: 50px; border: 3px solid rgba(0,240,255,0.1); border-top: 3px solid #00f0ff; border-radius: 50%; animation: spinStumble 0.8s linear infinite;"></div>
+          <span style="font-size: 0.8rem; color: #94a3b8; font-family: 'Space Grotesk', sans-serif; letter-spacing: 1px;">EMBARCANDO EM CANAL ALEATÓRIO...</span>
+        </div>
+        <style>
+          @keyframes spinStumble {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        </style>
+      `,
+      showConfirmButton: false,
+      allowOutsideClick: false,
+      background: '#0d0e15',
+      color: '#00f0ff',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title'
+      }
+    });
+
+    setTimeout(() => {
+      Swal.close();
+      this.router.navigate(['/b', selectedArticle!.authorUsername, 'post', selectedArticle!.slug]);
+    }, 1000);
   }
 }

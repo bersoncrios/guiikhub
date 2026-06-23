@@ -8,6 +8,7 @@
     <nav class="main-nav">
       <a routerLink="/" class="nav-item">Feed</a>
       <a routerLink="/admin" class="nav-item active">Studio Criador</a>
+      <button class="nav-item-stumble" (click)="db.stumbleUpon()">🎲 Estou com Sorte</button>
     </nav>
 
     <div class="user-action-area">
@@ -52,6 +53,7 @@
 
     <a routerLink="/" class="mobile-nav-item" (click)="closeMobileNav()">🏠 Feed</a>
     <a routerLink="/admin" class="mobile-nav-item active" (click)="closeMobileNav()">🎛️ Studio Criador</a>
+    <button class="nav-item-stumble-mobile" (click)="db.stumbleUpon(); closeMobileNav()">🎲 Estou com Sorte</button>
 
     <div class="mobile-nav-divider"></div>
 
