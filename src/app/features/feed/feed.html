@@ -135,6 +135,22 @@
       </div>
     }
 
+    <!-- Feed Tabs (Descobrir vs Seguindo) -->
+    <div class="feed-tabs">
+      <button 
+        class="feed-tab-btn" 
+        [class.active]="activeFeedTab() === 'discover'" 
+        (click)="activeFeedTab.set('discover')">
+        🧭 Descobrir
+      </button>
+      <button 
+        class="feed-tab-btn" 
+        [class.active]="activeFeedTab() === 'following'" 
+        (click)="activeFeedTab.set('following')">
+        👥 Seguindo
+      </button>
+    </div>
+
     <!-- Search and Filters -->
     <div class="feed-header">
       <div class="search-wrapper">
@@ -159,56 +175,77 @@
 
     <!-- Articles List -->
     <div class="articles-list">
-      @for (article of filteredArticles(); track article.id) {
-        <article class="glass-card article-card" [routerLink]="['/b', article.authorUsername, 'post', article.slug]">
-          <div class="article-cover" [style.background-image]="'url(' + article.coverUrl + ')'">
-            <div class="article-category-badge">
-              {{ article.tags[0] || 'Geek' }}
-            </div>
-          </div>
-          <div class="article-body">
-            <div class="article-meta">
-              <a [routerLink]="['/b', article.authorUsername]" (click)="$event.stopPropagation()" class="author-link">
-                <img [src]="article.authorAvatarUrl" [alt]="article.authorDisplayName" class="avatar-xs">
-                <span>{{ article.authorDisplayName }}</span>
-              </a>
-              <span class="dot">•</span>
-              <span class="date">{{ article.createdAt | date:'mediumDate' }}</span>
-            </div>
-            
-            <h2 class="article-title">{{ article.title }}</h2>
-            <p class="article-summary">{{ article.summary }}</p>
-
-            <div class="article-footer">
-              <div class="tags">
-                @for (tag of article.tags.slice(0, 3); track tag) {
-                  <span class="tag-label">#{{ tag }}</span>
-                }
+      @if (activeFeedTab() === 'following' && !db.isAuthenticated()) {
+        <!-- Login CTA for following feed -->
+        <div class="glass-card follow-login-cta">
+          <div class="cta-icon">🔒</div>
+          <h3>Acompanhe quem você segue</h3>
+          <p>Conecte-se ao GuiikHub para visualizar um feed exclusivo com publicações dos criadores que você acompanha.</p>
+          <a routerLink="/auth" class="btn btn-primary">⚡ Entrar / Cadastrar</a>
+        </div>
+      } @else {
+        @for (article of filteredArticles(); track article.id) {
+          <article class="glass-card article-card" [routerLink]="['/b', article.authorUsername, 'post', article.slug]">
+            <div class="article-cover" [style.background-image]="'url(' + article.coverUrl + ')'">
+              <div class="article-category-badge">
+                {{ article.tags[0] || 'Geek' }}
               </div>
+            </div>
+            <div class="article-body">
+              <div class="article-meta">
+                <a [routerLink]="['/b', article.authorUsername]" (click)="$event.stopPropagation()" class="author-link">
+                  <img [src]="article.authorAvatarUrl" [alt]="article.authorDisplayName" class="avatar-xs">
+                  <span>{{ article.authorDisplayName }}</span>
+                </a>
+                <span class="dot">•</span>
+                <span class="date">{{ article.createdAt | date:'mediumDate' }}</span>
+              </div>
+              
+              <h2 class="article-title">{{ article.title }}</h2>
+              <p class="article-summary">{{ article.summary }}</p>
 
-              <div class="article-interactions">
-                <button 
-                  class="action-btn" 
-                  [class.liked]="db.isLiked(article.id)"
-                  (click)="toggleLike($event, article.id)">
-                  <span class="icon">⚡</span>
-                  <span class="count">{{ article.likesCount }}</span>
-                </button>
-                <div class="action-btn">
-                  <span class="icon">💬</span>
-                  <span class="count">{{ article.commentsCount }}</span>
+              <div class="article-footer">
+                <div class="tags">
+                  @for (tag of article.tags.slice(0, 3); track tag) {
+                    <span class="tag-label">#{{ tag }}</span>
+                  }
+                </div>
+
+                <div class="article-interactions">
+                  <button 
+                    class="action-btn" 
+                    [class.liked]="db.isLiked(article.id)"
+                    (click)="toggleLike($event, article.id)">
+                    <span class="icon">⚡</span>
+                    <span class="count">{{ article.likesCount }}</span>
+                  </button>
+                  <div class="action-btn">
+                    <span class="icon">💬</span>
+                    <span class="count">{{ article.commentsCount }}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </article>
-      } @empty {
-        <div class="glass-card empty-state">
-          <div class="empty-icon">👾</div>
-          <h3>Nenhuma matéria encontrada</h3>
-          <p>Tente alterar sua busca ou tag para descobrir novos conteúdos geek.</p>
-          <button class="btn btn-primary" (click)="searchQuery.set(''); selectTag(null)">Limpar Filtros</button>
-        </div>
+          </article>
+        } @empty {
+          @if (activeFeedTab() === 'following' && db.isAuthenticated()) {
+            <!-- Special Empty state for Following Feed -->
+            <div class="glass-card empty-state">
+              <div class="empty-icon">👥</div>
+              <h3>Seu feed de seguindo está vazio</h3>
+              <p>Você ainda não está seguindo nenhum criador ou eles ainda não publicaram matérias. Explore a aba de Descobrir para encontrar novas mentes nerds!</p>
+              <button class="btn btn-primary" (click)="activeFeedTab.set('discover')">🧭 Descobrir Criadores</button>
+            </div>
+          } @else {
+            <!-- Standard Empty State -->
+            <div class="glass-card empty-state">
+              <div class="empty-icon">👾</div>
+              <h3>Nenhuma matéria encontrada</h3>
+              <p>Tente alterar sua busca ou tag para descobrir novos conteúdos geek.</p>
+              <button class="btn btn-primary" (click)="searchQuery.set(''); selectTag(null)">Limpar Filtros</button>
+            </div>
+          }
+        }
       }
     </div>
   </section>

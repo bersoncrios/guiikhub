@@ -513,3 +513,87 @@
     }
   }
 }
+
+/* Feed Tab Selector (Seguindo vs Descobrir) */
+.feed-tabs {
+  display: flex;
+  gap: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.25rem;
+
+  .feed-tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.05rem;
+    font-weight: 700;
+    font-family: var(--font-display);
+    padding: 0.5rem 0.5rem 0.75rem;
+    cursor: pointer;
+    position: relative;
+    transition: var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    &:hover {
+      color: var(--text-main);
+    }
+
+    &.active {
+      color: var(--secondary);
+      text-shadow: var(--glow-secondary);
+
+      &::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: var(--secondary);
+        box-shadow: var(--glow-secondary);
+        border-radius: var(--radius-full);
+      }
+    }
+  }
+}
+
+/* Follow Login CTA Card */
+.follow-login-cta {
+  text-align: center;
+  padding: 4rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  background: rgba(20, 22, 35, 0.4);
+  backdrop-filter: blur(12px);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+
+  .cta-icon {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    filter: drop-shadow(var(--glow-secondary));
+  }
+
+  h3 {
+    font-size: 1.3rem;
+    color: var(--text-main);
+    font-family: var(--font-display);
+  }
+
+  p {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    max-width: 420px;
+    line-height: 1.6;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn {
+    padding: 0.75rem 2rem;
+    font-size: 0.9rem;
+  }
+}
