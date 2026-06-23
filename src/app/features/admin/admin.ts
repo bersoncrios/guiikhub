@@ -1546,6 +1546,24 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   async placeSpotlightBid() {
+    if (this.db.leilaoDiaAtual()?.finalizado) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Leilão Encerrado',
+        text: 'Não é possível enviar lances para um leilão já finalizado!',
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Entendido',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return;
+    }
+
     if (!this.selectedArticleForSpotlightId) {
       Swal.fire({
         icon: 'warning',

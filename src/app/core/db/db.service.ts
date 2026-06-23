@@ -1583,6 +1583,15 @@ export class DbService {
           return;
         }
 
+        // Fetch winner user data BEFORE any transaction writes (reads must precede writes in Firestore transactions)
+        let winnerUsername = '';
+        if (leilaoData.usuarioLiderId) {
+          const winnerRef = doc(this.firestore, `users/${leilaoData.usuarioLiderId}`);
+          const winnerSnap = await transaction.get(winnerRef);
+          const winnerData = winnerSnap.exists() ? (winnerSnap.data() as User) : null;
+          winnerUsername = winnerData ? winnerData.username : '';
+        }
+
         transaction.update(leilaoRef, { finalizado: true });
 
         if (leilaoData.usuarioLiderId) {
@@ -1597,11 +1606,6 @@ export class DbService {
             createdAt: new Date().toISOString()
           };
           transaction.set(logRef, burnLog);
-
-          const winnerRef = doc(this.firestore, `users/${leilaoData.usuarioLiderId}`);
-          const winnerSnap = await transaction.get(winnerRef);
-          const winnerData = winnerSnap.exists() ? (winnerSnap.data() as User) : null;
-          const winnerUsername = winnerData ? winnerData.username : '';
 
           transaction.set(spotlightRef, {
             id: 'feed_spotlight',

@@ -1177,40 +1177,50 @@
         <!-- Bid Form Card -->
         <div class="bid-form-card">
           <h3>💸 Dar um Lance</h3>
-          <form (submit)="$event.preventDefault()" class="studio-form">
-            <div class="form-group">
-              <label for="spotlightArticleSelect">Escolha sua Matéria para Destacar</label>
-              <select id="spotlightArticleSelect" name="spotlightArticleSelect"
-                [(ngModel)]="selectedArticleForSpotlightId" class="form-control">
-                <option value="" disabled selected>-- Selecione uma Matéria --</option>
-                @for (art of myArticles(); track art.id) {
-                @if (!art.status || art.status === 'published') {
-                <option [value]="art.id">{{ art.title }}</option>
-                }
-                }
-              </select>
-              <small class="form-help">Apenas matérias já publicadas estão qualificadas para o leilão.</small>
+          @if (db.leilaoDiaAtual()?.finalizado) {
+            <div class="auction-closed-notice" style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.2); padding: 1.5rem; border-radius: 12px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; height: calc(100% - 3.5rem); gap: 0.75rem; box-shadow: 0 0 15px rgba(239, 68, 68, 0.1);">
+              <span style="font-size: 2.2rem; filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.4));">🔒</span>
+              <h4 style="color: #ff6b6b; margin: 0; font-family: var(--font-display); font-size: 1.2rem; text-shadow: 0 0 8px rgba(239,68,68,0.2);">Leilão Encerrado</h4>
+              <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.5; max-width: 280px;">
+                Este leilão foi encerrado e consolidado pela administração do sistema. Novos lances não são mais permitidos para o dia de hoje.
+              </p>
             </div>
+          } @else {
+            <form (submit)="$event.preventDefault()" class="studio-form">
+              <div class="form-group">
+                <label for="spotlightArticleSelect">Escolha sua Matéria para Destacar</label>
+                <select id="spotlightArticleSelect" name="spotlightArticleSelect"
+                  [(ngModel)]="selectedArticleForSpotlightId" class="form-control">
+                  <option value="" disabled selected>-- Selecione uma Matéria --</option>
+                  @for (art of myArticles(); track art.id) {
+                  @if (!art.status || art.status === 'published') {
+                  <option [value]="art.id">{{ art.title }}</option>
+                  }
+                  }
+                </select>
+                <small class="form-help">Apenas matérias já publicadas estão qualificadas para o leilão.</small>
+              </div>
 
-            <div class="form-group">
-              <label for="bidAmountInput">Valor do Lance (Bits)</label>
-              <input type="number" id="bidAmountInput" name="bidAmountInput" [(ngModel)]="spotlightBidAmount"
-                class="form-control"
-                [min]="((db.leilaoDiaAtual()?.maiorLanceAtual || 0) === 0 ? 10 : (db.leilaoDiaAtual()?.maiorLanceAtual || 0) + 10)">
-              <small class="form-help">
-                Mínimo exigido: <strong>{{ (db.leilaoDiaAtual()?.maiorLanceAtual || 0) === 0 ? 10 :
-                  (db.leilaoDiaAtual()?.maiorLanceAtual || 0) + 10 }} Bits</strong>.
-                Seu saldo atual: <strong>🪙 {{ db.currentUser()?.bits_balance || 0 }} Bits</strong>.
-              </small>
-            </div>
+              <div class="form-group">
+                <label for="bidAmountInput">Valor do Lance (Bits)</label>
+                <input type="number" id="bidAmountInput" name="bidAmountInput" [(ngModel)]="spotlightBidAmount"
+                  class="form-control"
+                  [min]="((db.leilaoDiaAtual()?.maiorLanceAtual || 0) === 0 ? 10 : (db.leilaoDiaAtual()?.maiorLanceAtual || 0) + 10)">
+                <small class="form-help">
+                  Mínimo exigido: <strong>{{ (db.leilaoDiaAtual()?.maiorLanceAtual || 0) === 0 ? 10 :
+                    (db.leilaoDiaAtual()?.maiorLanceAtual || 0) + 10 }} Bits</strong>.
+                  Seu saldo atual: <strong>🪙 {{ db.currentUser()?.bits_balance || 0 }} Bits</strong>.
+                </small>
+              </div>
 
-            <div class="form-actions">
-              <button type="button" class="btn btn-primary" (click)="placeSpotlightBid()"
-                [disabled]="!selectedArticleForSpotlightId">
-                ⚡ Confirmar Lance
-              </button>
-            </div>
-          </form>
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary" (click)="placeSpotlightBid()"
+                  [disabled]="!selectedArticleForSpotlightId">
+                  ⚡ Confirmar Lance
+                </button>
+              </div>
+            </form>
+          }
         </div>
       </div>
 
