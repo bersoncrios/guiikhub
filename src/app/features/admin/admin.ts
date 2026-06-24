@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { DbService } from '../../core/db/db.service';
-import { BlogSettings } from '../../core/models/interfaces';
+import { BlogSettings, ShopItem } from '../../core/models/interfaces';
 
 @Component({
   selector: 'app-admin',
@@ -19,7 +19,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   // Navigation
-  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin'>('gamification');
+  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop'>('gamification');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
   closeMobileNav()  { this.mobileNavOpen.set(false); }
@@ -44,6 +44,33 @@ export class AdminComponent implements OnInit, OnDestroy {
   badgeIconUrl = '';
   badgeRewardBits = 0;
   isUploadingBadgeIcon = false;
+
+  // Shop Variables
+  newItemName = '';
+  newItemDescription = '';
+  newItemCost = 100;
+  newItemCategory: 'frame' | 'tag' | 'theme' | 'other' = 'frame';
+  newItemValue = '';
+  newItemImageUrl = '';
+  isCreatingShopItem = false;
+
+  // Dynamic frame/theme creator fields
+  useCustomStyling = false; // flag to toggle custom vs technical styling
+
+  // Custom Frame fields
+  frameColor1 = '#00f0ff';
+  frameColor2 = '#ff007f';
+  frameGlowColor = '#00f0ff';
+  frameShape: 'circle' | 'square' = 'circle';
+  frameAnimation: 'pulse' | 'rotate' | 'glitch' | 'fire' | 'none' = 'pulse';
+
+  // Custom Theme fields
+  themePrimaryColor = '#39ff14';
+  themeBgColor = '#020202';
+  themeCardBgColor = 'rgba(10, 15, 10, 0.8)';
+  themeTextColor = '#e2e8f0';
+  themeAccentColor = '#39ff14';
+  themeEffect: 'scanlines' | 'matrix' | 'none' = 'scanlines';
 
   // New Post Form
   newPostTitle = '';
@@ -304,7 +331,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.blogSections = this.blogSections.filter(s => s !== name);
   }
 
-  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin') {
+  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop') {
     this.activeTab.set(tab);
     if (tab === 'new-post' && !this.editingArticleId()) {
       // Clear editor when opening the new post tab for a NEW post
@@ -1818,5 +1845,116 @@ export class AdminComponent implements OnInit, OnDestroy {
         Swal.fire('Erro', 'Não foi possível remover o emblema.', 'error');
       }
     }
+  }
+
+  // --- CYBER-SHOP ACTIONS ---
+
+  async saveShopItem() {
+    let finalValue = this.newItemValue;
+    
+    if (this.useCustomStyling) {
+      if (this.newItemCategory === 'frame') {
+        finalValue = JSON.stringify({
+          isCustom: true,
+          color1: this.frameColor1,
+          color2: this.frameColor2,
+          glowColor: this.frameGlowColor,
+          shape: this.frameShape,
+          animation: this.frameAnimation
+        });
+      } else if (this.newItemCategory === 'theme') {
+        finalValue = JSON.stringify({
+          isCustom: true,
+          primaryColor: this.themePrimaryColor,
+          bgColor: this.themeBgColor,
+          cardBgColor: this.themeCardBgColor,
+          textColor: this.themeTextColor,
+          accentColor: this.themeAccentColor,
+          effect: this.themeEffect
+        });
+      }
+    }
+
+    if (!this.newItemName || !this.newItemDescription || (!finalValue && !this.useCustomStyling) || this.newItemCost <= 0) {
+      Swal.fire('Campos inválidos', 'Preencha o nome, descrição, valor/personalização e custo do item.', 'warning');
+      return;
+    }
+    this.isCreatingShopItem = true;
+    const success = await this.db.createShopItem(
+      this.newItemName,
+      this.newItemDescription,
+      this.newItemCost,
+      this.newItemCategory,
+      finalValue,
+      this.newItemImageUrl
+    );
+    this.isCreatingShopItem = false;
+    if (success) {
+      this.newItemName = '';
+      this.newItemDescription = '';
+      this.newItemCost = 100;
+      this.newItemCategory = 'frame';
+      this.newItemValue = '';
+      this.newItemImageUrl = '';
+      this.useCustomStyling = false;
+    }
+  }
+
+  async deleteShopItem(itemId: string) {
+    Swal.fire({
+      title: 'Excluir Item da Loja?',
+      text: 'Tem certeza que deseja remover este item cosmético da Cyber-Shop?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Remover',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        cancelButton: 'guiik-swal-confirm-btn'
+      },
+      buttonsStyling: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        await this.db.deleteShopItem(itemId);
+      }
+    });
+  }
+
+  async buyItem(itemId: string) {
+    const user = this.db.currentUser();
+    if (!user) {
+      Swal.fire('Aviso', 'Você precisa estar logado para comprar itens.', 'warning');
+      return;
+    }
+    await this.db.buyShopItem(user.id, itemId);
+  }
+
+  isPurchased(itemId: string): boolean {
+    const user = this.db.currentUser();
+    if (!user) return false;
+    return user.purchasedItems?.includes(itemId) || false;
+  }
+
+  async equipCosmetic(category: 'frame' | 'tag' | 'theme', itemValue: string) {
+    const user = this.db.currentUser();
+    if (!user) return;
+    await this.db.updateActiveCosmetic(user.id, category, itemValue);
+  }
+
+  isEquipped(category: 'frame' | 'tag' | 'theme', itemValue: string): boolean {
+    const user = this.db.currentUser();
+    if (!user) return false;
+    if (category === 'frame') return user.activeFrame === itemValue;
+    if (category === 'tag') return user.activeTag === itemValue;
+    if (category === 'theme') return user.activeTheme === itemValue;
+    return false;
+  }
+
+  getFilteredShopItems(category: 'frame' | 'tag' | 'theme' | 'other'): ShopItem[] {
+    return this.db.shopItems().filter(item => item.category === category);
   }
 }

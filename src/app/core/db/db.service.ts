@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem } from '../models/interfaces';
 import { 
   Firestore, 
   collection, 
@@ -57,6 +57,7 @@ export class DbService {
   // Gamification Signals and Computeds
   readonly gamificationLogs = signal<GamificationLog[]>([]);
   readonly badges = signal<Badge[]>([]);
+  readonly shopItems = signal<ShopItem[]>([]);
 
   readonly currentUserLevel = computed(() => {
     const user = this.currentUser();
@@ -138,6 +139,13 @@ export class DbService {
         this.users.set(data as User[]);
       }
       this.isUsersLoading.set(false);
+    });
+
+    // Sync Shop Items
+    collectionData(collection(this.firestore, 'shop_items'), { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.shopItems.set(data as ShopItem[]);
+      }
     });
 
     // 2. Sync Auth State
@@ -590,5 +598,147 @@ export class DbService {
 
   async sendNewsletter(articleId: string, blogId: string) {
     await this.newsletterService.sendNewsletter(articleId, blogId, this.follows(), this.users());
+  }
+
+  // --- CYBER-SHOP DELEGATES & HELPERS ---
+
+  getUserById(id: string): User | undefined {
+    return this.users().find(u => u.id === id);
+  }
+
+  getUserByUsername(username: string): User | undefined {
+    return this.users().find(u => u.username?.toLowerCase() === username?.toLowerCase());
+  }
+
+  async createShopItem(
+    name: string,
+    description: string,
+    cost: number,
+    category: 'frame' | 'tag' | 'theme' | 'other',
+    itemValue: string,
+    imageUrl?: string
+  ): Promise<boolean> {
+    return this.gamificationService.createShopItem(name, description, cost, category, itemValue, imageUrl);
+  }
+
+  async deleteShopItem(itemId: string): Promise<boolean> {
+    return this.gamificationService.deleteShopItem(itemId);
+  }
+
+  async buyShopItem(userId: string, itemId: string): Promise<boolean> {
+    return this.gamificationService.buyShopItem(userId, itemId);
+  }
+
+  async updateActiveCosmetic(userId: string, category: 'frame' | 'tag' | 'theme', itemValue: string): Promise<boolean> {
+    return this.gamificationService.updateActiveCosmetic(userId, category, itemValue);
+  }
+
+  getFrameClass(activeFrame: string | undefined): string {
+    if (!activeFrame) return '';
+    if (activeFrame.startsWith('{')) return 'custom-frame';
+    return activeFrame;
+  }
+
+  getFrameStyle(activeFrame: string | undefined): Record<string, string> {
+    if (!activeFrame) return {};
+    if (!activeFrame.startsWith('{')) return {};
+    try {
+      const config = JSON.parse(activeFrame);
+      const color1 = config.color1 || '#00f0ff';
+      const color2 = config.color2 || '#ff007f';
+      const glowColor = config.glowColor || '#00f0ff';
+      const shape = config.shape || 'circle';
+      const animType = config.animation || 'pulse';
+      
+      let animation = 'none';
+      if (animType === 'pulse') animation = 'frame-pulse 2s infinite alternate';
+      else if (animType === 'rotate') animation = 'matrix-rotate 4s linear infinite';
+      else if (animType === 'glitch') animation = 'glitch-anim 0.3s steps(2) infinite';
+      else if (animType === 'fire') animation = 'fire-flicker 1.5s ease-in-out infinite alternate';
+
+      const frameRad = shape === 'circle' ? '50%' : '12px';
+      const avatarRad = shape === 'circle' ? '50%' : '9px';
+
+      return {
+        '--frame-bg': `linear-gradient(45deg, ${color1}, ${color2})`,
+        '--frame-radius': frameRad,
+        '--avatar-radius': avatarRad,
+        '--frame-glow': `0 0 12px ${glowColor}`,
+        '--frame-animation': animation
+      };
+    } catch (e) {
+      console.error('Error parsing custom activeFrame:', e);
+      return {};
+    }
+  }
+
+  getThemeClass(activeTheme: string | undefined): string {
+    if (!activeTheme) return '';
+    if (activeTheme.startsWith('{')) {
+      try {
+        const config = JSON.parse(activeTheme);
+        let cls = 'theme-custom';
+        if (config.effect === 'scanlines') cls += ' theme-custom-scanlines';
+        if (config.effect === 'matrix') cls += ' theme-custom-matrix';
+        if (config.fontFamily === 'mono') cls += ' theme-custom-mono';
+        return cls;
+      } catch (e) {
+        return 'theme-custom';
+      }
+    }
+    return activeTheme;
+  }
+
+  getThemeStyleVariables(activeTheme: string | undefined): Record<string, string> {
+    if (!activeTheme) return {};
+    if (!activeTheme.startsWith('{')) {
+      if (activeTheme === 'theme-terminal') {
+        return {
+          'background-color': '#020202',
+          'color': '#39ff14',
+          'border': '1.5px solid #39ff14'
+        };
+      }
+      if (activeTheme === 'theme-matrix') {
+        return {
+          'background-color': '#000000',
+          'color': '#39ff14',
+          'border': '1.5px solid rgba(57, 255, 20, 0.25)'
+        };
+      }
+      return {};
+    }
+    try {
+      const config = JSON.parse(activeTheme);
+      return {
+        'background-color': config.bgColor || '#121420',
+        'color': config.primaryColor || '#00f0ff',
+        'border': `1.5px solid ${config.primaryColor || '#00f0ff'}`,
+        '--accent-green': config.primaryColor || '#39ff14',
+        '--blog-primary': config.primaryColor || '#39ff14',
+        '--blog-bg': config.bgColor || '#121420',
+        '--blog-card-bg': config.cardBgColor || 'rgba(255,255,255,0.02)',
+        '--blog-text': config.textColor || '#fff'
+      };
+    } catch (e) {
+      return {};
+    }
+  }
+
+  getThemeSymbol(activeTheme: string | undefined): string {
+    if (!activeTheme) return '🎨';
+    if (!activeTheme.startsWith('{')) {
+      if (activeTheme === 'theme-terminal') return '>_';
+      if (activeTheme === 'theme-matrix') return '10';
+      return '🎨';
+    }
+    try {
+      const config = JSON.parse(activeTheme);
+      if (config.effect === 'scanlines') return '>_';
+      if (config.effect === 'matrix') return '10';
+      return '🎨';
+    } catch (e) {
+      return '🎨';
+    }
   }
 }

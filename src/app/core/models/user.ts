@@ -16,4 +16,8 @@ export interface User {
   lastDailyRewardAt?: string;
   role?: 'admin' | 'creator';
   unlockedBadges?: string[];
+  purchasedItems?: string[];
+  activeFrame?: string;
+  activeTag?: string;
+  activeTheme?: string;
 }

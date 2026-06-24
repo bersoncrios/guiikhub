@@ -137,7 +137,7 @@ export class ArticleDetailComponent implements OnDestroy {
     if (s.fontFamily === 'Space Grotesk') fontStr = 'var(--font-display)';
     else if (s.fontFamily === 'Fira Code') fontStr = 'var(--font-mono)';
 
-    return {
+    const vars: Record<string, string> = {
       '--blog-bg': s.bgColor,
       '--blog-card-bg': s.cardBgColor,
       '--blog-border': 'rgba(255, 255, 255, 0.08)',
@@ -147,7 +147,28 @@ export class ArticleDetailComponent implements OnDestroy {
       '--blog-text-muted': '#94a3b8',
       '--blog-font-family': fontStr,
       '--blog-glow': `0 0 20px ${s.accentColor}40`
-    } as Record<string, string>;
+    };
+
+    // Overlay active shop theme settings if custom JSON config
+    if (user.activeTheme && user.activeTheme.startsWith('{')) {
+      try {
+        const config = JSON.parse(user.activeTheme);
+        if (config.primaryColor) vars['--blog-primary'] = config.primaryColor;
+        if (config.bgColor) vars['--blog-bg'] = config.bgColor;
+        if (config.cardBgColor) vars['--blog-card-bg'] = config.cardBgColor;
+        if (config.textColor) vars['--blog-text'] = config.textColor;
+        if (config.accentColor) vars['--blog-accent'] = config.accentColor;
+        else if (config.primaryColor) vars['--blog-accent'] = config.primaryColor;
+        
+        if (config.primaryColor) {
+          vars['--blog-glow'] = `0 0 20px ${config.primaryColor}50`;
+        }
+      } catch (e) {
+        console.error('Error parsing custom activeTheme variables:', e);
+      }
+    }
+
+    return vars;
   });
 
   private readonly seo = inject(SeoService);

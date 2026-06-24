@@ -21,7 +21,7 @@
   </div>
 } @else if (blogUser(); as user) {
   <!-- Wrap in custom style container to apply theme variables -->
-  <div class="blog-wrapper" [ngStyle]="customStyleVariables()">
+  <div class="blog-wrapper" [class]="db.getThemeClass(user.activeTheme)" [ngStyle]="customStyleVariables()">
     <!-- Minimal Header Navigation -->
     <header class="blog-header-nav">
       <div class="nav-content">
@@ -48,12 +48,17 @@
       <div class="hero-overlay"></div>
       <div class="hero-content">
         <div class="creator-badge">
-          <img [src]="user.avatarUrl" [alt]="user.displayName" class="creator-avatar">
+          <div class="avatar-wrapper size-lg" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)" style="width: 90px; height: 90px;">
+            <img [src]="user.avatarUrl" [alt]="user.displayName" class="creator-avatar" style="width: 100%; height: 100%; border: none; box-shadow: none;">
+          </div>
           <div class="creator-text">
             <h1>{{ user.blogSettings.title }}</h1>
             <p class="tagline">{{ user.blogSettings.tagline }}</p>
             <div class="creator-social-meta">
               <span>Escrito por <strong>{{ user.displayName }}</strong>
+                @if (user.activeTag; as activeTag) {
+                  <span class="user-prestige-tag">{{ activeTag }}</span>
+                }
                 @if (user.collaborators && user.collaborators.length > 0) {
                    + colaboradores
                 }

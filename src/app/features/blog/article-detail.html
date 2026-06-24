@@ -22,7 +22,7 @@
 } @else if (article(); as art) {
   @if (blogUser(); as user) {
     <!-- Wrap in custom style container to apply theme variables -->
-    <div class="blog-wrapper" [ngStyle]="customStyleVariables()">
+    <div class="blog-wrapper" [class]="db.getThemeClass(user.activeTheme)" [ngStyle]="customStyleVariables()">
       <!-- Scroll progress bar -->
       <div class="scroll-progress-bar" [style.width.%]="scrollPercent()"></div>
       
@@ -44,10 +44,15 @@
             <!-- Meta Details -->
             <div class="article-meta">
               <div class="author-info">
-                <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName" class="avatar-sm">
+                <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)">
+                  <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName">
+                </div>
                 <div>
                   <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                     <a [routerLink]="['/b', art.authorUsername]" class="author-name">{{ art.authorDisplayName }}</a>
+                    @if (user.activeTag; as activeTag) {
+                      <span class="user-prestige-tag">{{ activeTag }}</span>
+                    }
                     <div class="author-badges-inline" style="display: flex; gap: 4px;">
                       @for (badge of getUserBadges(user); track badge.id) {
                         <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blog-primary, #00f0ff); box-shadow: 0 0 5px rgba(0,240,255,0.2);">
@@ -151,10 +156,15 @@
           <div class="comments-list">
             @for (comment of articleComments(); track comment.id) {
               <div class="comment-item">
-                <img [src]="comment.authorAvatarUrl" [alt]="comment.authorDisplayName" class="avatar-sm">
+                <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(db.getUserByUsername(comment.authorUsername)?.activeFrame)" [ngStyle]="db.getFrameStyle(db.getUserByUsername(comment.authorUsername)?.activeFrame)">
+                  <img [src]="comment.authorAvatarUrl" [alt]="comment.authorDisplayName">
+                </div>
                 <div class="comment-bubble">
                   <div class="comment-header">
                     <span class="comment-author" [routerLink]="['/b', comment.authorUsername]">{{ comment.authorDisplayName }}</span>
+                    @if (db.getUserByUsername(comment.authorUsername)?.activeTag; as activeTag) {
+                      <span class="user-prestige-tag">{{ activeTag }}</span>
+                    }
                     <span class="comment-handle">&#64;{{ comment.authorUsername }}</span>
                     <span class="comment-date">{{ comment.createdAt | date:'shortTime' }}</span>
                   </div>

@@ -866,4 +866,159 @@ export class GamificationService {
       return false;
     }
   }
+
+  async createShopItem(
+    name: string,
+    description: string,
+    cost: number,
+    category: 'frame' | 'tag' | 'theme' | 'other',
+    itemValue: string,
+    imageUrl?: string
+  ): Promise<boolean> {
+    try {
+      const id = 'shop_' + Date.now();
+      const newItem = {
+        id,
+        name,
+        description,
+        cost,
+        category,
+        itemValue,
+        imageUrl: imageUrl || '',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.firestore, `shop_items/${id}`), newItem);
+      Swal.fire({
+        icon: 'success',
+        title: 'Item de Loja Criado!',
+        text: `O item "${name}" foi cadastrado na Cyber-Shop com sucesso.`,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return true;
+    } catch (err) {
+      console.error('Erro ao criar item de loja:', err);
+      Swal.fire('Erro', 'Não foi possível cadastrar o item na loja.', 'error');
+      return false;
+    }
+  }
+
+  async deleteShopItem(itemId: string): Promise<boolean> {
+    try {
+      await deleteDoc(doc(this.firestore, `shop_items/${itemId}`));
+      Swal.fire({
+        icon: 'success',
+        title: 'Item Excluído',
+        text: 'O item cosmético foi removido da Cyber-Shop.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return true;
+    } catch (err) {
+      console.error('Erro ao excluir item de loja:', err);
+      Swal.fire('Erro', 'Não foi possível excluir o item cosmético.', 'error');
+      return false;
+    }
+  }
+
+  async buyShopItem(userId: string, itemId: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const itemRef = doc(this.firestore, `shop_items/${itemId}`);
+      const logId = 'glog_' + Date.now() + '_buy_' + Math.random().toString(36).substring(2, 7);
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      const result = await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        const itemDoc = await transaction.get(itemRef);
+
+        if (!userDoc.exists() || !itemDoc.exists()) {
+          throw new Error('Usuário ou item da loja não encontrado.');
+        }
+
+        const userData = userDoc.data() as User;
+        const itemData = itemDoc.data() as any;
+
+        const purchased = userData.purchasedItems || [];
+        if (purchased.includes(itemId)) {
+          throw new Error('Você já adquiriu este item cosmético!');
+        }
+
+        const cost = itemData.cost || 0;
+        const balance = userData.bits_balance || 0;
+        if (balance < cost) {
+          throw new Error(`Saldo de Bits insuficiente. O item custa ${cost} Bits e você tem ${balance} Bits.`);
+        }
+
+        const newPurchased = [...purchased, itemId];
+        transaction.update(userRef, {
+          bits_balance: balance - cost,
+          purchasedItems: newPurchased
+        });
+
+        const spendLog: GamificationLog = {
+          id: logId,
+          userId,
+          typeAction: 'spend',
+          amount: cost,
+          description: `Comprou o item cosmético: ${itemData.name} por ${cost} Bits`,
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, spendLog);
+        return itemData.name;
+      });
+
+      if (result) {
+        Swal.fire({
+          icon: 'success',
+          title: '🛍️ ITEM ADQUIRIDO!',
+          text: `Você comprou "${result}" com sucesso! Vá ao seu perfil para equipá-lo.`,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+        return true;
+      }
+      return false;
+    } catch (err: any) {
+      console.error('Erro ao comprar item cosmético:', err);
+      Swal.fire('Erro na Compra', err.message || 'Erro ao realizar a transação.', 'error');
+      return false;
+    }
+  }
+
+  async updateActiveCosmetic(
+    userId: string, 
+    category: 'frame' | 'tag' | 'theme', 
+    itemValue: string
+  ): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const updates: any = {};
+      if (category === 'frame') {
+        updates.activeFrame = itemValue;
+      } else if (category === 'tag') {
+        updates.activeTag = itemValue;
+      } else if (category === 'theme') {
+        updates.activeTheme = itemValue;
+      }
+      await updateDoc(userRef, updates);
+      
+      Swal.fire({
+        icon: 'success',
+        title: 'Cosmético Equipado!',
+        text: 'Sua customização visual foi alterada com sucesso.',
+        background: '#121420',
+        color: '#f1f5f9',
+        timer: 1500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return true;
+    } catch (err) {
+      console.error('Erro ao equipar cosmético:', err);
+      Swal.fire('Erro', 'Não foi possível equipar o cosmético.', 'error');
+      return false;
+    }
+  }
 }

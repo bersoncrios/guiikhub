@@ -827,4 +827,257 @@ textarea.form-control {
   }
 }
 
+/* ==========================================================================
+   CYBER-SHOP COSMETIC ELEMENTS
+   ========================================================================== */
+
+/* 1. Avatar Frames */
+.avatar-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--frame-bg, transparent);
+  border-radius: var(--frame-radius, 50%);
+  padding: 3px;
+  box-shadow: var(--frame-glow, none);
+  animation: var(--frame-animation, none);
+  
+  img {
+    border-radius: var(--avatar-radius, 50%);
+    object-fit: cover;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  &.size-xs { width: 28px; height: 28px; padding: 1.5px; }
+  &.size-sm { width: 38px; height: 38px; padding: 2px; }
+  &.size-md { width: 46px; height: 46px; padding: 2.5px; }
+  &.size-lg { width: 86px; height: 86px; padding: 4px; }
+
+  /* Neon Pulsing Frame */
+  &.frame-neon-pulsing {
+    background: linear-gradient(45deg, #00f0ff, #ff007f);
+    animation: frame-pulse 2s infinite alternate;
+    box-shadow: 0 0 10px rgba(0, 240, 255, 0.5), 0 0 20px rgba(255, 0, 127, 0.3);
+  }
+
+  /* Matrix Rain Digital Frame */
+  &.frame-matrix {
+    background: linear-gradient(180deg, #39ff14, #003300);
+    animation: matrix-rotate 4s linear infinite;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.6);
+  }
+
+  /* Glitch Hologram Frame */
+  &.frame-glitch {
+    background: linear-gradient(90deg, #ff0055, #00ffaa);
+    animation: glitch-anim 0.3s steps(2) infinite;
+    box-shadow: 0 0 8px rgba(255, 0, 85, 0.4), 0 0 8px rgba(0, 255, 170, 0.4);
+  }
+
+  /* Cybernetic Fire Frame */
+  &.frame-fire {
+    background: linear-gradient(0deg, #ff5500, #ffea00);
+    animation: fire-flicker 1.5s ease-in-out infinite alternate;
+    box-shadow: 0 0 15px rgba(255, 85, 0, 0.7);
+  }
+}
+
+/* Animations for Avatar Frames */
+@keyframes frame-pulse {
+  0% {
+    box-shadow: 0 0 5px rgba(0, 240, 255, 0.4), 0 0 10px rgba(255, 0, 127, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.8), 0 0 25px rgba(255, 0, 127, 0.5);
+  }
+}
+
+@keyframes matrix-rotate {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes glitch-anim {
+  0% { filter: hue-rotate(0deg); transform: skew(0deg); }
+  50% { filter: hue-rotate(90deg) contrast(1.2); transform: skew(2deg) scale(1.02); }
+  100% { filter: hue-rotate(360deg); transform: skew(-1deg); }
+}
+
+@keyframes fire-flicker {
+  0% {
+    box-shadow: 0 0 10px rgba(255, 85, 0, 0.5), 0 0 5px rgba(255, 234, 0, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 85, 0, 0.8), 0 0 15px rgba(255, 234, 0, 0.6);
+  }
+  100% {
+    box-shadow: 0 0 15px rgba(255, 85, 0, 0.6), 0 0 8px rgba(255, 234, 0, 0.4);
+  }
+}
+
+/* 2. Prestige Tags */
+.user-prestige-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.7rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+  background: rgba(0, 240, 255, 0.1);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.3);
+  text-shadow: 0 0 5px rgba(0, 240, 255, 0.5);
+}
+
+/* 3. Creator Blog Background Themes */
+/* Terminal Retro Theme */
+.theme-terminal {
+  background-color: #020202 !important;
+  background-image: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)) !important;
+  background-size: 100% 4px, 6px 100% !important;
+  color: #39ff14 !important;
+  text-shadow: 0 0 4px rgba(57, 255, 20, 0.5) !important;
+  font-family: var(--font-mono) !important;
+  
+  .glass-card, .article-card, .comment-box, .comments-list {
+    background: rgba(10, 15, 10, 0.8) !important;
+    border: 1px solid #39ff14 !important;
+    color: #39ff14 !important;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.2) !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, strong, span, p, a {
+    color: #39ff14 !important;
+    text-shadow: 0 0 5px rgba(57, 255, 20, 0.6) !important;
+  }
+  
+  .btn-primary {
+    background: transparent !important;
+    border: 1px solid #39ff14 !important;
+    color: #39ff14 !important;
+    box-shadow: 0 0 10px rgba(57, 255, 20, 0.3) !important;
+    &:hover {
+      background: #39ff14 !important;
+      color: #000 !important;
+      box-shadow: 0 0 20px #39ff14 !important;
+    }
+  }
+}
+
+/* Matrix Code Theme */
+.theme-matrix {
+  background-color: #000000 !important;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: "1001101110100101100101110100101011001011101001";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    color: rgba(57, 255, 20, 0.08);
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.2;
+    word-wrap: break-word;
+    pointer-events: none;
+    z-index: 0;
+    animation: matrix-scroll 20s linear infinite;
+  }
+
+  .glass-card, .article-card, .comment-box, .comments-list {
+    background: rgba(0, 5, 0, 0.85) !important;
+    border: 1px solid rgba(57, 255, 20, 0.25) !important;
+    color: #88ff88 !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, strong, span, p, a {
+    color: #39ff14 !important;
+  }
+}
+
+@keyframes matrix-scroll {
+  0% { transform: translateY(-5%); }
+  100% { transform: translateY(5%); }
+}
+
+/* Dynamic Custom Theme Classes */
+.theme-custom {
+  background-color: var(--blog-bg) !important;
+  color: var(--blog-text) !important;
+  
+  .glass-card, .article-card, .comment-box, .comments-list {
+    background: var(--blog-card-bg) !important;
+    border: 1px solid var(--blog-primary) !important;
+    color: var(--blog-text) !important;
+    box-shadow: var(--blog-glow) !important;
+  }
+  
+  h1, h2, h3, h4, h5, h6, strong, span, p, a {
+    color: var(--blog-text) !important;
+  }
+  
+  .btn-primary {
+    background: transparent !important;
+    border: 1px solid var(--blog-primary) !important;
+    color: var(--blog-primary) !important;
+    box-shadow: var(--blog-glow) !important;
+    &:hover {
+      background: var(--blog-primary) !important;
+      color: var(--blog-bg) !important;
+      box-shadow: var(--blog-glow) !important;
+    }
+  }
+}
+
+.theme-custom-scanlines {
+  background-image: 
+    linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+    linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)) !important;
+  background-size: 100% 4px, 6px 100% !important;
+  text-shadow: 0 0 4px var(--blog-primary) !important;
+  
+  h1, h2, h3, h4, h5, h6, strong, span, p, a {
+    text-shadow: 0 0 5px var(--blog-primary) !important;
+  }
+}
+
+.theme-custom-matrix {
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: "1001101110100101100101110100101011001011101001";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    color: rgba(57, 255, 20, 0.08);
+    font-family: monospace;
+    font-size: 14px;
+    line-height: 1.2;
+    word-wrap: break-word;
+    pointer-events: none;
+    z-index: 0;
+    animation: matrix-scroll 20s linear infinite;
+  }
+}
+
+.theme-custom-mono {
+  font-family: var(--font-mono) !important;
+}
+
+
 

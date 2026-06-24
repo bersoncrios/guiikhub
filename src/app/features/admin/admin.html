@@ -134,6 +134,9 @@
       <button class="menu-btn" [class.active]="activeTab() === 'monetization'" (click)="setTab('monetization')">
         <span class="icon">💰</span> Monetização
       </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'shop'" (click)="setTab('shop')">
+        <span class="icon">🛍️</span> Cyber-Shop
+      </button>
     </div>
   </aside>
 
@@ -1034,6 +1037,166 @@
       </form>
     </div>
     }
+    
+    <!-- Active Tab: Cyber-Shop Customizações -->
+    @if (activeTab() === 'shop') {
+    <div class="glass-card work-card shop-dashboard" style="display: flex; flex-direction: column; gap: 1.5rem;">
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 1rem;">
+        <div>
+          <h2 style="font-family: var(--font-display); color: #fff; margin: 0; font-size: 1.5rem; letter-spacing: -0.5px;">🛍️ Cyber-Shop Customizações</h2>
+          <p style="font-size: 0.8rem; color: var(--text-muted); margin: 4px 0 0 0;">Adquira molduras neon, títulos de prestígio e temas dinâmicos usando seus Bits!</p>
+        </div>
+        <div style="background: rgba(0, 240, 255, 0.1); border: 1px solid rgba(0, 240, 255, 0.2); padding: 0.5rem 1rem; border-radius: 8px; font-weight: 700; color: #00f0ff;">
+          🪙 Saldo: {{ db.currentUser()?.bits_balance || 0 }} Bits
+        </div>
+      </div>
+
+      <!-- Shop Categories Grid -->
+      <div style="display: flex; flex-direction: column; gap: 2rem;">
+        
+        <!-- Category: Frames -->
+        <div>
+          <h3 style="color: #00f0ff; margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🖼️</span> Molduras de Avatar (Neon Frames)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+            @for (item of getFilteredShopItems('frame'); track item.id) {
+              <div class="glass-card item-shop-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; position: relative;">
+                <div style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.8rem; font-weight: 700; color: #ffd700;">
+                  🪙 {{ item.cost }}
+                </div>
+                
+                <!-- Frame Preview Wrapper -->
+                <div class="avatar-wrapper size-lg" [class]="db.getFrameClass(item.itemValue)" [ngStyle]="db.getFrameStyle(item.itemValue)" style="margin: 0.5rem 0;">
+                  <img [src]="db.currentUser()?.avatarUrl || '/images/default-avatar.svg'" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                </div>
+
+                <strong style="color: #fff; font-size: 0.95rem;">{{ item.name }}</strong>
+                <p style="font-size: 0.75rem; color: var(--text-muted); min-height: 36px; margin: 0;">{{ item.description }}</p>
+
+                <!-- Actions -->
+                <div style="width: 100%; margin-top: 0.25rem;">
+                  @if (!isPurchased(item.id)) {
+                    <button class="btn btn-primary btn-sm" (click)="buyItem(item.id)" style="width: 100%; justify-content: center;">
+                      Comprar por {{ item.cost }} Bits
+                    </button>
+                  } @else {
+                    @if (isEquipped('frame', item.itemValue)) {
+                      <button class="btn btn-secondary btn-sm" (click)="equipCosmetic('frame', '')" style="width: 100%; justify-content: center; background: rgba(255,0,127,0.1); border-color: rgba(255,0,127,0.3); color: #ff007f;">
+                        Remover Moldura
+                      </button>
+                    } @else {
+                      <button class="btn btn-secondary btn-sm" (click)="equipCosmetic('frame', item.itemValue)" style="width: 100%; justify-content: center;">
+                        Equipar Moldura
+                      </button>
+                    }
+                  }
+                </div>
+              </div>
+            } @empty {
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhuma moldura disponível no momento.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Category: Tags -->
+        <div>
+          <h3 style="color: #ff007f; margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🏷️</span> Títulos de Prestígio (Tags)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+            @for (item of getFilteredShopItems('tag'); track item.id) {
+              <div class="glass-card item-shop-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; position: relative;">
+                <div style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.8rem; font-weight: 700; color: #ffd700;">
+                  🪙 {{ item.cost }}
+                </div>
+                
+                <!-- Tag Preview -->
+                <div style="margin: 0.75rem 0; min-height: 24px;">
+                  <span class="user-prestige-tag" style="margin: 0; font-size: 0.8rem; padding: 4px 10px;">{{ item.itemValue }}</span>
+                </div>
+
+                <strong style="color: #fff; font-size: 0.95rem;">{{ item.name }}</strong>
+                <p style="font-size: 0.75rem; color: var(--text-muted); min-height: 36px; margin: 0;">{{ item.description }}</p>
+
+                <!-- Actions -->
+                <div style="width: 100%; margin-top: 0.25rem;">
+                  @if (!isPurchased(item.id)) {
+                    <button class="btn btn-primary btn-sm" (click)="buyItem(item.id)" style="width: 100%; justify-content: center;">
+                      Comprar por {{ item.cost }} Bits
+                    </button>
+                  } @else {
+                    @if (isEquipped('tag', item.itemValue)) {
+                      <button class="btn btn-secondary btn-sm" (click)="equipCosmetic('tag', '')" style="width: 100%; justify-content: center; background: rgba(255,0,127,0.1); border-color: rgba(255,0,127,0.3); color: #ff007f;">
+                        Desequipar Tag
+                      </button>
+                    } @else {
+                      <button class="btn btn-secondary btn-sm" (click)="equipCosmetic('tag', item.itemValue)" style="width: 100%; justify-content: center;">
+                        Equipar Tag
+                      </button>
+                    }
+                  }
+                </div>
+              </div>
+            } @empty {
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhuma tag de prestígio disponível no momento.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Category: Themes -->
+        <div>
+          <h3 style="color: #39ff14; margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🎨</span> Temas Dinâmicos de Blog (Fundo)
+          </h3>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem;">
+            @for (item of getFilteredShopItems('theme'); track item.id) {
+              <div class="glass-card item-shop-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 1.25rem; display: flex; flex-direction: column; align-items: center; text-align: center; gap: 0.75rem; position: relative;">
+                <div style="position: absolute; top: 0.5rem; right: 0.5rem; font-size: 0.8rem; font-weight: 700; color: #ffd700;">
+                  🪙 {{ item.cost }}
+                </div>
+                
+                <!-- Theme Visual Symbol -->
+                <div style="margin: 0.5rem 0; width: 50px; height: 50px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-family: monospace; font-size: 1.2rem; font-weight: bold;"
+                  [class]="db.getThemeClass(item.itemValue)"
+                  [ngStyle]="db.getThemeStyleVariables(item.itemValue)">
+                  {{ db.getThemeSymbol(item.itemValue) }}
+                </div>
+
+                <strong style="color: #fff; font-size: 0.95rem;">{{ item.name }}</strong>
+                <p style="font-size: 0.75rem; color: var(--text-muted); min-height: 36px; margin: 0;">{{ item.description }}</p>
+
+                <!-- Actions -->
+                <div style="width: 100%; margin-top: 0.25rem;">
+                  @if (!isPurchased(item.id)) {
+                    <button class="btn btn-primary btn-sm" (click)="buyItem(item.id)" style="width: 100%; justify-content: center;">
+                      Comprar por {{ item.cost }} Bits
+                    </button>
+                  } @else {
+                    @if (isEquipped('theme', item.itemValue)) {
+                      <button class="btn btn-secondary btn-sm" (click)="equipCosmetic('theme', '')" style="width: 100%; justify-content: center; background: rgba(255,0,127,0.1); border-color: rgba(255,0,127,0.3); color: #ff007f;">
+                        Desativar Tema
+                      </button>
+                    } @else {
+                      <button class="btn btn-secondary btn-sm" (click)="equipCosmetic('theme', item.itemValue)" style="width: 100%; justify-content: center;">
+                        Ativar Tema
+                      </button>
+                    }
+                  }
+                </div>
+              </div>
+            } @empty {
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum tema dinâmico disponível no momento.</p>
+            }
+          </div>
+        </div>
+
+      </div>
+    </div>
+    }
 
     <!-- Active Tab: Gamification Dashboard -->
     @if (activeTab() === 'gamification') {
@@ -1483,6 +1646,184 @@
             } @empty {
             <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum emblema cadastrado no
               sistema ainda. Cadastre um acima!</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Create Custom Shop Item Form -->
+      <div class="grant-balance-card"
+        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+        <h3>🛍️ Gerenciar Itens da Cyber-Shop (Loja)</h3>
+        <form (submit)="$event.preventDefault()" class="studio-form">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="shopItemNameInput">Nome do Item Cosmético</label>
+              <input type="text" id="shopItemNameInput" name="shopItemNameInput" [(ngModel)]="newItemName" class="form-control"
+                placeholder="Ex: Moldura Matrix Neon" required>
+            </div>
+
+            <div class="form-group">
+              <label for="shopItemCategorySelect">Categoria do Item</label>
+              <select id="shopItemCategorySelect" name="shopItemCategorySelect" [(ngModel)]="newItemCategory" class="form-control">
+                <option value="frame">🖼️ Moldura de Avatar</option>
+                <option value="tag">🏷️ Tag de Status (Prestígio)</option>
+                <option value="theme">🎨 Tema de Background</option>
+                <option value="other">📦 Outro</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="shopItemCostInput">Custo em Bits</label>
+              <input type="number" id="shopItemCostInput" name="shopItemCostInput" [(ngModel)]="newItemCost"
+                class="form-control" min="1" required>
+            </div>
+
+            @if (!useCustomStyling) {
+              <div class="form-group">
+                <label for="shopItemValueInput">Valor Técnico (Classe CSS ou Texto da Tag)</label>
+                <input type="text" id="shopItemValueInput" name="shopItemValueInput" [(ngModel)]="newItemValue"
+                  class="form-control" placeholder="Ex: frame-matrix ou [Netrunner]" required>
+              </div>
+            }
+          </div>
+
+          <!-- Advanced Customization Toggle -->
+          @if (newItemCategory === 'frame' || newItemCategory === 'theme') {
+            <div class="form-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(0,240,255,0.05); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px dashed rgba(0,240,255,0.2);">
+              <input type="checkbox" id="useCustomStylingCheckbox" name="useCustomStylingCheckbox" [(ngModel)]="useCustomStyling" style="cursor: pointer; width: 16px; height: 16px;">
+              <label for="useCustomStylingCheckbox" style="margin: 0; cursor: pointer; color: #00f0ff; font-weight: 600; font-size: 0.85rem;">🎨 Ativar Personalização Avançada (Cores, Efeitos e Formas)</label>
+            </div>
+          }
+
+          <!-- Custom Frame Creator Fields -->
+          @if (useCustomStyling && newItemCategory === 'frame') {
+            <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label for="frameColor1Input">Cor Inicial do Gradiente</label>
+                <input type="color" id="frameColor1Input" name="frameColor1Input" [(ngModel)]="frameColor1" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+              <div class="form-group">
+                <label for="frameColor2Input">Cor Final do Gradiente</label>
+                <input type="color" id="frameColor2Input" name="frameColor2Input" [(ngModel)]="frameColor2" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+              <div class="form-group">
+                <label for="frameGlowColorInput">Cor do Brilho (Neon)</label>
+                <input type="color" id="frameGlowColorInput" name="frameGlowColorInput" [(ngModel)]="frameGlowColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+            </div>
+            
+            <div class="form-row-2" style="margin-bottom: 1rem;">
+              <div class="form-group">
+                <label for="frameShapeSelect">Formato da Moldura</label>
+                <select id="frameShapeSelect" name="frameShapeSelect" [(ngModel)]="frameShape" class="form-control">
+                  <option value="circle">🟢 Círculo (Padrão)</option>
+                  <option value="square">🔲 Quadrado com Bordas Arredondadas</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="frameAnimSelect">Efeito de Animação</label>
+                <select id="frameAnimSelect" name="frameAnimSelect" [(ngModel)]="frameAnimation" class="form-control">
+                  <option value="pulse">💗 Neon Pulsante</option>
+                  <option value="rotate">🔄 Chuva Matrix Rotativa</option>
+                  <option value="glitch">⚡ Glitch Holográfico</option>
+                  <option value="fire">🔥 Fogo Cibernético</option>
+                  <option value="none">❌ Sem Animação</option>
+                </select>
+              </div>
+            </div>
+          }
+
+          <!-- Custom Theme Creator Fields -->
+          @if (useCustomStyling && newItemCategory === 'theme') {
+            <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label for="themePrimaryColorInput">Cor Principal (Accents/Botões)</label>
+                <input type="color" id="themePrimaryColorInput" name="themePrimaryColorInput" [(ngModel)]="themePrimaryColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+              <div class="form-group">
+                <label for="themeBgColorInput">Cor de Fundo da Página</label>
+                <input type="color" id="themeBgColorInput" name="themeBgColorInput" [(ngModel)]="themeBgColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+              <div class="form-group">
+                <label for="themeCardBgColorInput">Cor dos Cards (Transparente)</label>
+                <input type="text" id="themeCardBgColorInput" name="themeCardBgColorInput" [(ngModel)]="themeCardBgColor" class="form-control" placeholder="Ex: rgba(10, 15, 10, 0.8)">
+              </div>
+            </div>
+            
+            <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+              <div class="form-group">
+                <label for="themeTextColorInput">Cor do Texto</label>
+                <input type="color" id="themeTextColorInput" name="themeTextColorInput" [(ngModel)]="themeTextColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+              <div class="form-group">
+                <label for="themeAccentColorInput">Cor Secundária (Glow)</label>
+                <input type="color" id="themeAccentColorInput" name="themeAccentColorInput" [(ngModel)]="themeAccentColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+              </div>
+              <div class="form-group">
+                <label for="themeEffectSelect">Efeito de Fundo Especial</label>
+                <select id="themeEffectSelect" name="themeEffectSelect" [(ngModel)]="themeEffect" class="form-control">
+                  <option value="scanlines">📺 Scanlines CRT (Terminal Retro)</option>
+                  <option value="matrix">👾 Cascata de Código Matrix</option>
+                  <option value="none">❌ Sem Efeito (Fundo Limpo)</option>
+                </select>
+              </div>
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="shopItemDescInput">Descrição do Item</label>
+            <input type="text" id="shopItemDescInput" name="shopItemDescInput" [(ngModel)]="newItemDescription"
+              class="form-control" placeholder="Ex: Aplica uma chuva digital verde Matrix ao redor de seu avatar" required>
+          </div>
+
+          <div class="form-group">
+            <label for="shopItemImgInput">URL da Imagem de Pré-visualização (Opcional)</label>
+            <input type="url" id="shopItemImgInput" name="shopItemImgInput" [(ngModel)]="newItemImageUrl"
+              class="form-control" placeholder="Ex: https://link-da-imagem.png">
+          </div>
+
+          <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+            <button type="button" class="btn btn-primary" (click)="saveShopItem()"
+              [disabled]="!newItemName || !newItemDescription || (!newItemValue && !useCustomStyling) || newItemCost <= 0 || isCreatingShopItem">
+              🛍️ Criar e Publicar Item Cosmético
+            </button>
+          </div>
+        </form>
+
+        <!-- List of active shop items -->
+        <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.75rem; font-weight: 700;">Itens Cadastrados na Cyber-Shop</label>
+          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            @for (item of db.shopItems(); track item.id) {
+            <div
+              style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                  {{ item.category === 'frame' ? '🖼️' : item.category === 'tag' ? '🏷️' : '🎨' }}
+                </div>
+                <div>
+                  <strong style="font-size: 0.9rem; color: #fff;">
+                    {{ item.name }} 
+                    <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase; background: rgba(255, 215, 0, 0.15); color: #fbbf24;">
+                      🪙 {{ item.cost }} Bits
+                    </span>
+                  </strong>
+                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
+                    Categoria: <b>{{ item.category }}</b> — Valor: <code style="color: #00f0ff;">{{ item.itemValue }}</code> — {{ item.description }}
+                  </span>
+                </div>
+              </div>
+              <button type="button" class="btn btn-danger btn-xs"
+                style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
+                (click)="deleteShopItem(item.id)">
+                Excluir
+              </button>
+            </div>
+            } @empty {
+            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum item cadastrado na Cyber-Shop ainda. Cadastre um acima!</p>
             }
           </div>
         </div>

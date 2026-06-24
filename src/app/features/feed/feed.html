@@ -20,9 +20,16 @@
       @if (db.isAuthenticated()) {
         @if (db.currentUser(); as user) {
           <div class="current-user-badge authenticated">
-            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+            <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)">
+              <img [src]="user.avatarUrl" [alt]="user.displayName">
+            </div>
             <div class="user-info">
-              <span class="user-name">{{ user.displayName }}</span>
+              <span class="user-name">
+                {{ user.displayName }}
+                @if (user.activeTag; as activeTag) {
+                  <span class="user-prestige-tag">{{ activeTag }}</span>
+                }
+              </span>
               <span class="user-role">Conectado</span>
             </div>
             
@@ -71,8 +78,15 @@
       @if (db.currentUser(); as user) {
         <div class="mobile-user-section">
           <div class="mobile-user-info">
-            <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
-            <span class="mobile-user-name">{{ user.displayName }}</span>
+            <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)">
+              <img [src]="user.avatarUrl" [alt]="user.displayName">
+            </div>
+            <span class="mobile-user-name">
+              {{ user.displayName }}
+              @if (user.activeTag; as activeTag) {
+                <span class="user-prestige-tag">{{ activeTag }}</span>
+              }
+            </span>
           </div>
           <button class="btn btn-danger btn-xs" (click)="db.logout(); closeMobileNav()">Sair</button>
         </div>
@@ -91,10 +105,17 @@
       <div class="glass-card profile-preview-card">
         <div class="profile-banner" [style.background-image]="'url(' + (user.blogSettings.bannerUrl || user.bannerUrl || '/images/cyberpunk_cover.png') + ')'"></div>
         <div class="profile-avatar-wrapper">
-          <img [src]="user.avatarUrl" [alt]="user.displayName" class="profile-avatar">
+          <div class="avatar-wrapper size-lg" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)">
+            <img [src]="user.avatarUrl" [alt]="user.displayName">
+          </div>
         </div>
         <div class="profile-details">
-          <h3>{{ user.displayName }}</h3>
+          <h3>
+            {{ user.displayName }}
+            @if (user.activeTag; as activeTag) {
+              <span class="user-prestige-tag">{{ activeTag }}</span>
+            }
+          </h3>
           <div class="profile-badges-inline" style="display: flex; gap: 4px; justify-content: center; margin-bottom: 0.5rem; flex-wrap: wrap;">
             @for (badge of getUserBadges(user); track badge.id) {
               <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'" style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1.5px solid var(--primary, #00f0ff); box-shadow: 0 0 8px rgba(0, 240, 255, 0.3);">
@@ -178,8 +199,13 @@
           <div class="spotlight-card-content">
             <div class="spotlight-header">
               <span class="spotlight-author-info">
-                <img [src]="spotlight.authorAvatarUrl" class="avatar-xs">
+                <div class="avatar-wrapper size-xs" [class]="db.getFrameClass(db.getUserByUsername(spotlight.authorUsername)?.activeFrame)" [ngStyle]="db.getFrameStyle(db.getUserByUsername(spotlight.authorUsername)?.activeFrame)">
+                  <img [src]="spotlight.authorAvatarUrl">
+                </div>
                 <span>{{ spotlight.authorDisplayName }}</span>
+                @if (db.getUserByUsername(spotlight.authorUsername)?.activeTag; as activeTag) {
+                  <span class="user-prestige-tag">{{ activeTag }}</span>
+                }
               </span>
               <span class="spotlight-bid-badge">🪙 Lance Vencedor: {{ db.holofoteAtivo()?.maiorLanceVencedor }} Bits</span>
             </div>
@@ -249,8 +275,13 @@
             <div class="article-body">
               <div class="article-meta">
                 <a [routerLink]="['/b', article.authorUsername]" (click)="$event.stopPropagation()" class="author-link">
-                  <img [src]="article.authorAvatarUrl" [alt]="article.authorDisplayName" class="avatar-xs">
+                  <div class="avatar-wrapper size-xs" [class]="db.getFrameClass(db.getUserByUsername(article.authorUsername)?.activeFrame)" [ngStyle]="db.getFrameStyle(db.getUserByUsername(article.authorUsername)?.activeFrame)">
+                    <img [src]="article.authorAvatarUrl" [alt]="article.authorDisplayName">
+                  </div>
                   <span>{{ article.authorDisplayName }}</span>
+                  @if (db.getUserByUsername(article.authorUsername)?.activeTag; as activeTag) {
+                    <span class="user-prestige-tag">{{ activeTag }}</span>
+                  }
                 </a>
                 <span class="dot">•</span>
                 <span class="date">{{ article.createdAt | date:'mediumDate' }}</span>
@@ -313,9 +344,16 @@
         @for (creator of recommendedCreators(); track creator.id) {
           <div class="creator-item">
             <div class="creator-info-wrapper" [routerLink]="['/b', creator.username]">
-              <img [src]="creator.avatarUrl" [alt]="creator.displayName" class="avatar-md">
+              <div class="avatar-wrapper size-md" [class]="db.getFrameClass(creator.activeFrame)" [ngStyle]="db.getFrameStyle(creator.activeFrame)">
+                <img [src]="creator.avatarUrl" [alt]="creator.displayName">
+              </div>
               <div class="creator-details">
-                <span class="creator-name">{{ creator.displayName }}</span>
+                <span class="creator-name">
+                  {{ creator.displayName }}
+                  @if (creator.activeTag; as activeTag) {
+                    <span class="user-prestige-tag">{{ activeTag }}</span>
+                  }
+                </span>
                 <span class="creator-handle">&#64;{{ creator.username }}</span>
               </div>
             </div>
