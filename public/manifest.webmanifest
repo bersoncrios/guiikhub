@@ -1,6 +1,6 @@
 {
-  "name": "geek-hub",
-  "short_name": "geek-hub",
+  "name": "GuiikHub",
+  "short_name": "GuiikHub",
   "display": "standalone",
   "scope": "./",
   "start_url": "./",
