@@ -111,7 +111,7 @@
           <div class="gamification-status-box">
             <div class="level-badge-wrapper">
               <span class="level-label">🚀 Nível {{ db.currentUserLevel() }}</span>
-              <span class="xp-ratio">{{ db.currentUserXpProgress() }}/100 XP</span>
+              <span class="xp-ratio">{{ db.currentUserXpInLevel() }}/{{ db.currentUserXpRequiredForNext() }} XP</span>
             </div>
             <div class="xp-bar-container">
               <div class="xp-bar-fill" [style.width.%]="db.currentUserXpProgress()"></div>
