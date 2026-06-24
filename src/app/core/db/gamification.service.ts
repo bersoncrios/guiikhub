@@ -772,10 +772,8 @@ export class GamificationService {
   async checkAndAssignEventBadges(userId: string, todayStr: string, badgesList: Badge[], currentUser: User | null): Promise<boolean> {
     try {
       const userRef = doc(this.firestore, `users/${userId}`);
-      const userSnap = await getDoc(userRef);
-      if (!userSnap.exists()) return false;
-      const userData = userSnap.data() as User;
-      const unlocked = userData.unlockedBadges || [];
+      const logId = 'glog_' + Date.now() + '_event_auto';
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
 
       let activeBadges = badgesList || [];
       if (activeBadges.length === 0) {
@@ -784,44 +782,57 @@ export class GamificationService {
         activeBadges = badgesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Badge));
       }
 
-      // Filter event badges for today that the user does not have yet
-      const eventBadgesForToday = activeBadges.filter(b => 
-        b.type === 'event' && b.targetDate === todayStr && !unlocked.includes(b.id)
-      );
-
-      if (eventBadgesForToday.length === 0) {
-        return false;
-      }
-
-      const newUnlocked = [...unlocked];
-      let eventLogsText = '';
+      let eventBadgesForToday: Badge[] = [];
       let totalRewardBits = 0;
-      eventBadgesForToday.forEach(b => {
-        newUnlocked.push(b.id);
-        if (eventLogsText) eventLogsText += ', ';
-        eventLogsText += b.name;
-        totalRewardBits += b.rewardBits || 0;
+      let newUnlocked: string[] = [];
+      let eventLogsText = '';
+
+      const resulted = await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        if (!userDoc.exists()) return false;
+        const userData = userDoc.data() as User;
+        const unlocked = userData.unlockedBadges || [];
+
+        // Filter event badges for today that the user does not have yet
+        eventBadgesForToday = activeBadges.filter(b => 
+          b.type === 'event' && b.targetDate === todayStr && !unlocked.includes(b.id)
+        );
+
+        if (eventBadgesForToday.length === 0) {
+          return false;
+        }
+
+        newUnlocked = [...unlocked];
+        eventLogsText = '';
+        totalRewardBits = 0;
+        eventBadgesForToday.forEach(b => {
+          newUnlocked.push(b.id);
+          if (eventLogsText) eventLogsText += ', ';
+          eventLogsText += b.name;
+          totalRewardBits += b.rewardBits || 0;
+        });
+
+        const updates: any = { unlockedBadges: newUnlocked };
+        if (totalRewardBits > 0) {
+          updates.bits_balance = (userData.bits_balance || 0) + totalRewardBits;
+        }
+        transaction.update(userRef, updates);
+
+        const eventLog: GamificationLog = {
+          id: logId,
+          userId,
+          typeAction: 'earn',
+          amount: totalRewardBits,
+          description: `Emblema de evento especial recebido automaticamente: ${eventLogsText}` + (totalRewardBits > 0 ? ` (+${totalRewardBits} Bits)` : ''),
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, eventLog);
+        return true;
       });
 
-      // Update user document
-      const updates: any = { unlockedBadges: newUnlocked };
-      if (totalRewardBits > 0) {
-        updates.bits_balance = (userData.bits_balance || 0) + totalRewardBits;
+      if (!resulted) {
+        return false;
       }
-      await updateDoc(userRef, updates);
-
-      // Create gamification log
-      const logId = 'glog_' + Date.now() + '_event_auto';
-      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
-      const eventLog: GamificationLog = {
-        id: logId,
-        userId,
-        typeAction: 'earn',
-        amount: totalRewardBits,
-        description: `Emblema de evento especial recebido automaticamente: ${eventLogsText}` + (totalRewardBits > 0 ? ` (+${totalRewardBits} Bits)` : ''),
-        createdAt: new Date().toISOString()
-      };
-      await setDoc(logRef, eventLog);
 
       // Show alert if current user
       if (currentUser && userId === currentUser.id) {

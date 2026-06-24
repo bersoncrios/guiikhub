@@ -99,6 +99,8 @@ export class DbService {
   readonly isAuthenticated = signal<boolean>(false);
   readonly isAuthLoading = signal<boolean>(true);
   readonly isOffline = signal<boolean>(false);
+  private isCheckingEventBadges = false;
+  private isClaimingDailyReward = false;
 
   constructor() {
     if (typeof window !== 'undefined') {
@@ -140,12 +142,16 @@ export class DbService {
 
     // 2. Sync Auth State
     let logsSubscription: any = null;
+    let userSubscription: any = null;
     authState(this.auth).subscribe(fbUser => {
       if (fbUser) {
         this.isAuthenticated.set(true);
         // Sync user doc from Firestore
         const userRef = doc(this.firestore, `users/${fbUser.uid}`);
-        docData(userRef).subscribe({
+        if (userSubscription) {
+          userSubscription.unsubscribe();
+        }
+        userSubscription = docData(userRef).subscribe({
           next: userData => {
             if (userData) {
               const u = userData as User;
@@ -209,6 +215,10 @@ export class DbService {
         this.isAuthenticated.set(false);
         this.currentUser.set(null);
         this.gamificationLogs.set([]);
+        if (userSubscription) {
+          userSubscription.unsubscribe();
+          userSubscription = null;
+        }
         if (logsSubscription) {
           logsSubscription.unsubscribe();
           logsSubscription = null;
@@ -475,7 +485,13 @@ export class DbService {
   }
 
   async claimDailyReward(userId: string, todayStr: string): Promise<boolean> {
-    return this.gamificationService.claimDailyReward(userId, todayStr, this.badges(), this.currentUser());
+    if (this.isClaimingDailyReward) return false;
+    this.isClaimingDailyReward = true;
+    try {
+      return await this.gamificationService.claimDailyReward(userId, todayStr, this.badges(), this.currentUser());
+    } finally {
+      this.isClaimingDailyReward = false;
+    }
   }
 
   async applaudArticle(
@@ -525,7 +541,13 @@ export class DbService {
   }
 
   async checkAndAssignEventBadges(userId: string, todayStr: string): Promise<boolean> {
-    return this.gamificationService.checkAndAssignEventBadges(userId, todayStr, this.badges(), this.currentUser());
+    if (this.isCheckingEventBadges) return false;
+    this.isCheckingEventBadges = true;
+    try {
+      return await this.gamificationService.checkAndAssignEventBadges(userId, todayStr, this.badges(), this.currentUser());
+    } finally {
+      this.isCheckingEventBadges = false;
+    }
   }
 
   async rewardPostReading(articleId: string, articleTitle: string): Promise<boolean> {
