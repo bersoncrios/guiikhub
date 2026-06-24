@@ -1,59 +1,102 @@
-# GeekHub
+# ⚡ GuiikHub
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.2.
+GuiikHub é uma plataforma moderna de publicação de artigos e blogs para a comunidade geek/tech. Ela traz recursos avançados de gamificação, leilão de holofote, envio de newsletters e colaboração entre criadores, desenvolvida com as melhores práticas e alta performance.
 
-## Development server
+---
 
-To start a local development server, run:
+## 🚀 Funcionalidades Principais
 
+* **⚡ Sistema de Gamificação (XP & Bits)**:
+  * Ganho de **XP** e **Bits** (moeda interna) ao interagir com a plataforma (leitura, curtidas, comentários, aplausos).
+  * Conquista e desbloqueio de **Medalhas (Badges)** baseadas nos seus pontos acumulados.
+* **🎯 Leilão de Holofote (Spotlight)**:
+  * Um leilão diário onde criadores dão lances usando seus Bits acumulados para destacar seus artigos na página principal do feed.
+  * Consolidação automática diária.
+* **👥 Colaboração & Autoria**:
+  * Adicione colaboradores para editar seus artigos em conjunto.
+  * Controle de versões salvas (`ArticleVersion`) e notas internas (`ArticleNote`) do editor.
+* **📨 Newsletter Integrada**:
+  * Disparo automático de e-mails formatados via **EmailJS** para todos os seguidores de um blog assim que um artigo é publicado.
+* **📂 Upload de Mídia Otimizado**:
+  * Upload de imagens de capa de artigos direto para o armazenamento descentralizado e redundante da **Tebi Storage** (S3-compatible).
+* **📱 Progressive Web App (PWA)**:
+  * Aplicativo instalável no celular ou desktop com suporte offline básico e ícones customizados.
+
+---
+
+## 🛠️ Stack Tecnológica
+
+* **Frontend**: [Angular](https://angular.dev/) (Versão 20+ com standalone components, Signals e SSR).
+* **Styling**: CSS Custom Properties (Design System moderno e responsivo).
+* **BaaS (Backend-as-a-Service)**: [Firebase](https://firebase.google.com/) (Authentication, Cloud Firestore).
+* **CDN / Object Storage**: [Tebi](https://tebi.io/) (Armazenamento compatível com S3 para mídias).
+* **Serviço de E-mail**: [EmailJS](https://www.emailjs.com/).
+
+---
+
+## ⚙️ Configuração do Ambiente
+
+O projeto utiliza um script dinâmico para gerar os arquivos de ambiente do Angular a partir de um arquivo `.env` seguro.
+
+1. Duplique o arquivo `.env.example` na raiz do projeto e renomeie-o para `.env`:
+   ```bash
+   cp .env.example .env
+   ```
+2. Abra o arquivo `.env` e preencha as variáveis de ambiente com suas credenciais:
+   * **Firebase Prod & Dev**: Credenciais dos projetos do Firebase de Produção e Desenvolvimento.
+   * **Tebi Storage**: Suas chaves de acesso (Access Key e Secret Key) da Tebi.
+   * **EmailJS**: Seus identificadores do EmailJS para envio de newsletters.
+
+---
+
+## 🏃 Como Rodar Localmente
+
+### 1. Instalar as dependências
 ```bash
-ng serve
+npm install
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
-
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
+### 2. Iniciar o servidor de desenvolvimento
 ```bash
-ng generate component component-name
+npm start
+```
+> 💡 *O comando de inicialização roda automaticamente o script `scripts/set-env.js` no hook `prestart`, gerando os arquivos de ambiente em `src/environments/` com base no seu `.env`.*
+
+Abra [http://localhost:4200](http://localhost:4200) no seu navegador para ver o aplicativo rodando.
+
+---
+
+## 📦 Build e Deploy
+
+### Build de Produção
+Para gerar a build de produção otimizada:
+```bash
+npm run build
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+### Deploy na Vercel
+1. Instale a CLI da Vercel ou conecte o repositório ao painel da Vercel.
+2. Certifique-se de configurar todas as variáveis do `.env.example` diretamente na aba **Environment Variables** do seu projeto na Vercel.
+3. O build script executará a geração dos arquivos de ambiente na nuvem automaticamente.
 
-```bash
-ng generate --help
+---
+
+## 📂 Estrutura de Pastas Relevante
+
+```text
+├── public/                  # Arquivos estáticos e PWA manifest
+├── scripts/                 # Scripts auxiliares (como set-env.js)
+├── src/
+│   ├── app/
+│   │   ├── core/            # Serviços singleton, guards e lógica de banco
+│   │   │   ├── db/          # Serviços modulares do Firestore
+│   │   │   └── models/      # Interfaces de dados
+│   │   └── features/        # Componentes e páginas (admin, auth, feed)
+│   └── environments/        # Configurações de ambiente (gerados dinamicamente)
 ```
 
-## Building
+---
 
-To build the project run:
+## 📄 Licença
 
-```bash
-ng build
-```
-
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
-```
-
-## Running end-to-end tests
-
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
-```
-
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Este projeto é de uso privado. Todos os direitos reservados.
