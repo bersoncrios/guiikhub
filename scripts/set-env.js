@@ -5,7 +5,7 @@ const envPath = path.join(__dirname, '../.env');
 
 // Read and parse .env manually (no dependencies)
 function loadEnv() {
-  const env = {};
+  const env = { ...process.env };
   if (fs.existsSync(envPath)) {
     const content = fs.readFileSync(envPath, 'utf8');
     content.split('\n').forEach(line => {
