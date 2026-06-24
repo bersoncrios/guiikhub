@@ -5,4 +5,8 @@ export interface Badge {
   xpRequirement: number;
   iconUrl: string;
   createdAt: string;
+  type?: 'xp' | 'event' | 'special' | 'staff' | 'milestone' | 'custom';
+  targetDate?: string;
+  rewardBits?: number;
 }
+

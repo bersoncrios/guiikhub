@@ -39,7 +39,10 @@ export class AdminComponent implements OnInit, OnDestroy {
   badgeName = '';
   badgeDescription = '';
   badgeXpRequirement = 100;
+  badgeType: 'xp' | 'event' | 'special' | 'staff' | 'milestone' | 'custom' = 'xp';
+  badgeTargetDate = '';
   badgeIconUrl = '';
+  badgeRewardBits = 0;
   isUploadingBadgeIcon = false;
 
   // New Post Form
@@ -1675,21 +1678,39 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   async saveBadge() {
-    if (!this.badgeName || !this.badgeDescription || this.badgeXpRequirement <= 0) {
-      Swal.fire('Campos inválidos', 'Preencha o nome, descrição e um marco de XP válido.', 'warning');
+    if (!this.badgeName || !this.badgeDescription) {
+      Swal.fire('Campos inválidos', 'Preencha o nome e a descrição do emblema.', 'warning');
       return;
     }
+    if (this.badgeType === 'xp' && this.badgeXpRequirement <= 0) {
+      Swal.fire('Campos inválidos', 'Preencha um marco de XP válido.', 'warning');
+      return;
+    }
+    if (this.badgeType === 'event' && !this.badgeTargetDate) {
+      Swal.fire('Campos inválidos', 'Por favor, selecione uma data válida para o evento.', 'warning');
+      return;
+    }
+
+    const xpReq = this.badgeType === 'xp' ? this.badgeXpRequirement : 0;
+    const targetDate = this.badgeType === 'event' ? this.badgeTargetDate : '';
+
     const success = await this.db.createBadge(
       this.badgeName,
       this.badgeDescription,
-      this.badgeXpRequirement,
-      this.badgeIconUrl
+      xpReq,
+      this.badgeIconUrl,
+      this.badgeType,
+      targetDate,
+      this.badgeRewardBits
     );
     if (success) {
       this.badgeName = '';
       this.badgeDescription = '';
       this.badgeXpRequirement = 100;
+      this.badgeType = 'xp';
+      this.badgeTargetDate = '';
       this.badgeIconUrl = '';
+      this.badgeRewardBits = 0;
     }
   }
 
@@ -1720,5 +1741,82 @@ export class AdminComponent implements OnInit, OnDestroy {
   getUserBadges(user: any): any[] {
     if (!user || !user.unlockedBadges) return [];
     return this.db.badges().filter(b => user.unlockedBadges.includes(b.id));
+  }
+
+  async assignBadgeToUser(userId: string, badgeId: string) {
+    if (!userId || !badgeId) return;
+    
+    Swal.fire({
+      title: 'Atribuindo Emblema...',
+      allowOutsideClick: false,
+      background: '#121420',
+      color: '#f1f5f9',
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const success = await this.db.assignBadgeToUser(userId, badgeId);
+    Swal.close();
+
+    if (success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Emblema Atribuído!',
+        text: 'O emblema foi associado ao usuário com sucesso.',
+        background: '#121420',
+        color: '#f1f5f9',
+        timer: 2000,
+        showConfirmButton: false
+      });
+    } else {
+      Swal.fire('Erro', 'Não foi possível atribuir o emblema.', 'error');
+    }
+  }
+
+  async removeBadgeFromUser(userId: string, badgeId: string) {
+    if (!userId || !badgeId) return;
+
+    const result = await Swal.fire({
+      title: 'Remover Emblema?',
+      text: 'Tem certeza que deseja revogar este emblema deste usuário?',
+      icon: 'warning',
+      showCancelButton: true,
+      background: '#121420',
+      color: '#f1f5f9',
+      confirmButtonColor: '#ef4444',
+      cancelButtonColor: '#374151',
+      confirmButtonText: 'Sim, remover',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      Swal.fire({
+        title: 'Removendo Emblema...',
+        allowOutsideClick: false,
+        background: '#121420',
+        color: '#f1f5f9',
+        didOpen: () => {
+          Swal.showLoading();
+        }
+      });
+
+      const success = await this.db.removeBadgeFromUser(userId, badgeId);
+      Swal.close();
+
+      if (success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Emblema Removido!',
+          text: 'O emblema foi revogado com sucesso.',
+          background: '#121420',
+          color: '#f1f5f9',
+          timer: 2000,
+          showConfirmButton: false
+        });
+      } else {
+        Swal.fire('Erro', 'Não foi possível remover o emblema.', 'error');
+      }
+    }
   }
 }

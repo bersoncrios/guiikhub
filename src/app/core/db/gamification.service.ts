@@ -1,7 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import Swal from 'sweetalert2';
 import { User, Article, GamificationLog, Badge } from '../models/interfaces';
-import { Firestore, doc, updateDoc, deleteDoc, setDoc, runTransaction } from '@angular/fire/firestore';
+import { Firestore, doc, getDoc, updateDoc, deleteDoc, setDoc, runTransaction, collection, getDocs } from '@angular/fire/firestore';
 
 @Injectable({
   providedIn: 'root'
@@ -103,7 +103,7 @@ export class GamificationService {
       const currentXp = u.xp_points ?? 0;
       const currentBits = u.bits_balance ?? 0;
       const unlocked = u.unlockedBadges || [];
-      const eligibleBadges = badgesList.filter(b => b.xpRequirement <= currentXp && !unlocked.includes(b.id));
+      const eligibleBadges = badgesList.filter(b => (!b.type || b.type === 'xp') && b.xpRequirement <= currentXp && !unlocked.includes(b.id));
 
       const updates: any = {};
       let needsUpdate = false;
@@ -125,13 +125,18 @@ export class GamificationService {
         await updateDoc(userRef, updates);
       }
     }
-  }
-
-  async claimDailyReward(userId: string, todayStr: string, badgesList: Badge[], currentUser: User | null): Promise<boolean> {
+  }  async claimDailyReward(userId: string, todayStr: string, badgesList: Badge[], currentUser: User | null): Promise<boolean> {
     try {
       const userRef = doc(this.firestore, `users/${userId}`);
       const logId = 'glog_' + Date.now() + '_daily';
       const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+      let activeBadges = badgesList || [];
+      if (activeBadges.length === 0) {
+        const badgesCol = collection(this.firestore, 'badges');
+        const badgesSnap = await getDocs(badgesCol);
+        activeBadges = badgesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Badge));
+      }
 
       await runTransaction(this.firestore, async (transaction) => {
         const userDoc = await transaction.get(userRef);
@@ -147,26 +152,52 @@ export class GamificationService {
         const currentBalance = userData.bits_balance || 0;
         const currentXp = userData.xp_points || 0;
         const newXp = currentXp + 10;
+        const unlocked = userData.unlockedBadges || [];
+        const newUnlocked = [...unlocked];
+
+        // Auto-assign event badges matching today's date
+        const eventBadgesForToday = activeBadges.filter(b => 
+          b.type === 'event' && b.targetDate === todayStr && !unlocked.includes(b.id)
+        );
+
+        let eventLogsText = '';
+        if (eventBadgesForToday.length > 0) {
+          eventBadgesForToday.forEach(b => {
+            newUnlocked.push(b.id);
+            if (eventLogsText) eventLogsText += ', ';
+            eventLogsText += b.name;
+          });
+        }
         
         transaction.update(userRef, {
           bits_balance: currentBalance + 10,
           xp_points: newXp,
+          unlockedBadges: newUnlocked,
           lastDailyRewardAt: todayStr
         });
 
-        this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef, badgesList, currentUser);
+        // Also check regular XP badges
+        this.checkAndUnlockBadgesInTransaction(
+          { ...userData, unlockedBadges: newUnlocked }, 
+          newXp, 
+          transaction, 
+          userRef, 
+          activeBadges, 
+          currentUser
+        );
 
         const rewardLog: GamificationLog = {
           id: logId,
           userId,
           typeAction: 'earn',
           amount: 10,
-          description: 'Recompensa de Login Diário GuiikHub',
+          description: 'Recompensa de Login Diário GuiikHub' + (eventLogsText ? `. Emblemas de evento desbloqueados: ${eventLogsText}` : ''),
           createdAt: new Date().toISOString()
         };
         transaction.set(logRef, rewardLog);
       });
 
+      // Show daily bonus success toast
       Swal.fire({
         icon: 'success',
         title: '⚡ BÔNUS DIÁRIO RECEBIDO!',
@@ -181,6 +212,37 @@ export class GamificationService {
           popup: 'guiik-swal-toast-popup'
         }
       });
+
+      // Show event badges alerts if any were newly unlocked
+      const currentUserUnlocked = currentUser?.unlockedBadges || [];
+      const newlyUnlockedEvents = activeBadges.filter(b => 
+        b.type === 'event' && b.targetDate === todayStr && !currentUserUnlocked.includes(b.id)
+      );
+
+      if (newlyUnlockedEvents.length > 0 && currentUser && userId === currentUser.id) {
+        setTimeout(() => {
+          newlyUnlockedEvents.forEach(badge => {
+            Swal.fire({
+              title: '🎁 EMBLEMA DE EVENTO!',
+              text: `Por logar hoje, você desbloqueou o emblema especial: ${badge.name}!`,
+              imageUrl: badge.iconUrl || '/images/default-badge.png',
+              imageWidth: 100,
+              imageHeight: 100,
+              imageAlt: badge.name,
+              background: '#121420',
+              color: '#f1f5f9',
+              confirmButtonText: 'Sensacional!',
+              customClass: {
+                popup: 'guiik-swal-popup',
+                title: 'guiik-swal-title',
+                confirmButton: 'guiik-swal-confirm-btn'
+              },
+              buttonsStyling: false
+            });
+          });
+        }, 3500);
+      }
+
       return true;
     } catch (err) {
       console.error('Erro ao conceder bônus diário:', err);
@@ -338,9 +400,14 @@ export class GamificationService {
         const badgeResult = this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef, badgesList, currentUser);
         const newUnlockedBadgesText = badgeResult.unlockedBadgesText;
 
-        transaction.update(userRef, {
+        const updates: any = {
           xp_points: newXp
-        });
+        };
+        if (badgeResult.rewardBits > 0) {
+          updates.bits_balance = (userData.bits_balance || 0) + badgeResult.rewardBits;
+        }
+
+        transaction.update(userRef, updates);
 
         const xpLog: GamificationLog = {
           id: logId,
@@ -367,18 +434,20 @@ export class GamificationService {
     userRef: any,
     badgesList: Badge[],
     currentUser: User | null
-  ): { unlockedBadgesText: string; newUnlocked: string[] } {
+  ): { unlockedBadgesText: string; newUnlocked: string[]; rewardBits: number } {
     const unlocked = userData.unlockedBadges || [];
     const newUnlocked = [...unlocked];
-    const eligibleBadges = badgesList.filter(b => b.xpRequirement <= newXp && !unlocked.includes(b.id));
+    const eligibleBadges = badgesList.filter(b => (!b.type || b.type === 'xp') && b.xpRequirement <= newXp && !unlocked.includes(b.id));
     
     let unlockedBadgesText = '';
+    let rewardBits = 0;
     if (eligibleBadges.length > 0) {
       eligibleBadges.forEach(b => {
         if (!newUnlocked.includes(b.id)) {
           newUnlocked.push(b.id);
           if (unlockedBadgesText) unlockedBadgesText += ', ';
           unlockedBadgesText += b.name;
+          rewardBits += b.rewardBits || 0;
         }
       });
       transaction.update(userRef, {
@@ -388,9 +457,10 @@ export class GamificationService {
       if (currentUser && userData.id === currentUser.id) {
         setTimeout(() => {
           eligibleBadges.forEach(badge => {
+            const bitsText = badge.rewardBits ? ` e ganhou +${badge.rewardBits} Bits` : '';
             Swal.fire({
               title: '🏆 NOVO EMBLEMA DESBLOQUEADO!',
-              text: `Parabéns! Você alcançou o marco de ${badge.xpRequirement} XP e ganhou o emblema: ${badge.name}!`,
+              text: `Parabéns! Você alcançou o marco de ${badge.xpRequirement} XP e ganhou o emblema: ${badge.name}${bitsText}!`,
               imageUrl: badge.iconUrl || '/images/default-badge.png',
               imageWidth: 100,
               imageHeight: 100,
@@ -409,7 +479,7 @@ export class GamificationService {
         }, 500);
       }
     }
-    return { unlockedBadgesText, newUnlocked };
+    return { unlockedBadgesText, newUnlocked, rewardBits };
   }
 
   async unlockBadgesRetroactively(userId: string, badgesToUnlock: Badge[], currentUser: User | null): Promise<void> {
@@ -427,25 +497,29 @@ export class GamificationService {
         const newUnlocked = [...unlocked];
         
         let newUnlockedBadgesText = '';
+        let rewardBits = 0;
         badgesToUnlock.forEach(b => {
           if (!newUnlocked.includes(b.id)) {
             newUnlocked.push(b.id);
             if (newUnlockedBadgesText) newUnlockedBadgesText += ', ';
             newUnlockedBadgesText += b.name;
+            rewardBits += b.rewardBits || 0;
           }
         });
 
         if (newUnlockedBadgesText) {
-          transaction.update(userRef, {
-            unlockedBadges: newUnlocked
-          });
+          const updates: any = { unlockedBadges: newUnlocked };
+          if (rewardBits > 0) {
+            updates.bits_balance = (userData.bits_balance || 0) + rewardBits;
+          }
+          transaction.update(userRef, updates);
 
           const xpLog: GamificationLog = {
             id: logId,
             userId,
             typeAction: 'earn',
             amount: 0,
-            description: `Desbloqueou conquistas retroativamente: ${newUnlockedBadgesText}`,
+            description: `Desbloqueou conquistas retroativamente: ${newUnlockedBadgesText}` + (rewardBits > 0 ? ` (+${rewardBits} Bits)` : ''),
             createdAt: new Date().toISOString()
           };
           transaction.set(logRef, xpLog);
@@ -453,9 +527,10 @@ export class GamificationService {
           if (currentUser && userId === currentUser.id) {
             setTimeout(() => {
               badgesToUnlock.forEach(badge => {
+                const bitsText = badge.rewardBits ? ` e ganhou +${badge.rewardBits} Bits` : '';
                 Swal.fire({
                   title: '🏆 NOVO EMBLEMA DESBLOQUEADO!',
-                  text: `Parabéns! Você alcançou o marco de ${badge.xpRequirement} XP e ganhou o emblema: ${badge.name}!`,
+                  text: `Parabéns! Você alcançou o marco de ${badge.xpRequirement} XP e ganhou o emblema: ${badge.name}${bitsText}!`,
                   imageUrl: badge.iconUrl || '/images/default-badge.png',
                   imageWidth: 100,
                   imageHeight: 100,
@@ -480,7 +555,15 @@ export class GamificationService {
     }
   }
 
-  async createBadge(name: string, description: string, xpRequirement: number, iconUrl: string): Promise<boolean> {
+  async createBadge(
+    name: string, 
+    description: string, 
+    xpRequirement: number, 
+    iconUrl: string,
+    type?: 'xp' | 'event' | 'special' | 'staff' | 'milestone' | 'custom',
+    targetDate?: string,
+    rewardBits?: number
+  ): Promise<boolean> {
     try {
       const id = 'badge_' + Date.now();
       const newBadge: Badge = {
@@ -489,6 +572,9 @@ export class GamificationService {
         description,
         xpRequirement,
         iconUrl: iconUrl || '/images/default-badge.png',
+        type: type || 'xp',
+        targetDate: targetDate || '',
+        rewardBits: rewardBits || 0,
         createdAt: new Date().toISOString()
       };
       await setDoc(doc(this.firestore, `badges/${id}`), newBadge);
@@ -614,5 +700,159 @@ export class GamificationService {
       rewardedArticlesInMemory.delete(articleId);
     }
     return false;
+  }
+
+  async assignBadgeToUser(userId: string, badgeId: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const badgeRef = doc(this.firestore, `badges/${badgeId}`);
+      
+      const [userSnap, badgeSnap] = await Promise.all([
+        getDoc(userRef),
+        getDoc(badgeRef)
+      ]);
+      
+      if (!userSnap.exists()) return false;
+      const userData = userSnap.data() as User;
+      const unlocked = userData.unlockedBadges || [];
+      if (!unlocked.includes(badgeId)) {
+        const newUnlocked = [...unlocked, badgeId];
+        const updates: any = { unlockedBadges: newUnlocked };
+        
+        let rewardAmount = 0;
+        if (badgeSnap.exists()) {
+          const badgeData = badgeSnap.data() as Badge;
+          rewardAmount = badgeData.rewardBits || 0;
+        }
+        
+        if (rewardAmount > 0) {
+          updates.bits_balance = (userData.bits_balance || 0) + rewardAmount;
+          
+          // Log the bits reward
+          const logId = 'glog_' + Date.now() + '_badge_bits_' + Math.random().toString(36).substring(2, 7);
+          const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+          const bitsLog: GamificationLog = {
+            id: logId,
+            userId,
+            typeAction: 'earn',
+            amount: rewardAmount,
+            description: `Recebeu ${rewardAmount} Bits ao ganhar o emblema: ${badgeSnap.data()?.['name'] || ''}`,
+            createdAt: new Date().toISOString()
+          };
+          await setDoc(logRef, bitsLog);
+        }
+        
+        await updateDoc(userRef, updates);
+      }
+      return true;
+    } catch (err) {
+      console.error('Error assigning badge to user:', err);
+      return false;
+    }
+  }
+
+  async removeBadgeFromUser(userId: string, badgeId: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return false;
+      const userData = userSnap.data() as User;
+      const unlocked = userData.unlockedBadges || [];
+      if (unlocked.includes(badgeId)) {
+        const newUnlocked = unlocked.filter(id => id !== badgeId);
+        await updateDoc(userRef, { unlockedBadges: newUnlocked });
+      }
+      return true;
+    } catch (err) {
+      console.error('Error removing badge from user:', err);
+      return false;
+    }
+  }
+
+  async checkAndAssignEventBadges(userId: string, todayStr: string, badgesList: Badge[], currentUser: User | null): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) return false;
+      const userData = userSnap.data() as User;
+      const unlocked = userData.unlockedBadges || [];
+
+      let activeBadges = badgesList || [];
+      if (activeBadges.length === 0) {
+        const badgesCol = collection(this.firestore, 'badges');
+        const badgesSnap = await getDocs(badgesCol);
+        activeBadges = badgesSnap.docs.map(d => ({ id: d.id, ...d.data() } as Badge));
+      }
+
+      // Filter event badges for today that the user does not have yet
+      const eventBadgesForToday = activeBadges.filter(b => 
+        b.type === 'event' && b.targetDate === todayStr && !unlocked.includes(b.id)
+      );
+
+      if (eventBadgesForToday.length === 0) {
+        return false;
+      }
+
+      const newUnlocked = [...unlocked];
+      let eventLogsText = '';
+      let totalRewardBits = 0;
+      eventBadgesForToday.forEach(b => {
+        newUnlocked.push(b.id);
+        if (eventLogsText) eventLogsText += ', ';
+        eventLogsText += b.name;
+        totalRewardBits += b.rewardBits || 0;
+      });
+
+      // Update user document
+      const updates: any = { unlockedBadges: newUnlocked };
+      if (totalRewardBits > 0) {
+        updates.bits_balance = (userData.bits_balance || 0) + totalRewardBits;
+      }
+      await updateDoc(userRef, updates);
+
+      // Create gamification log
+      const logId = 'glog_' + Date.now() + '_event_auto';
+      const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+      const eventLog: GamificationLog = {
+        id: logId,
+        userId,
+        typeAction: 'earn',
+        amount: totalRewardBits,
+        description: `Emblema de evento especial recebido automaticamente: ${eventLogsText}` + (totalRewardBits > 0 ? ` (+${totalRewardBits} Bits)` : ''),
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(logRef, eventLog);
+
+      // Show alert if current user
+      if (currentUser && userId === currentUser.id) {
+        setTimeout(() => {
+          eventBadgesForToday.forEach(badge => {
+            const bitsText = badge.rewardBits ? ` e ganhou +${badge.rewardBits} Bits` : '';
+            Swal.fire({
+              title: '🎁 EMBLEMA DE EVENTO!',
+              text: `Por logar hoje, você desbloqueou o emblema especial: ${badge.name}${bitsText}!`,
+              imageUrl: badge.iconUrl || '/images/default-badge.png',
+              imageWidth: 100,
+              imageHeight: 100,
+              imageAlt: badge.name,
+              background: '#121420',
+              color: '#f1f5f9',
+              confirmButtonText: 'Sensacional!',
+              customClass: {
+                popup: 'guiik-swal-popup',
+                title: 'guiik-swal-title',
+                confirmButton: 'guiik-swal-confirm-btn'
+              },
+              buttonsStyling: false
+            });
+          });
+        }, 1500);
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Erro ao verificar emblemas de evento:', err);
+      return false;
+    }
   }
 }

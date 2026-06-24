@@ -115,7 +115,7 @@ export class DbService {
       if (user && badgesList.length > 0) {
         const currentXp = user.xp_points || 0;
         const unlocked = user.unlockedBadges || [];
-        const eligibleButLocked = badgesList.filter(b => b.xpRequirement <= currentXp && !unlocked.includes(b.id));
+        const eligibleButLocked = badgesList.filter(b => (!b.type || b.type === 'xp') && b.xpRequirement <= currentXp && !unlocked.includes(b.id));
         
         if (eligibleButLocked.length > 0) {
           this.unlockBadgesRetroactively(user.id, eligibleButLocked);
@@ -174,8 +174,16 @@ export class DbService {
               }
               this.currentUser.set(u);
 
-              // Daily Reward Bonus Check
-              const todayStr = new Date().toISOString().split('T')[0];
+              // Daily Reward Bonus Check (usando data local para coincidir com o fuso do admin)
+              const now = new Date();
+              const year = now.getFullYear();
+              const month = String(now.getMonth() + 1).padStart(2, '0');
+              const day = String(now.getDate()).padStart(2, '0');
+              const todayStr = `${year}-${month}-${day}`;
+              
+              // Check/Assign event badges for today
+              this.checkAndAssignEventBadges(u.id, todayStr);
+
               if (u.lastDailyRewardAt !== todayStr) {
                 this.claimDailyReward(u.id, todayStr);
               }
@@ -492,12 +500,32 @@ export class DbService {
     await this.gamificationService.unlockBadgesRetroactively(userId, badgesToUnlock, this.currentUser());
   }
 
-  async createBadge(name: string, description: string, xpRequirement: number, iconUrl: string): Promise<boolean> {
-    return this.gamificationService.createBadge(name, description, xpRequirement, iconUrl);
+  async createBadge(
+    name: string, 
+    description: string, 
+    xpRequirement: number, 
+    iconUrl: string,
+    type?: 'xp' | 'event' | 'special' | 'staff' | 'milestone' | 'custom',
+    targetDate?: string,
+    rewardBits?: number
+  ): Promise<boolean> {
+    return this.gamificationService.createBadge(name, description, xpRequirement, iconUrl, type, targetDate, rewardBits);
+  }
+
+  async assignBadgeToUser(userId: string, badgeId: string): Promise<boolean> {
+    return this.gamificationService.assignBadgeToUser(userId, badgeId);
+  }
+
+  async removeBadgeFromUser(userId: string, badgeId: string): Promise<boolean> {
+    return this.gamificationService.removeBadgeFromUser(userId, badgeId);
   }
 
   async deleteBadge(badgeId: string): Promise<boolean> {
     return this.gamificationService.deleteBadge(badgeId);
+  }
+
+  async checkAndAssignEventBadges(userId: string, todayStr: string): Promise<boolean> {
+    return this.gamificationService.checkAndAssignEventBadges(userId, todayStr, this.badges(), this.currentUser());
   }
 
   async rewardPostReading(articleId: string, articleTitle: string): Promise<boolean> {

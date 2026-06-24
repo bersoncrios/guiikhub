@@ -1361,9 +1361,39 @@
             </div>
 
             <div class="form-group">
+              <label for="badgeTypeSelect">Categoria / Tipo</label>
+              <select id="badgeTypeSelect" name="badgeTypeSelect" [(ngModel)]="badgeType" class="form-control">
+                <option value="xp">⚡ Marco de XP (Automático)</option>
+                <option value="event">🏷️ Evento (Atribuição Manual)</option>
+                <option value="special">✨ Especial (Atribuição Manual)</option>
+                <option value="staff">👥 Equipe / Staff (Atribuição Manual)</option>
+                <option value="milestone">🏆 Conquista (Atribuição Manual)</option>
+                <option value="custom">🎨 Personalizado (Atribuição Manual)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-2" style="margin-top: 1rem;">
+            @if (badgeType === 'xp') {
+            <div class="form-group">
               <label for="badgeXpReqInput">Marco de XP Necessário</label>
               <input type="number" id="badgeXpReqInput" name="badgeXpReqInput" [(ngModel)]="badgeXpRequirement"
                 class="form-control" min="1" required>
+            </div>
+            } @else if (badgeType === 'event') {
+            <div class="form-group">
+              <label for="badgeTargetDateInput">Data do Evento (AAAA-MM-DD)</label>
+              <input type="date" id="badgeTargetDateInput" name="badgeTargetDateInput" [(ngModel)]="badgeTargetDate"
+                class="form-control" required>
+            </div>
+            } @else {
+            <div></div>
+            }
+
+            <div class="form-group">
+              <label for="badgeRewardBitsInput">Recompensa em Bits (Opcional)</label>
+              <input type="number" id="badgeRewardBitsInput" name="badgeRewardBitsInput" [(ngModel)]="badgeRewardBits"
+                class="form-control" min="0" placeholder="Ex: 50">
             </div>
           </div>
 
@@ -1405,7 +1435,7 @@
 
           <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
             <button type="button" class="btn btn-primary" (click)="saveBadge()"
-              [disabled]="!badgeName || !badgeDescription || badgeXpRequirement <= 0">
+              [disabled]="!badgeName || !badgeDescription || (badgeType === 'xp' && badgeXpRequirement <= 0)">
               🏆 Criar e Publicar Emblema
             </button>
           </div>
@@ -1422,9 +1452,25 @@
                 <img [src]="b.iconUrl"
                   style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
                 <div>
-                  <strong style="font-size: 0.9rem; color: #fff;">{{ b.name }}</strong>
+                  <strong style="font-size: 0.9rem; color: #fff;">
+                    {{ b.name }} 
+                    <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase;"
+                      [style.background]="b.type === 'xp' || !b.type ? 'rgba(0, 240, 255, 0.15)' : b.type === 'staff' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 215, 0, 0.15)'"
+                      [style.color]="b.type === 'xp' || !b.type ? '#00f0ff' : b.type === 'staff' ? '#f87171' : '#fbbf24'">
+                      {{ b.type === 'xp' || !b.type ? '⚡ XP' : b.type === 'staff' ? '👥 Staff' : b.type === 'event' ? '🏷️ Evento' : b.type === 'special' ? '✨ Especial' : b.type === 'milestone' ? '🏆 Conquista' : '🎨 Personalizado' }}
+                    </span>
+                  </strong>
                   <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
-                    Requisito: <b style="color: #ff007f;">{{ b.xpRequirement }} XP</b> — {{ b.description }}
+                    @if (b.type === 'xp' || !b.type) {
+                      Requisito: <b style="color: #ff007f;">{{ b.xpRequirement }} XP</b> — 
+                    }
+                    @if (b.type === 'event' && b.targetDate) {
+                      Data do Evento: <b style="color: #00f0ff;">{{ b.targetDate }}</b> — 
+                    }
+                    @if (b.rewardBits) {
+                      Recompensa: <b style="color: #ffd700;">🪙 {{ b.rewardBits }} Bits</b> — 
+                    }
+                    {{ b.description }}
                   </span>
                 </div>
               </div>
@@ -1454,6 +1500,7 @@
                 <th>Saldo Bits</th>
                 <th>Total XP</th>
                 <th>Cargo</th>
+                <th>Ações de Emblema</th>
               </tr>
             </thead>
             <tbody>
@@ -1465,11 +1512,20 @@
                     <div>
                       <span class="title-text">{{ user.displayName }}</span>
                       <span style="font-size: 0.75rem; color: var(--text-muted);">@{{ user.username }}</span>
-                      <div class="user-badges-list" style="display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap;">
+                      <div class="user-badges-list" style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
                         @for (badge of getUserBadges(user); track badge.id) {
-                        <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'"
-                          class="badge-mini-icon"
-                          style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(255,255,255,0.15); object-fit: cover;">
+                        <div style="position: relative; display: inline-block;" class="badge-mini-wrapper">
+                          <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'"
+                            class="badge-mini-icon"
+                            style="width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.15); object-fit: cover;">
+                          @if (badge.type && badge.type !== 'xp') {
+                          <span (click)="removeBadgeFromUser(user.id, badge.id)" 
+                            title="Revogar emblema"
+                            style="position: absolute; -webkit-transform: translate(50%, -50%); transform: translate(50%, -50%); top: 0; right: 0; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; font-size: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; border: 1px solid rgba(0,0,0,0.6); line-height: 1;">
+                            ×
+                          </span>
+                          }
+                        </div>
                         }
                       </div>
                     </div>
@@ -1483,6 +1539,19 @@
                     style="color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">
                     {{ user.role === 'admin' ? 'Admin' : 'Criador' }}
                   </span>
+                </td>
+                <td>
+                  <div style="display: flex; align-items: center; gap: 0.25rem;">
+                    <select #badgeSelect class="form-control" style="font-size: 0.75rem; padding: 2px 6px; height: 26px; width: 140px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; cursor: pointer;"
+                      (change)="assignBadgeToUser(user.id, badgeSelect.value); badgeSelect.value = ''">
+                      <option value="">+ Atribuir Emblema</option>
+                      @for (b of db.badges(); track b.id) {
+                        @if (b.type && b.type !== 'xp' && !(user.unlockedBadges || []).includes(b.id)) {
+                          <option [value]="b.id">{{ b.name }}</option>
+                        }
+                      }
+                    </select>
+                  </div>
                 </td>
               </tr>
               }
