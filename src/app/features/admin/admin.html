@@ -1518,463 +1518,491 @@
         </div>
       </div>
 
-      <!-- Quick Admin Commands -->
-      <div class="admin-commands-grid"
-        style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1rem;">
-        <div class="stat-box"
-          style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
-          <span class="box-tag" style="color: #ef4444;">CONSOLIDAÇÃO DE LEILÃO</span>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
-            Força o encerramento do leilão em data ativa e atualiza o post em destaque do feed global.
-          </p>
-          <button class="btn btn-primary"
-            style="background: #ef4444; border: none; align-self: flex-start; margin-top: auto;"
-            (click)="triggerManualConsolidation()">
-            ⚙️ Executar Fechamento
-          </button>
-        </div>
-
-        <div class="stat-box"
-          style="border-left: 4px solid #a855f7; background: rgba(168, 85, 247, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
-          <span class="box-tag" style="color: #c084fc;">MIGRAÇÃO DE BANCO</span>
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
-            Inicializa e corrige saldos/XP de contas antigas no Firestore que estejam indefinidos.
-          </p>
-          <button class="btn btn-primary"
-            style="background: #a855f7; border: none; align-self: flex-start; margin-top: auto;"
-            (click)="triggerManualMigration()">
-            ⚙️ Executar Migração
-          </button>
-        </div>
+      <!-- Sub-tabs Navigation for Sys-Admin -->
+      <div class="studio-tabs" style="border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+        <button class="tab-btn" [class.active]="sysAdminSubTab() === 'overview'" (click)="sysAdminSubTab.set('overview')">
+          ⚙️ Comandos & Saldo
+        </button>
+        <button class="tab-btn" [class.active]="sysAdminSubTab() === 'users'" (click)="sysAdminSubTab.set('users')">
+          👥 Contas de Usuários
+        </button>
+        <button class="tab-btn" [class.active]="sysAdminSubTab() === 'badges'" (click)="sysAdminSubTab.set('badges')">
+          🏆 Emblemas (Badges)
+        </button>
+        <button class="tab-btn" [class.active]="sysAdminSubTab() === 'shop'" (click)="sysAdminSubTab.set('shop')">
+          🛍️ Cyber-Shop (Loja)
+        </button>
       </div>
 
-      <!-- Grant Balance Form -->
-      <div class="grant-balance-card"
-        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-        <h3>🪙 Ajuste Administrativo de Saldo</h3>
-        <form (submit)="$event.preventDefault()" class="studio-form">
-          <div class="form-row-3">
-            <div class="form-group">
-              <label for="sysAdminUserSelect">Selecionar Usuário</label>
-              <select id="sysAdminUserSelect" name="sysAdminUserSelect" [(ngModel)]="sysAdminGrantUserId"
-                class="form-control" required>
-                <option value="" disabled selected>-- Escolha o Usuário --</option>
-                @for (u of db.users(); track u.id) {
-                <option [value]="u.id">{{ u.displayName }} (@{{ u.username }})</option>
-                }
-              </select>
-            </div>
-
-            <div class="form-group">
-              <label for="sysAdminAmountInput">Quantia de Bits (Negativo para Deduzir)</label>
-              <input type="number" id="sysAdminAmountInput" name="sysAdminAmountInput" [(ngModel)]="sysAdminGrantAmount"
-                class="form-control" required>
-            </div>
-
-            <div class="form-group">
-              <label for="sysAdminDescInput">Motivo / Descrição</label>
-              <input type="text" id="sysAdminDescInput" name="sysAdminDescInput" [(ngModel)]="sysAdminGrantDescription"
-                class="form-control" required>
-            </div>
-          </div>
-
-          <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
-            <button type="button" class="btn btn-primary" (click)="grantBits()" [disabled]="!sysAdminGrantUserId">
-              ⚡ Aplicar Ajuste de Bits/XP
+      <!-- Tab: Overview & Commands -->
+      @if (sysAdminSubTab() === 'overview') {
+        <!-- Quick Admin Commands -->
+        <div class="admin-commands-grid"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1rem;">
+          <div class="stat-box"
+            style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
+            <span class="box-tag" style="color: #ef4444;">CONSOLIDAÇÃO DE LEILÃO</span>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+              Força o encerramento do leilão em data ativa e atualiza o post em destaque do feed global.
+            </p>
+            <button class="btn btn-primary"
+              style="background: #ef4444; border: none; align-self: flex-start; margin-top: auto;"
+              (click)="triggerManualConsolidation()">
+              ⚙️ Executar Fechamento
             </button>
           </div>
-        </form>
-      </div>
 
-      <!-- Create Dynamic Badge Form -->
-      <div class="grant-balance-card"
-        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-        <h3>🏆 Gerenciar Emblemas (Badges) do Sistema</h3>
-        <form (submit)="$event.preventDefault()" class="studio-form">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="badgeNameInput">Nome do Emblema</label>
-              <input type="text" id="badgeNameInput" name="badgeNameInput" [(ngModel)]="badgeName" class="form-control"
-                placeholder="Ex: Influenciador do Hub" required>
-            </div>
-
-            <div class="form-group">
-              <label for="badgeTypeSelect">Categoria / Tipo</label>
-              <select id="badgeTypeSelect" name="badgeTypeSelect" [(ngModel)]="badgeType" class="form-control">
-                <option value="xp">⚡ Marco de XP (Automático)</option>
-                <option value="event">🏷️ Evento (Atribuição Manual)</option>
-                <option value="special">✨ Especial (Atribuição Manual)</option>
-                <option value="staff">👥 Equipe / Staff (Atribuição Manual)</option>
-                <option value="milestone">🏆 Conquista (Atribuição Manual)</option>
-                <option value="custom">🎨 Personalizado (Atribuição Manual)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row-2" style="margin-top: 1rem;">
-            @if (badgeType === 'xp') {
-            <div class="form-group">
-              <label for="badgeXpReqInput">Marco de XP Necessário</label>
-              <input type="number" id="badgeXpReqInput" name="badgeXpReqInput" [(ngModel)]="badgeXpRequirement"
-                class="form-control" min="1" required>
-            </div>
-            } @else if (badgeType === 'event') {
-            <div class="form-group">
-              <label for="badgeTargetDateInput">Data do Evento (AAAA-MM-DD)</label>
-              <input type="date" id="badgeTargetDateInput" name="badgeTargetDateInput" [(ngModel)]="badgeTargetDate"
-                class="form-control" required>
-            </div>
-            } @else {
-            <div></div>
-            }
-
-            <div class="form-group">
-              <label for="badgeRewardBitsInput">Recompensa em Bits (Opcional)</label>
-              <input type="number" id="badgeRewardBitsInput" name="badgeRewardBitsInput" [(ngModel)]="badgeRewardBits"
-                class="form-control" min="0" placeholder="Ex: 50">
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="badgeDescInput">Descrição da Conquista</label>
-            <input type="text" id="badgeDescInput" name="badgeDescInput" [(ngModel)]="badgeDescription"
-              class="form-control" placeholder="Ex: Escreveu conteúdos memoráveis e acumulou 1500 XP" required>
-          </div>
-
-          <!-- Upload Badge Icon -->
-          <div class="form-group">
-            <label>Ícone do Emblema</label>
-            <div style="display: flex; gap: 0.5rem; align-items: center; width: 100%;">
-              @if (badgeIconUrl) {
-              <img [src]="badgeIconUrl"
-                style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.3); object-fit: cover;">
-              } @else {
-              <div
-                style="width: 44px; height: 44px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);">
-                Sem ícone
-              </div>
-              }
-
-              <input type="url" name="badgeIconUrlInput" [(ngModel)]="badgeIconUrl" class="form-control"
-                placeholder="Link do ícone ou envie um arquivo" style="flex: 1;">
-
-              <input type="file" id="badgeIconFileInput" class="file-input-hidden" accept="image/*"
-                (change)="onBadgeIconSelected($event)" style="display: none;">
-              <label for="badgeIconFileInput" class="btn btn-secondary"
-                style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
-                @if (isUploadingBadgeIcon) {
-                ⏳ Enviando...
-                } @else {
-                📁 Enviar Ícone
-                }
-              </label>
-            </div>
-          </div>
-
-          <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
-            <button type="button" class="btn btn-primary" (click)="saveBadge()"
-              [disabled]="!badgeName || !badgeDescription || (badgeType === 'xp' && badgeXpRequirement <= 0)">
-              🏆 Criar e Publicar Emblema
+          <div class="stat-box"
+            style="border-left: 4px solid #a855f7; background: rgba(168, 85, 247, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
+            <span class="box-tag" style="color: #c084fc;">MIGRAÇÃO DE BANCO</span>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4;">
+              Inicializa e corrige saldos/XP de contas antigas no Firestore que estejam indefinidos.
+            </p>
+            <button class="btn btn-primary"
+              style="background: #a855f7; border: none; align-self: flex-start; margin-top: auto;"
+              (click)="triggerManualMigration()">
+              ⚙️ Executar Migração
             </button>
           </div>
-        </form>
+        </div>
 
-        <!-- List of active system badges -->
-        <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
-          <label style="display: block; margin-bottom: 0.75rem; font-weight: 700;">Emblemas Ativos no Sistema</label>
-          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            @for (b of db.badges(); track b.id) {
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <img [src]="b.iconUrl"
-                  style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
-                <div>
-                  <strong style="font-size: 0.9rem; color: #fff;">
-                    {{ b.name }} 
-                    <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase;"
-                      [style.background]="b.type === 'xp' || !b.type ? 'rgba(0, 240, 255, 0.15)' : b.type === 'staff' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 215, 0, 0.15)'"
-                      [style.color]="b.type === 'xp' || !b.type ? '#00f0ff' : b.type === 'staff' ? '#f87171' : '#fbbf24'">
-                      {{ b.type === 'xp' || !b.type ? '⚡ XP' : b.type === 'staff' ? '👥 Staff' : b.type === 'event' ? '🏷️ Evento' : b.type === 'special' ? '✨ Especial' : b.type === 'milestone' ? '🏆 Conquista' : '🎨 Personalizado' }}
-                    </span>
-                  </strong>
-                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
-                    @if (b.type === 'xp' || !b.type) {
-                      Requisito: <b style="color: #ff007f;">{{ b.xpRequirement }} XP</b> — 
-                    }
-                    @if (b.type === 'event' && b.targetDate) {
-                      Data do Evento: <b style="color: #00f0ff;">{{ b.targetDate }}</b> — 
-                    }
-                    @if (b.rewardBits) {
-                      Recompensa: <b style="color: #ffd700;">🪙 {{ b.rewardBits }} Bits</b> — 
-                    }
-                    {{ b.description }}
-                  </span>
-                </div>
+        <!-- Grant Balance Form -->
+        <div class="grant-balance-card"
+          style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
+          <h3>🪙 Ajuste Administrativo de Saldo</h3>
+          <form (submit)="$event.preventDefault()" class="studio-form">
+            <div class="form-row-3">
+              <div class="form-group">
+                <label for="sysAdminUserSelect">Selecionar Usuário</label>
+                <select id="sysAdminUserSelect" name="sysAdminUserSelect" [(ngModel)]="sysAdminGrantUserId"
+                  class="form-control" required>
+                  <option value="" disabled selected>-- Escolha o Usuário --</option>
+                  @for (u of db.users(); track u.id) {
+                  <option [value]="u.id">{{ u.displayName }} (@{{ u.username }})</option>
+                  }
+                </select>
               </div>
-              <button type="button" class="btn btn-danger btn-xs"
-                style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
-                (click)="deleteBadge(b.id)">
-                Excluir
+
+              <div class="form-group">
+                <label for="sysAdminAmountInput">Quantia de Bits (Negativo para Deduzir)</label>
+                <input type="number" id="sysAdminAmountInput" name="sysAdminAmountInput" [(ngModel)]="sysAdminGrantAmount"
+                  class="form-control" required>
+              </div>
+
+              <div class="form-group">
+                <label for="sysAdminDescInput">Motivo / Descrição</label>
+                <input type="text" id="sysAdminDescInput" name="sysAdminDescInput" [(ngModel)]="sysAdminGrantDescription"
+                  class="form-control" required>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+              <button type="button" class="btn btn-primary" (click)="grantBits()" [disabled]="!sysAdminGrantUserId">
+                ⚡ Aplicar Ajuste de Bits/XP
               </button>
             </div>
-            } @empty {
-            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum emblema cadastrado no
-              sistema ainda. Cadastre um acima!</p>
-            }
-          </div>
+          </form>
         </div>
-      </div>
+      }
 
-      <!-- Create Custom Shop Item Form -->
-      <div class="grant-balance-card"
-        style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1.5rem;">
-        <h3>🛍️ Gerenciar Itens da Cyber-Shop (Loja)</h3>
-        <form (submit)="$event.preventDefault()" class="studio-form">
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="shopItemNameInput">Nome do Item Cosmético</label>
-              <input type="text" id="shopItemNameInput" name="shopItemNameInput" [(ngModel)]="newItemName" class="form-control"
-                placeholder="Ex: Moldura Matrix Neon" required>
-            </div>
-
-            <div class="form-group">
-              <label for="shopItemCategorySelect">Categoria do Item</label>
-              <select id="shopItemCategorySelect" name="shopItemCategorySelect" [(ngModel)]="newItemCategory" class="form-control">
-                <option value="frame">🖼️ Moldura de Avatar</option>
-                <option value="tag">🏷️ Tag de Status (Prestígio)</option>
-                <option value="theme">🎨 Tema de Background</option>
-                <option value="other">📦 Outro</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="form-row-2">
-            <div class="form-group">
-              <label for="shopItemCostInput">Custo em Bits</label>
-              <input type="number" id="shopItemCostInput" name="shopItemCostInput" [(ngModel)]="newItemCost"
-                class="form-control" min="1" required>
-            </div>
-
-            @if (!useCustomStyling) {
-              <div class="form-group">
-                <label for="shopItemValueInput">Valor Técnico (Classe CSS ou Texto da Tag)</label>
-                <input type="text" id="shopItemValueInput" name="shopItemValueInput" [(ngModel)]="newItemValue"
-                  class="form-control" placeholder="Ex: frame-matrix ou [Netrunner]" required>
-              </div>
-            }
-          </div>
-
-          <!-- Advanced Customization Toggle -->
-          @if (newItemCategory === 'frame' || newItemCategory === 'theme') {
-            <div class="form-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(0,240,255,0.05); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px dashed rgba(0,240,255,0.2);">
-              <input type="checkbox" id="useCustomStylingCheckbox" name="useCustomStylingCheckbox" [(ngModel)]="useCustomStyling" style="cursor: pointer; width: 16px; height: 16px;">
-              <label for="useCustomStylingCheckbox" style="margin: 0; cursor: pointer; color: #00f0ff; font-weight: 600; font-size: 0.85rem;">🎨 Ativar Personalização Avançada (Cores, Efeitos e Formas)</label>
-            </div>
-          }
-
-          <!-- Custom Frame Creator Fields -->
-          @if (useCustomStyling && newItemCategory === 'frame') {
-            <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-              <div class="form-group">
-                <label for="frameColor1Input">Cor Inicial do Gradiente</label>
-                <input type="color" id="frameColor1Input" name="frameColor1Input" [(ngModel)]="frameColor1" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-              <div class="form-group">
-                <label for="frameColor2Input">Cor Final do Gradiente</label>
-                <input type="color" id="frameColor2Input" name="frameColor2Input" [(ngModel)]="frameColor2" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-              <div class="form-group">
-                <label for="frameGlowColorInput">Cor do Brilho (Neon)</label>
-                <input type="color" id="frameGlowColorInput" name="frameGlowColorInput" [(ngModel)]="frameGlowColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-            </div>
-            
-            <div class="form-row-2" style="margin-bottom: 1rem;">
-              <div class="form-group">
-                <label for="frameShapeSelect">Formato da Moldura</label>
-                <select id="frameShapeSelect" name="frameShapeSelect" [(ngModel)]="frameShape" class="form-control">
-                  <option value="circle">🟢 Círculo (Padrão)</option>
-                  <option value="square">🔲 Quadrado com Bordas Arredondadas</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label for="frameAnimSelect">Efeito de Animação</label>
-                <select id="frameAnimSelect" name="frameAnimSelect" [(ngModel)]="frameAnimation" class="form-control">
-                  <option value="pulse">💗 Neon Pulsante</option>
-                  <option value="rotate">🔄 Chuva Matrix Rotativa</option>
-                  <option value="glitch">⚡ Glitch Holográfico</option>
-                  <option value="fire">🔥 Fogo Cibernético</option>
-                  <option value="none">❌ Sem Animação</option>
-                </select>
-              </div>
-            </div>
-          }
-
-          <!-- Custom Theme Creator Fields -->
-          @if (useCustomStyling && newItemCategory === 'theme') {
-            <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-              <div class="form-group">
-                <label for="themePrimaryColorInput">Cor Principal (Accents/Botões)</label>
-                <input type="color" id="themePrimaryColorInput" name="themePrimaryColorInput" [(ngModel)]="themePrimaryColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-              <div class="form-group">
-                <label for="themeBgColorInput">Cor de Fundo da Página</label>
-                <input type="color" id="themeBgColorInput" name="themeBgColorInput" [(ngModel)]="themeBgColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-              <div class="form-group">
-                <label for="themeCardBgColorInput">Cor dos Cards (Transparente)</label>
-                <input type="text" id="themeCardBgColorInput" name="themeCardBgColorInput" [(ngModel)]="themeCardBgColor" class="form-control" placeholder="Ex: rgba(10, 15, 10, 0.8)">
-              </div>
-            </div>
-            
-            <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-              <div class="form-group">
-                <label for="themeTextColorInput">Cor do Texto</label>
-                <input type="color" id="themeTextColorInput" name="themeTextColorInput" [(ngModel)]="themeTextColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-              <div class="form-group">
-                <label for="themeAccentColorInput">Cor Secundária (Glow)</label>
-                <input type="color" id="themeAccentColorInput" name="themeAccentColorInput" [(ngModel)]="themeAccentColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
-              </div>
-              <div class="form-group">
-                <label for="themeEffectSelect">Efeito de Fundo Especial</label>
-                <select id="themeEffectSelect" name="themeEffectSelect" [(ngModel)]="themeEffect" class="form-control">
-                  <option value="scanlines">📺 Scanlines CRT (Terminal Retro)</option>
-                  <option value="matrix">👾 Cascata de Código Matrix</option>
-                  <option value="none">❌ Sem Efeito (Fundo Limpo)</option>
-                </select>
-              </div>
-            </div>
-          }
-
-          <div class="form-group">
-            <label for="shopItemDescInput">Descrição do Item</label>
-            <input type="text" id="shopItemDescInput" name="shopItemDescInput" [(ngModel)]="newItemDescription"
-              class="form-control" placeholder="Ex: Aplica uma chuva digital verde Matrix ao redor de seu avatar" required>
-          </div>
-
-          <div class="form-group">
-            <label for="shopItemImgInput">URL da Imagem de Pré-visualização (Opcional)</label>
-            <input type="url" id="shopItemImgInput" name="shopItemImgInput" [(ngModel)]="newItemImageUrl"
-              class="form-control" placeholder="Ex: https://link-da-imagem.png">
-          </div>
-
-          <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
-            <button type="button" class="btn btn-primary" (click)="saveShopItem()"
-              [disabled]="!newItemName || !newItemDescription || (!newItemValue && !useCustomStyling) || newItemCost <= 0 || isCreatingShopItem">
-              🛍️ Criar e Publicar Item Cosmético
-            </button>
-          </div>
-        </form>
-
-        <!-- List of active shop items -->
-        <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
-          <label style="display: block; margin-bottom: 0.75rem; font-weight: 700;">Itens Cadastrados na Cyber-Shop</label>
-          <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-            @for (item of db.shopItems(); track item.id) {
-            <div
-              style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
-              <div style="display: flex; align-items: center; gap: 0.75rem;">
-                <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
-                  {{ item.category === 'frame' ? '🖼️' : item.category === 'tag' ? '🏷️' : '🎨' }}
-                </div>
-                <div>
-                  <strong style="font-size: 0.9rem; color: #fff;">
-                    {{ item.name }} 
-                    <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase; background: rgba(255, 215, 0, 0.15); color: #fbbf24;">
-                      🪙 {{ item.cost }} Bits
-                    </span>
-                  </strong>
-                  <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
-                    Categoria: <b>{{ item.category }}</b> — Valor: <code style="color: #00f0ff;">{{ item.itemValue }}</code> — {{ item.description }}
-                  </span>
-                </div>
-              </div>
-              <button type="button" class="btn btn-danger btn-xs"
-                style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
-                (click)="deleteShopItem(item.id)">
-                Excluir
-              </button>
-            </div>
-            } @empty {
-            <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum item cadastrado na Cyber-Shop ainda. Cadastre um acima!</p>
-            }
-          </div>
-        </div>
-      </div>
-
-      <!-- Users Table -->
-      <div class="logs-section" style="margin-top: 2rem;">
-        <h3>👥 Contas Cadastradas no GuiikHub</h3>
-        <div class="posts-table-wrapper" style="overflow-x: auto;">
-          <table class="posts-table">
-            <thead>
-              <tr>
-                <th>Usuário</th>
-                <th>E-mail</th>
-                <th>Saldo Bits</th>
-                <th>Total XP</th>
-                <th>Cargo</th>
-                <th>Ações de Emblema</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (user of db.users(); track user.id) {
-              <tr>
-                <td class="col-title">
-                  <div class="post-title-cell">
-                    <img [src]="user.avatarUrl" class="post-thumb" style="border-radius: 50%;">
-                    <div>
-                      <span class="title-text">{{ user.displayName }}</span>
-                      <span style="font-size: 0.75rem; color: var(--text-muted);">@{{ user.username }}</span>
-                      <div class="user-badges-list" style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
-                        @for (badge of getUserBadges(user); track badge.id) {
-                        <div style="position: relative; display: inline-block;" class="badge-mini-wrapper">
-                          <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'"
-                            class="badge-mini-icon"
-                            style="width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.15); object-fit: cover;">
-                          @if (badge.type && badge.type !== 'xp') {
-                          <span (click)="removeBadgeFromUser(user.id, badge.id)" 
-                            title="Revogar emblema"
-                            style="position: absolute; -webkit-transform: translate(50%, -50%); transform: translate(50%, -50%); top: 0; right: 0; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; font-size: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; border: 1px solid rgba(0,0,0,0.6); line-height: 1;">
-                            ×
-                          </span>
+      <!-- Tab: User Accounts -->
+      @if (sysAdminSubTab() === 'users') {
+        <!-- Users Table -->
+        <div class="logs-section" style="margin-top: 1rem;">
+          <h3>👥 Contas Cadastradas no GuiikHub</h3>
+          <div class="posts-table-wrapper" style="overflow-x: auto;">
+            <table class="posts-table">
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>E-mail</th>
+                  <th>Saldo Bits</th>
+                  <th>Total XP</th>
+                  <th>Cargo</th>
+                  <th>Ações de Emblema</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (user of db.users(); track user.id) {
+                <tr>
+                  <td class="col-title">
+                    <div class="post-title-cell">
+                      <img [src]="user.avatarUrl" class="post-thumb" style="border-radius: 50%;">
+                      <div>
+                        <span class="title-text">{{ user.displayName }}</span>
+                        <span style="font-size: 0.75rem; color: var(--text-muted);">@{{ user.username }}</span>
+                        <div class="user-badges-list" style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; align-items: center;">
+                          @for (badge of getUserBadges(user); track badge.id) {
+                          <div style="position: relative; display: inline-block;" class="badge-mini-wrapper">
+                            <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'"
+                              class="badge-mini-icon"
+                              style="width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.15); object-fit: cover;">
+                            @if (badge.type && badge.type !== 'xp') {
+                            <span (click)="removeBadgeFromUser(user.id, badge.id)" 
+                              title="Revogar emblema"
+                              style="position: absolute; -webkit-transform: translate(50%, -50%); transform: translate(50%, -50%); top: 0; right: 0; background: #ef4444; color: white; border-radius: 50%; width: 12px; height: 12px; font-size: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; border: 1px solid rgba(0,0,0,0.6); line-height: 1;">
+                              ×
+                            </span>
+                            }
+                          </div>
                           }
                         </div>
-                        }
                       </div>
                     </div>
-                  </div>
-                </td>
-                <td>{{ user.email || 'N/A' }}</td>
-                <td style="color: #ffd700; font-weight: 700;">🪙 {{ user.bits_balance ?? 0 }}</td>
-                <td style="color: #ff007f; font-weight: 700;">⚡ {{ user.xp_points ?? 0 }}</td>
-                <td>
-                  <span class="badge" [style.background]="user.role === 'admin' ? '#ef4444' : '#64748b'"
-                    style="color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">
-                    {{ user.role === 'admin' ? 'Admin' : 'Criador' }}
-                  </span>
-                </td>
-                <td>
-                  <div style="display: flex; align-items: center; gap: 0.25rem;">
-                    <select #badgeSelect class="form-control" style="font-size: 0.75rem; padding: 2px 6px; height: 26px; width: 140px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; cursor: pointer;"
-                      (change)="assignBadgeToUser(user.id, badgeSelect.value); badgeSelect.value = ''">
-                      <option value="">+ Atribuir Emblema</option>
-                      @for (b of db.badges(); track b.id) {
-                        @if (b.type && b.type !== 'xp' && !(user.unlockedBadges || []).includes(b.id)) {
-                          <option [value]="b.id">{{ b.name }}</option>
+                  </td>
+                  <td>{{ user.email || 'N/A' }}</td>
+                  <td style="color: #ffd700; font-weight: 700;">🪙 {{ user.bits_balance ?? 0 }}</td>
+                  <td style="color: #ff007f; font-weight: 700;">⚡ {{ user.xp_points ?? 0 }}</td>
+                  <td>
+                    <span class="badge" [style.background]="user.role === 'admin' ? '#ef4444' : '#64748b'"
+                      style="color: #fff; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;">
+                      {{ user.role === 'admin' ? 'Admin' : 'Criador' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; align-items: center; gap: 0.25rem;">
+                      <select #badgeSelect class="form-control" style="font-size: 0.75rem; padding: 2px 6px; height: 26px; width: 140px; background: rgba(0,0,0,0.2); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; cursor: pointer;"
+                        (change)="assignBadgeToUser(user.id, badgeSelect.value); badgeSelect.value = ''">
+                        <option value="">+ Atribuir Emblema</option>
+                        @for (b of db.badges(); track b.id) {
+                          @if (b.type && b.type !== 'xp' && !(user.unlockedBadges || []).includes(b.id)) {
+                            <option [value]="b.id">{{ b.name }}</option>
+                          }
                         }
-                      }
-                    </select>
-                  </div>
-                </td>
-              </tr>
-              }
-            </tbody>
-          </table>
+                      </select>
+                    </div>
+                  </td>
+                </tr>
+                }
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      }
+
+      <!-- Tab: Badges Management -->
+      @if (sysAdminSubTab() === 'badges') {
+        <!-- Create Dynamic Badge Form -->
+        <div class="grant-balance-card"
+          style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+          <h3>🏆 Gerenciar Emblemas (Badges) do Sistema</h3>
+          <form (submit)="$event.preventDefault()" class="studio-form">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="badgeNameInput">Nome do Emblema</label>
+                <input type="text" id="badgeNameInput" name="badgeNameInput" [(ngModel)]="badgeName" class="form-control"
+                  placeholder="Ex: Influenciador do Hub" required>
+              </div>
+
+              <div class="form-group">
+                <label for="badgeTypeSelect">Categoria / Tipo</label>
+                <select id="badgeTypeSelect" name="badgeTypeSelect" [(ngModel)]="badgeType" class="form-control">
+                  <option value="xp">⚡ Marco de XP (Automático)</option>
+                  <option value="event">🏷️ Evento (Atribuição Manual)</option>
+                  <option value="special">✨ Especial (Atribuição Manual)</option>
+                  <option value="staff">👥 Equipe / Staff (Atribuição Manual)</option>
+                  <option value="milestone">🏆 Conquista (Atribuição Manual)</option>
+                  <option value="custom">🎨 Personalizado (Atribuição Manual)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2" style="margin-top: 1rem;">
+              @if (badgeType === 'xp') {
+              <div class="form-group">
+                <label for="badgeXpReqInput">Marco de XP Necessário</label>
+                <input type="number" id="badgeXpReqInput" name="badgeXpReqInput" [(ngModel)]="badgeXpRequirement"
+                  class="form-control" min="1" required>
+              </div>
+              } @else if (badgeType === 'event') {
+              <div class="form-group">
+                <label for="badgeTargetDateInput">Data do Evento (AAAA-MM-DD)</label>
+                <input type="date" id="badgeTargetDateInput" name="badgeTargetDateInput" [(ngModel)]="badgeTargetDate"
+                  class="form-control" required>
+              </div>
+              } @else {
+              <div></div>
+              }
+
+              <div class="form-group">
+                <label for="badgeRewardBitsInput">Recompensa em Bits (Opcional)</label>
+                <input type="number" id="badgeRewardBitsInput" name="badgeRewardBitsInput" [(ngModel)]="badgeRewardBits"
+                  class="form-control" min="0" placeholder="Ex: 50">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="badgeDescInput">Descrição da Conquista</label>
+              <input type="text" id="badgeDescInput" name="badgeDescInput" [(ngModel)]="badgeDescription"
+                class="form-control" placeholder="Ex: Escreveu conteúdos memoráveis e acumulou 1500 XP" required>
+            </div>
+
+            <!-- Upload Badge Icon -->
+            <div class="form-group">
+              <label>Ícone do Emblema</label>
+              <div style="display: flex; gap: 0.5rem; align-items: center; width: 100%;">
+                @if (badgeIconUrl) {
+                <img [src]="badgeIconUrl"
+                  style="width: 44px; height: 44px; border-radius: 50%; border: 2px solid #00f0ff; box-shadow: 0 0 10px rgba(0,240,255,0.3); object-fit: cover;">
+                } @else {
+                <div
+                  style="width: 44px; height: 44px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: var(--text-muted);">
+                  Sem ícone
+                </div>
+                }
+
+                <input type="url" name="badgeIconUrlInput" [(ngModel)]="badgeIconUrl" class="form-control"
+                  placeholder="Link do ícone ou envie um arquivo" style="flex: 1;">
+
+                <input type="file" id="badgeIconFileInput" class="file-input-hidden" accept="image/*"
+                  (change)="onBadgeIconSelected($event)" style="display: none;">
+                <label for="badgeIconFileInput" class="btn btn-secondary"
+                  style="margin: 0; display: inline-flex; align-items: center; cursor: pointer; white-space: nowrap;">
+                  @if (isUploadingBadgeIcon) {
+                  ⏳ Enviando...
+                  } @else {
+                  📁 Enviar Ícone
+                  }
+                </label>
+              </div>
+            </div>
+
+            <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+              <button type="button" class="btn btn-primary" (click)="saveBadge()"
+                [disabled]="!badgeName || !badgeDescription || (badgeType === 'xp' && badgeXpRequirement <= 0)">
+                🏆 Criar e Publicar Emblema
+              </button>
+            </div>
+          </form>
+
+          <!-- List of active system badges -->
+          <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.75rem; font-weight: 700;">Emblemas Ativos no Sistema</label>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              @for (b of db.badges(); track b.id) {
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <img [src]="b.iconUrl"
+                    style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.1);">
+                  <div>
+                    <strong style="font-size: 0.9rem; color: #fff;">
+                      {{ b.name }} 
+                      <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase;"
+                        [style.background]="b.type === 'xp' || !b.type ? 'rgba(0, 240, 255, 0.15)' : b.type === 'staff' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(255, 215, 0, 0.15)'"
+                        [style.color]="b.type === 'xp' || !b.type ? '#00f0ff' : b.type === 'staff' ? '#f87171' : '#fbbf24'">
+                        {{ b.type === 'xp' || !b.type ? '⚡ XP' : b.type === 'staff' ? '👥 Staff' : b.type === 'event' ? '🏷️ Evento' : b.type === 'special' ? '✨ Especial' : b.type === 'milestone' ? '🏆 Conquista' : '🎨 Personalizado' }}
+                      </span>
+                    </strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
+                      @if (b.type === 'xp' || !b.type) {
+                        Requisito: <b style="color: #ff007f;">{{ b.xpRequirement }} XP</b> — 
+                      }
+                      @if (b.type === 'event' && b.targetDate) {
+                        Data do Evento: <b style="color: #00f0ff;">{{ b.targetDate }}</b> — 
+                      }
+                      @if (b.rewardBits) {
+                        Recompensa: <b style="color: #ffd700;">🪙 {{ b.rewardBits }} Bits</b> — 
+                      }
+                      {{ b.description }}
+                    </span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-xs"
+                  style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
+                  (click)="deleteBadge(b.id)">
+                  Excluir
+                </button>
+              </div>
+              } @empty {
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum emblema cadastrado no
+                sistema ainda. Cadastre um acima!</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Tab: Shop Customization Management -->
+      @if (sysAdminSubTab() === 'shop') {
+        <!-- Create Custom Shop Item Form -->
+        <div class="grant-balance-card"
+          style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem;">
+          <h3>🛍️ Gerenciar Itens da Cyber-Shop (Loja)</h3>
+          <form (submit)="$event.preventDefault()" class="studio-form">
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="shopItemNameInput">Nome do Item Cosmético</label>
+                <input type="text" id="shopItemNameInput" name="shopItemNameInput" [(ngModel)]="newItemName" class="form-control"
+                  placeholder="Ex: Moldura Matrix Neon" required>
+              </div>
+
+              <div class="form-group">
+                <label for="shopItemCategorySelect">Categoria do Item</label>
+                <select id="shopItemCategorySelect" name="shopItemCategorySelect" [(ngModel)]="newItemCategory" class="form-control">
+                  <option value="frame">🖼️ Moldura de Avatar</option>
+                  <option value="tag">🏷️ Tag de Status (Prestígio)</option>
+                  <option value="theme">🎨 Tema de Background</option>
+                  <option value="other">📦 Outro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row-2">
+              <div class="form-group">
+                <label for="shopItemCostInput">Custo em Bits</label>
+                <input type="number" id="shopItemCostInput" name="shopItemCostInput" [(ngModel)]="newItemCost"
+                  class="form-control" min="1" required>
+              </div>
+
+              @if (!useCustomStyling) {
+                <div class="form-group">
+                  <label for="shopItemValueInput">Valor Técnico (Classe CSS ou Texto da Tag)</label>
+                  <input type="text" id="shopItemValueInput" name="shopItemValueInput" [(ngModel)]="newItemValue"
+                    class="form-control" placeholder="Ex: frame-matrix ou [Netrunner]" required>
+                </div>
+              }
+            </div>
+
+            <!-- Advanced Customization Toggle -->
+            @if (newItemCategory === 'frame' || newItemCategory === 'theme') {
+              <div class="form-group" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; background: rgba(0,240,255,0.05); padding: 0.5rem 0.75rem; border-radius: 6px; border: 1px dashed rgba(0,240,255,0.2);">
+                <input type="checkbox" id="useCustomStylingCheckbox" name="useCustomStylingCheckbox" [(ngModel)]="useCustomStyling" style="cursor: pointer; width: 16px; height: 16px;">
+                <label for="useCustomStylingCheckbox" style="margin: 0; cursor: pointer; color: #00f0ff; font-weight: 600; font-size: 0.85rem;">🎨 Ativar Personalização Avançada (Cores, Efeitos e Formas)</label>
+              </div>
+            }
+
+            <!-- Custom Frame Creator Fields -->
+            @if (useCustomStyling && newItemCategory === 'frame') {
+              <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label for="frameColor1Input">Cor Inicial do Gradiente</label>
+                  <input type="color" id="frameColor1Input" name="frameColor1Input" [(ngModel)]="frameColor1" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label for="frameColor2Input">Cor Final do Gradiente</label>
+                  <input type="color" id="frameColor2Input" name="frameColor2Input" [(ngModel)]="frameColor2" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label for="frameGlowColorInput">Cor do Brilho (Neon)</label>
+                  <input type="color" id="frameGlowColorInput" name="frameGlowColorInput" [(ngModel)]="frameGlowColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+              </div>
+              
+              <div class="form-row-2" style="margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label for="frameShapeSelect">Formato da Moldura</label>
+                  <select id="frameShapeSelect" name="frameShapeSelect" [(ngModel)]="frameShape" class="form-control">
+                    <option value="circle">🟢 Círculo (Padrão)</option>
+                    <option value="square">🔲 Quadrado com Bordas Arredondadas</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="frameAnimSelect">Efeito de Animação</label>
+                  <select id="frameAnimSelect" name="frameAnimSelect" [(ngModel)]="frameAnimation" class="form-control">
+                    <option value="pulse">💗 Neon Pulsante</option>
+                    <option value="rotate">🔄 Chuva Matrix Rotativa</option>
+                    <option value="glitch">⚡ Glitch Holográfico</option>
+                    <option value="fire">🔥 Fogo Cibernético</option>
+                    <option value="none">❌ Sem Animação</option>
+                  </select>
+                </div>
+              </div>
+            }
+
+            <!-- Custom Theme Creator Fields -->
+            @if (useCustomStyling && newItemCategory === 'theme') {
+              <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label for="themePrimaryColorInput">Cor Principal (Accents/Botões)</label>
+                  <input type="color" id="themePrimaryColorInput" name="themePrimaryColorInput" [(ngModel)]="themePrimaryColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label for="themeBgColorInput">Cor de Fundo da Página</label>
+                  <input type="color" id="themeBgColorInput" name="themeBgColorInput" [(ngModel)]="themeBgColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label for="themeCardBgColorInput">Cor dos Cards (Transparente)</label>
+                  <input type="text" id="themeCardBgColorInput" name="themeCardBgColorInput" [(ngModel)]="themeCardBgColor" class="form-control" placeholder="Ex: rgba(10, 15, 10, 0.8)">
+                </div>
+              </div>
+              
+              <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                <div class="form-group">
+                  <label for="themeTextColorInput">Cor do Texto</label>
+                  <input type="color" id="themeTextColorInput" name="themeTextColorInput" [(ngModel)]="themeTextColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label for="themeAccentColorInput">Cor Secundária (Glow)</label>
+                  <input type="color" id="themeAccentColorInput" name="themeAccentColorInput" [(ngModel)]="themeAccentColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
+                </div>
+                <div class="form-group">
+                  <label for="themeEffectSelect">Efeito de Fundo Especial</label>
+                  <select id="themeEffectSelect" name="themeEffectSelect" [(ngModel)]="themeEffect" class="form-control">
+                    <option value="scanlines">📺 Scanlines CRT (Terminal Retro)</option>
+                    <option value="matrix">👾 Cascata de Código Matrix</option>
+                    <option value="none">❌ Sem Efeito (Fundo Limpo)</option>
+                  </select>
+                </div>
+              </div>
+            }
+
+            <div class="form-group">
+              <label for="shopItemDescInput">Descrição do Item</label>
+              <input type="text" id="shopItemDescInput" name="shopItemDescInput" [(ngModel)]="newItemDescription"
+                class="form-control" placeholder="Ex: Aplica uma chuva digital verde Matrix ao redor de seu avatar" required>
+            </div>
+
+            <div class="form-group">
+              <label for="shopItemImgInput">URL da Imagem de Pré-visualização (Opcional)</label>
+              <input type="url" id="shopItemImgInput" name="shopItemImgInput" [(ngModel)]="newItemImageUrl"
+                class="form-control" placeholder="Ex: https://link-da-imagem.png">
+            </div>
+
+            <div class="form-actions" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+              <button type="button" class="btn btn-primary" (click)="saveShopItem()"
+                [disabled]="!newItemName || !newItemDescription || (!newItemValue && !useCustomStyling) || newItemCost <= 0 || isCreatingShopItem">
+                🛍️ Criar e Publicar Item Cosmético
+              </button>
+            </div>
+          </form>
+
+          <!-- List of active shop items -->
+          <div style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.75rem; font-weight: 700;">Itens Cadastrados na Cyber-Shop</label>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              @for (item of db.shopItems(); track item.id) {
+              <div
+                style="display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.15); padding: 0.75rem 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <div style="width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 1rem;">
+                    {{ item.category === 'frame' ? '🖼️' : item.category === 'tag' ? '🏷️' : '🎨' }}
+                  </div>
+                  <div>
+                    <strong style="font-size: 0.9rem; color: #fff;">
+                      {{ item.name }} 
+                      <span style="font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase; background: rgba(255, 215, 0, 0.15); color: #fbbf24;">
+                        🪙 {{ item.cost }} Bits
+                      </span>
+                    </strong>
+                    <span style="font-size: 0.75rem; color: var(--text-muted); display: block; margin-top: 2px;">
+                      Categoria: <b>{{ item.category }}</b> — Valor: <code style="color: #00f0ff;">{{ item.itemValue }}</code> — {{ item.description }}
+                    </span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-danger btn-xs"
+                  style="background: rgba(255, 50, 50, 0.1); color: #ff6b6b; border: 1px solid rgba(255,50,50,0.2);"
+                  (click)="deleteShopItem(item.id)">
+                  Excluir
+                </button>
+              </div>
+              } @empty {
+              <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic;">Nenhum item cadastrado na Cyber-Shop ainda. Cadastre um acima!</p>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
     }
   </section>

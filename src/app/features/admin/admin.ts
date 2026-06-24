@@ -20,6 +20,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   // Navigation
   readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop'>('gamification');
+  readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop'>('overview');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
   closeMobileNav()  { this.mobileNavOpen.set(false); }
