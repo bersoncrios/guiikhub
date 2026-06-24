@@ -52,9 +52,12 @@ export class ArticleDetailComponent implements OnDestroy {
       
       if (percentage >= 99.5 && !this.readingRewardClaimed) {
         const art = this.article();
+        const user = this.db.currentUser();
         if (art && this.db.isAuthenticated()) {
           this.readingRewardClaimed = true;
-          this.db.rewardPostReading(art.id, art.title);
+          if (user && art.authorId !== user.id) {
+            this.db.rewardPostReading(art.id, art.title);
+          }
         }
       }
     }
@@ -168,10 +171,13 @@ export class ArticleDetailComponent implements OnDestroy {
     });
 
     effect(() => {
+      this.postSlug();
+      this.readingRewardClaimed = false;
+    });
+
+    effect(() => {
       const art = this.article();
       const user = this.blogUser();
-      
-      this.readingRewardClaimed = false; // Reset claim flag on transition
       
       if (user && this.viewRegisteredForUserId !== user.id) {
         this.db.registerBlogView(user.id);
@@ -247,14 +253,21 @@ export class ArticleDetailComponent implements OnDestroy {
       return;
     }
 
+    // Calculate claps already given to this article from gamification logs
+    const clapsGiven = this.db.gamificationLogs()
+      .filter(log => log.typeAction === 'spend' && log.description === `Aplaudiu o artigo "${art.title}"`)
+      .reduce((sum, log) => sum + log.amount, 0);
+
+    const remainingAllowed = Math.max(0, 5 - clapsGiven);
     const currentBalance = user.bits_balance || 0;
+    const allowedLimit = Math.min(remainingAllowed, currentBalance);
     const pending = this.localClapsPending();
 
-    if (currentBalance <= pending) {
+    if (remainingAllowed === 0) {
       Swal.fire({
         icon: 'warning',
-        title: 'Saldo Insuficiente',
-        text: 'Você não tem mais Bits suficientes para enviar mais aplausos!',
+        title: 'Limite Máximo Atingido',
+        text: 'Você já deu o limite máximo de 5 aplausos para este artigo!',
         toast: true,
         position: 'top-end',
         timer: 3000,
@@ -262,6 +275,35 @@ export class ArticleDetailComponent implements OnDestroy {
         background: '#121420',
         color: '#f1f5f9'
       });
+      return;
+    }
+
+    if (pending >= allowedLimit) {
+      if (allowedLimit === remainingAllowed) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Limite Máximo Atingido',
+          text: 'Você pode enviar no máximo 5 aplausos no total para este artigo!',
+          toast: true,
+          position: 'top-end',
+          timer: 3000,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      } else {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Saldo Insuficiente',
+          text: `Você tem apenas ${currentBalance} Bits disponíveis para aplaudir!`,
+          toast: true,
+          position: 'top-end',
+          timer: 3000,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      }
       return;
     }
 

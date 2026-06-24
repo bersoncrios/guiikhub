@@ -35,6 +35,7 @@ export class DbService {
   private readonly firestore = inject(Firestore);
   private readonly auth = inject(Auth);
   private readonly router = inject(Router);
+  private readonly rewardedArticlesInMemory = new Set<string>();
 
   // EmailJS Configuration
   private readonly emailjsServiceId = 'service_8dyxl0t';
@@ -1359,6 +1360,15 @@ export class DbService {
           throw new Error('Saldo de Bits insuficiente');
         }
 
+        // Validate 5 claps maximum limit
+        const clapsGiven = this.gamificationLogs()
+          .filter(log => log.typeAction === 'spend' && log.description === `Aplaudiu o artigo "${articleData.title}"`)
+          .reduce((sum, log) => sum + log.amount, 0);
+
+        if (clapsGiven + amount > 5) {
+          throw new Error('Limite de 5 aplausos por artigo excedido');
+        }
+
         // Deduct from reader
         transaction.update(readerRef, {
           bits_balance: readerBalance - amount
@@ -1897,15 +1907,28 @@ export class DbService {
     const user = this.currentUser();
     if (!user) return false;
 
+    // Prevent user from earning XP by reading their own articles
+    const art = this.articles().find(a => a.id === articleId);
+    if (art && art.authorId === user.id) {
+      return false;
+    }
+
+    // Check memory cache first to prevent rapid concurrent scrolls on same page
+    if (this.rewardedArticlesInMemory.has(articleId)) {
+      return false;
+    }
+
     // Check if user has already read this article using synced logs
     const alreadyRewarded = this.gamificationLogs().some(
       log => log.typeAction === 'earn' && log.description.includes(`Leitura completa do artigo: ${articleId}`)
     );
 
     if (alreadyRewarded) {
+      this.rewardedArticlesInMemory.add(articleId);
       return false;
     }
 
+    this.rewardedArticlesInMemory.add(articleId);
     const success = await this.addXpToUser(user.id, 5, `Leitura completa do artigo: ${articleId}`);
     if (success) {
       Swal.fire({
@@ -1920,6 +1943,8 @@ export class DbService {
         position: 'bottom-end'
       });
       return true;
+    } else {
+      this.rewardedArticlesInMemory.delete(articleId);
     }
     return false;
   }
