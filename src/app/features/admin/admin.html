@@ -739,50 +739,54 @@
 
 
 
-        <!-- Color Customizer Grid -->
-        <div class="color-picker-grid">
-          <h4 class="grid-title">Esquema de Cores Customizado</h4>
-          <div class="color-inputs">
-            <div class="color-item">
-              <label>Fundo da Página</label>
-              <div class="color-control-wrapper">
-                <input type="color" name="blogBg" [(ngModel)]="blogBg">
-                <input type="text" name="blogBgText" [(ngModel)]="blogBg" class="color-hex">
+        <!-- Themes Customizer: Purchased Themes -->
+        <div class="color-picker-grid" style="margin-bottom: 1.5rem;">
+          <h4 class="grid-title">Seus Temas Adquiridos (Cyber-Shop)</h4>
+          <p class="form-help" style="margin-bottom: 0.75rem; opacity: 0.8; font-size: 0.85rem;">Escolha um dos temas cosméticos que você adquiriu para aplicar como plano de fundo do seu blog.</p>
+          
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+            <!-- Option 1: Tema Padrão (Default) -->
+            <div class="glass-card" 
+              style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; text-align: center; min-height: 110px; position: relative;"
+              [style.border-color]="!db.currentUser()?.activeTheme ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+              (click)="equipCosmetic('theme', '')">
+              @if (!db.currentUser()?.activeTheme) {
+                <div style="position: absolute; top: 0.35rem; right: 0.35rem; font-size: 0.8rem; background: rgba(0, 240, 255, 0.15); color: #00f0ff; padding: 1px 4px; border-radius: 3px; font-weight: bold; font-size: 0.65rem;">ATIVO</div>
+              }
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: #0d0e15; border: 1.5px solid #00f0ff; display: flex; align-items: center; justify-content: center; font-size: 0.9rem;">
+                🏠
               </div>
+              <strong style="font-size: 0.85rem; color: #fff;">Tema Padrão</strong>
+              <span style="font-size: 0.7rem; color: var(--text-muted);">Estilo original do GuiikHub</span>
             </div>
 
-            <div class="color-item">
-              <label>Fundo dos Cards</label>
-              <div class="color-control-wrapper">
-                <input type="color" name="blogCardBg" [(ngModel)]="blogCardBg">
-                <input type="text" name="blogCardBgText" [(ngModel)]="blogCardBg" class="color-hex">
+            <!-- Loop over purchased themes -->
+            @for (item of getPurchasedThemes(); track item.id) {
+              <div class="glass-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 1rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; cursor: pointer; text-align: center; min-height: 110px; position: relative;"
+                [style.border-color]="isEquipped('theme', item.itemValue) ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+                (click)="equipCosmetic('theme', item.itemValue)">
+                @if (isEquipped('theme', item.itemValue)) {
+                  <div style="position: absolute; top: 0.35rem; right: 0.35rem; font-size: 0.8rem; background: rgba(0, 240, 255, 0.15); color: #00f0ff; padding: 1px 4px; border-radius: 3px; font-weight: bold; font-size: 0.65rem;">ATIVO</div>
+                }
+                <!-- Symbol -->
+                <div style="width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.9rem; font-family: monospace;"
+                  [class]="db.getThemeClass(item.itemValue)"
+                  [ngStyle]="db.getThemeStyleVariables(item.itemValue)">
+                  {{ db.getThemeSymbol(item.itemValue) }}
+                </div>
+                <strong style="font-size: 0.85rem; color: #fff; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ item.name }}</strong>
+                <span style="font-size: 0.7rem; color: var(--text-muted); display: block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Adquirido</span>
               </div>
-            </div>
-
-            <div class="color-item">
-              <label>Cor Primária (Links)</label>
-              <div class="color-control-wrapper">
-                <input type="color" name="blogPrimary" [(ngModel)]="blogPrimary">
-                <input type="text" name="blogPrimaryText" [(ngModel)]="blogPrimary" class="color-hex">
-              </div>
-            </div>
-
-            <div class="color-item">
-              <label>Cor de Destaque / Glow</label>
-              <div class="color-control-wrapper">
-                <input type="color" name="blogAccent" [(ngModel)]="blogAccent">
-                <input type="text" name="blogAccentText" [(ngModel)]="blogAccent" class="color-hex">
-              </div>
-            </div>
-
-            <div class="color-item">
-              <label>Cor do Texto</label>
-              <div class="color-control-wrapper">
-                <input type="color" name="blogText" [(ngModel)]="blogText">
-                <input type="text" name="blogTextText" [(ngModel)]="blogText" class="color-hex">
-              </div>
-            </div>
+            }
           </div>
+          
+          <!-- Shop promotion link if no custom themes purchased yet -->
+          @if (getPurchasedThemes().length === 0) {
+            <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 1rem; font-style: italic;">
+              Você ainda não possui temas adquiridos. Visite a <a (click)="activeTab.set('shop'); $event.preventDefault();" href="#" style="color: #39ff14; text-decoration: underline; cursor: pointer; font-weight: bold;">Cyber-Shop</a> para comprar temas exclusivos com seus Bits!
+            </p>
+          }
         </div>
 
         <!-- Customizable Sections Management -->
@@ -897,6 +901,77 @@
           <label for="profileBio">Bio Social</label>
           <textarea id="profileBio" name="profileBio" [(ngModel)]="profileBio" class="form-control"
             placeholder="Escreva algo sobre você..."></textarea>
+        </div>
+
+        <!-- Avatar Frames Customize in Profile Editor -->
+        <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Moldura do Avatar Adquirida</label>
+          <p class="form-help" style="margin-bottom: 0.75rem; font-size: 0.8rem; opacity: 0.85;">Selecione uma das molduras cosméticas que você adquiriu para contornar seu avatar.</p>
+          
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem;">
+            <!-- Option: No Frame -->
+            <div class="glass-card" 
+              style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; min-width: 140px; position: relative;"
+              [style.border-color]="!db.currentUser()?.activeFrame ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+              (click)="equipCosmetic('frame', '')">
+              <div class="avatar-wrapper size-sm" style="background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.2); width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <img [src]="profileAvatar || '/images/default-avatar.svg'" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+              </div>
+              <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">Sem Moldura</span>
+            </div>
+
+            <!-- Loop purchased frames -->
+            @for (item of getPurchasedFrames(); track item.id) {
+              <div class="glass-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; min-width: 140px; position: relative;"
+                [style.border-color]="isEquipped('frame', item.itemValue) ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+                (click)="equipCosmetic('frame', item.itemValue)">
+                <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(item.itemValue)" [ngStyle]="db.getFrameStyle(item.itemValue)">
+                  <img [src]="profileAvatar || '/images/default-avatar.svg'" style="border-radius: 50%;">
+                </div>
+                <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">{{ item.name }}</span>
+              </div>
+            }
+          </div>
+
+          @if (getPurchasedFrames().length === 0) {
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; font-style: italic;">
+              Nenhuma moldura de avatar comprada. Visite a <a (click)="activeTab.set('shop'); $event.preventDefault();" href="#" style="color: #39ff14; text-decoration: underline; cursor: pointer; font-weight: bold;">Cyber-Shop</a> para adquirir molduras neon exclusivas!
+            </p>
+          }
+        </div>
+
+        <!-- Status Tags Customize in Profile Editor -->
+        <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; margin-bottom: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">Título de Status Adquirido</label>
+          <p class="form-help" style="margin-bottom: 0.75rem; font-size: 0.8rem; opacity: 0.85;">Selecione um título de prestígio para exibir ao lado do seu nome nos posts e comentários.</p>
+          
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem;">
+            <!-- Option: No Tag -->
+            <div class="glass-card" 
+              style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; min-width: 140px; position: relative;"
+              [style.border-color]="!db.currentUser()?.activeTag ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+              (click)="equipCosmetic('tag', '')">
+              <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">Sem Título</span>
+            </div>
+
+            <!-- Loop purchased tags -->
+            @for (item of getPurchasedTags(); track item.id) {
+              <div class="glass-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; min-width: 140px; position: relative;"
+                [style.border-color]="isEquipped('tag', item.itemValue) ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+                (click)="equipCosmetic('tag', item.itemValue)">
+                <span class="user-prestige-tag" style="margin: 0; font-size: 0.75rem; padding: 3px 8px;">{{ item.itemValue }}</span>
+                <span style="font-size: 0.8rem; font-weight: bold; color: #fff; margin-left: 0.25rem;">{{ item.name }}</span>
+              </div>
+            }
+          </div>
+
+          @if (getPurchasedTags().length === 0) {
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; font-style: italic;">
+              Nenhum título de status comprado. Visite a <a (click)="activeTab.set('shop'); $event.preventDefault();" href="#" style="color: #39ff14; text-decoration: underline; cursor: pointer; font-weight: bold;">Cyber-Shop</a> para adquirir títulos de prestígio!
+            </p>
+          }
         </div>
 
         <div class="form-actions">

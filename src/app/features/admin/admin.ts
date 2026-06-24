@@ -1957,4 +1957,28 @@ export class AdminComponent implements OnInit, OnDestroy {
   getFilteredShopItems(category: 'frame' | 'tag' | 'theme' | 'other'): ShopItem[] {
     return this.db.shopItems().filter(item => item.category === category);
   }
+
+  getPurchasedThemes(): ShopItem[] {
+    const user = this.db.currentUser();
+    if (!user) return [];
+    return this.db.shopItems().filter(item => 
+      item.category === 'theme' && user.purchasedItems?.includes(item.id)
+    );
+  }
+
+  getPurchasedFrames(): ShopItem[] {
+    const user = this.db.currentUser();
+    if (!user) return [];
+    return this.db.shopItems().filter(item => 
+      item.category === 'frame' && user.purchasedItems?.includes(item.id)
+    );
+  }
+
+  getPurchasedTags(): ShopItem[] {
+    const user = this.db.currentUser();
+    if (!user) return [];
+    return this.db.shopItems().filter(item => 
+      item.category === 'tag' && user.purchasedItems?.includes(item.id)
+    );
+  }
 }
