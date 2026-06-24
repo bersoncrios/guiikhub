@@ -2,6 +2,7 @@ import { Component, signal, computed, effect, inject, ElementRef, ViewChild, Hos
 import { CommonModule } from '@angular/common';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import Swal from 'sweetalert2';
+import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { DbService } from '../../core/db/db.service';
@@ -182,6 +183,33 @@ export class AdminComponent implements OnInit, OnDestroy {
     });
   }
 
+  private async uploadImageToS3(file: File, filenamePrefix: string): Promise<string> {
+    const filename = `${filenamePrefix}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
+    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
+
+    const s3 = new S3Client({
+      endpoint: 'https://s3.tebi.io',
+      region: 'us-east-1',
+      credentials: {
+        accessKeyId: environment.tebi.accessKeyId,
+        secretAccessKey: environment.tebi.secretAccessKey
+      }
+    });
+
+    const fileBuffer = new Uint8Array(await file.arrayBuffer());
+
+    const cmd = new PutObjectCommand({
+      Bucket: 'guiikhub',
+      Key: filename,
+      Body: fileBuffer,
+      ContentType: file.type,
+      ACL: 'public-read'
+    });
+
+    await s3.send(cmd);
+    return uploadUrl;
+  }
+
   resetForms() {
     const user = this.db.currentUser();
     if (!user) return;
@@ -354,31 +382,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.isUploadingInlineImage = true;
-    const filename = `inline_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
-
     try {
-      const s3 = new S3Client({
-        endpoint: 'https://s3.tebi.io',
-        region: 'us-east-1',
-        credentials: {
-          accessKeyId: 'ztWbSlXugHK1EYjV',
-          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
-        }
-      });
-
-      const fileBuffer = new Uint8Array(await file.arrayBuffer());
-
-      const cmd = new PutObjectCommand({
-        Bucket: 'guiikhub',
-        Key: filename,
-        Body: fileBuffer,
-        ContentType: file.type,
-        ACL: 'public-read'
-      });
-
-      await s3.send(cmd);
-
+      const uploadUrl = await this.uploadImageToS3(file, 'inline');
       document.execCommand('insertImage', false, uploadUrl);
       this.richEditorRef.nativeElement.focus();
       this.syncEditorContent();
@@ -1034,33 +1039,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.isUploadingCover = true;
-    const filename = `cover_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-    
-    // Upload endpoint
-    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
-
     try {
-      const s3 = new S3Client({
-        endpoint: 'https://s3.tebi.io',
-        region: 'us-east-1',
-        credentials: {
-          accessKeyId: 'ztWbSlXugHK1EYjV',
-          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
-        }
-      });
-
-      const fileBuffer = new Uint8Array(await file.arrayBuffer());
-
-      const cmd = new PutObjectCommand({
-        Bucket: 'guiikhub',
-        Key: filename,
-        Body: fileBuffer,
-        ContentType: file.type,
-        ACL: 'public-read'
-      });
-
-      await s3.send(cmd);
-
+      const uploadUrl = await this.uploadImageToS3(file, 'cover');
       this.newPostCoverUrl = uploadUrl;
       Swal.fire({
         icon: 'success',
@@ -1146,31 +1126,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.isUploadingBlogBanner = true;
-    const filename = `banner_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
-
     try {
-      const s3 = new S3Client({
-        endpoint: 'https://s3.tebi.io',
-        region: 'us-east-1',
-        credentials: {
-          accessKeyId: 'ztWbSlXugHK1EYjV',
-          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
-        }
-      });
-
-      const fileBuffer = new Uint8Array(await file.arrayBuffer());
-
-      const cmd = new PutObjectCommand({
-        Bucket: 'guiikhub',
-        Key: filename,
-        Body: fileBuffer,
-        ContentType: file.type,
-        ACL: 'public-read'
-      });
-
-      await s3.send(cmd);
-
+      const uploadUrl = await this.uploadImageToS3(file, 'banner');
       this.blogBannerUrl = uploadUrl;
       Swal.fire({
         icon: 'success',
@@ -1202,31 +1159,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     if (sponsorIndex === 1) this.isUploadingSponsor1 = true;
     else this.isUploadingSponsor2 = true;
 
-    const filename = `sponsor${sponsorIndex}_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
-
     try {
-      const s3 = new S3Client({
-        endpoint: 'https://s3.tebi.io',
-        region: 'us-east-1',
-        credentials: {
-          accessKeyId: 'ztWbSlXugHK1EYjV',
-          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
-        }
-      });
-
-      const fileBuffer = new Uint8Array(await file.arrayBuffer());
-
-      const cmd = new PutObjectCommand({
-        Bucket: 'guiikhub',
-        Key: filename,
-        Body: fileBuffer,
-        ContentType: file.type,
-        ACL: 'public-read'
-      });
-
-      await s3.send(cmd);
-
+      const uploadUrl = await this.uploadImageToS3(file, `sponsor${sponsorIndex}`);
       if (sponsorIndex === 1) this.blogSponsorUrl1 = uploadUrl;
       else this.blogSponsorUrl2 = uploadUrl;
 
@@ -1259,31 +1193,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.isUploadingAvatar = true;
-    const filename = `avatar_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
-
     try {
-      const s3 = new S3Client({
-        endpoint: 'https://s3.tebi.io',
-        region: 'us-east-1',
-        credentials: {
-          accessKeyId: 'ztWbSlXugHK1EYjV',
-          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
-        }
-      });
-
-      const fileBuffer = new Uint8Array(await file.arrayBuffer());
-
-      const cmd = new PutObjectCommand({
-        Bucket: 'guiikhub',
-        Key: filename,
-        Body: fileBuffer,
-        ContentType: file.type,
-        ACL: 'public-read'
-      });
-
-      await s3.send(cmd);
-
+      const uploadUrl = await this.uploadImageToS3(file, 'avatar');
       this.profileAvatar = uploadUrl;
       Swal.fire({
         icon: 'success',
@@ -1743,31 +1654,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     this.isUploadingBadgeIcon = true;
-    const filename = `badge_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '')}`;
-    const uploadUrl = `https://s3.tebi.io/guiikhub/${filename}`;
-
     try {
-      const s3 = new S3Client({
-        endpoint: 'https://s3.tebi.io',
-        region: 'us-east-1',
-        credentials: {
-          accessKeyId: 'ztWbSlXugHK1EYjV',
-          secretAccessKey: 'IQZDobQP3wmAocfoZpKgfSbUWC9YDG3AumY7TyM5'
-        }
-      });
-
-      const fileBuffer = new Uint8Array(await file.arrayBuffer());
-
-      const cmd = new PutObjectCommand({
-        Bucket: 'guiikhub',
-        Key: filename,
-        Body: fileBuffer,
-        ContentType: file.type,
-        ACL: 'public-read'
-      });
-
-      await s3.send(cmd);
-
+      const uploadUrl = await this.uploadImageToS3(file, 'badge');
       this.badgeIconUrl = uploadUrl;
       Swal.fire({
         icon: 'success',

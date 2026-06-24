@@ -3,15 +3,17 @@ import Swal from 'sweetalert2';
 import { User, Article } from '../models/interfaces';
 import { Firestore, doc, getDoc, updateDoc, setDoc } from '@angular/fire/firestore';
 
+import { environment } from '../../../environments/environment';
+
 @Injectable({
   providedIn: 'root'
 })
 export class NewsletterService {
   private readonly firestore = inject(Firestore);
 
-  private readonly emailjsServiceId = 'service_8dyxl0t';
-  private readonly emailjsTemplateId = 'template_2tqtp6q';
-  private readonly emailjsPublicKey = 'EWcK4w9n6ogMtV0XV';
+  private readonly emailjsServiceId = environment.emailjs.serviceId;
+  private readonly emailjsTemplateId = environment.emailjs.templateId;
+  private readonly emailjsPublicKey = environment.emailjs.publicKey;
 
   async sendNewsletter(
     articleId: string, 
