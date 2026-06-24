@@ -136,7 +136,8 @@ export class ArticleService {
     content: string, 
     user: User, 
     articlesList: Article[],
-    addXpFn?: (userId: string, xpAmount: number, reason: string) => Promise<boolean>
+    addXpFn?: (userId: string, xpAmount: number, reason: string) => Promise<boolean>,
+    parentId?: string
   ): Promise<Comment | null> {
     const id = 'c_' + Date.now();
     const newComment: Comment = {
@@ -149,6 +150,10 @@ export class ArticleService {
       content,
       createdAt: new Date().toISOString()
     };
+
+    if (parentId) {
+      newComment.parentId = parentId;
+    }
 
     await setDoc(doc(this.firestore, `comments/${id}`), newComment);
     

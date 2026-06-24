@@ -399,12 +399,13 @@ export class DbService {
     await this.articleService.approveArticle(articleId);
   }
 
-  async addComment(articleId: string, content: string) {
+  async addComment(articleId: string, content: string, parentId?: string) {
     const user = this.currentUser();
     if (!user) return null;
     return this.articleService.addComment(
       articleId, content, user, this.articles(),
-      (uId, xp, reason) => this.addXpToUser(uId, xp, reason)
+      (uId, xp, reason) => this.addXpToUser(uId, xp, reason),
+      parentId
     );
   }
 

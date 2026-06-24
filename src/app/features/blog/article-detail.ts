@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
+import { Comment } from '../../core/models/comment';
 import { SeoService } from '../../core/services/seo.service';
 import { Subject, Subscription, debounceTime } from 'rxjs';
 import Swal from 'sweetalert2';
@@ -124,8 +125,14 @@ export class ArticleDetailComponent implements OnDestroy {
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   });
 
-  // Form Field
+  readonly topLevelComments = computed(() => {
+    return this.articleComments().filter(c => !c.parentId);
+  });
+
+  // Form Fields
   newCommentText = '';
+  activeReplyCommentId: string | null = null;
+  replyCommentText = '';
 
   // Build custom CSS variables map for the wrapper (matching parent blog theme!)
   readonly customStyleVariables = computed(() => {
@@ -238,6 +245,32 @@ export class ArticleDetailComponent implements OnDestroy {
 
     this.db.addComment(art.id, this.newCommentText.trim());
     this.newCommentText = '';
+  }
+
+  getCommentReplies(commentId: string): Comment[] {
+    const art = this.article();
+    if (!art) return [];
+    return this.db.comments()
+      .filter(c => c.articleId === art.id && c.parentId === commentId)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+  }
+
+  startReply(commentId: string) {
+    this.activeReplyCommentId = commentId;
+    this.replyCommentText = '';
+  }
+
+  cancelReply() {
+    this.activeReplyCommentId = null;
+    this.replyCommentText = '';
+  }
+
+  async submitReply(parentId: string) {
+    const art = this.article();
+    if (!art || !this.replyCommentText.trim()) return;
+
+    await this.db.addComment(art.id, this.replyCommentText.trim(), parentId);
+    this.cancelReply();
   }
 
   formatContent(content: string): string {

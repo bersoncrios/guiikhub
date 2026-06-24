@@ -7,4 +7,5 @@ export interface Comment {
   authorAvatarUrl: string;
   content: string;
   createdAt: string;
+  parentId?: string;
 }

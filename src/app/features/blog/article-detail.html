@@ -1,198 +1,255 @@
 @if (db.isArticlesLoading() || db.isUsersLoading()) {
-  <div class="loading-container">
-    <div class="spinner"></div>
-    <style>
-      .loading-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 60vh;
+<div class="loading-container">
+  <div class="spinner"></div>
+  <style>
+    .loading-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 60vh;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255, 255, 255, 0.1);
+      border-top-color: var(--blog-primary, #00f0ff);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      100% {
+        transform: rotate(360deg);
       }
-      .spinner {
-        width: 50px;
-        height: 50px;
-        border: 4px solid rgba(255, 255, 255, 0.1);
-        border-top-color: var(--blog-primary, #00f0ff);
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-      @keyframes spin { 100% { transform: rotate(360deg); } }
-    </style>
-  </div>
+    }
+  </style>
+</div>
 } @else if (article(); as art) {
-  @if (blogUser(); as user) {
-    <!-- Wrap in custom style container to apply theme variables -->
-    <div class="blog-wrapper" [class]="db.getThemeClass(user.activeTheme)" [ngStyle]="customStyleVariables()">
-      <!-- Scroll progress bar -->
-      <div class="scroll-progress-bar" [style.width.%]="scrollPercent()"></div>
-      
-      <!-- Minimal Header Navigation -->
-      <header class="blog-header-nav">
-        <div class="nav-content">
-          <a [routerLink]="['/b', user.username]" class="back-link">← Voltar para {{ user.blogSettings.title }}</a>
-          <a routerLink="/" class="back-link">Voltar para o GuiikHub</a>
-        </div>
-      </header>
+@if (blogUser(); as user) {
+<!-- Wrap in custom style container to apply theme variables -->
+<div class="blog-wrapper" [class]="db.getThemeClass(user.activeTheme)" [ngStyle]="customStyleVariables()">
+  <!-- Scroll progress bar -->
+  <div class="scroll-progress-bar" [style.width.%]="scrollPercent()"></div>
 
-      <!-- Main Article Container -->
-      <main class="article-detail-container">
-        <article class="custom-card article-view">
-          <!-- Article Cover -->
-          <div class="article-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+  <!-- Minimal Header Navigation -->
+  <header class="blog-header-nav">
+    <div class="nav-content">
+      <a [routerLink]="['/b', user.username]" class="back-link">← Voltar para {{ user.blogSettings.title }}</a>
+      <a routerLink="/" class="back-link">Voltar para o GuiikHub</a>
+    </div>
+  </header>
 
-          <div class="article-body">
-            <!-- Meta Details -->
-            <div class="article-meta">
-              <div class="author-info">
-                <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)">
-                  <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName">
-                </div>
-                <div>
-                  <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                    <a [routerLink]="['/b', art.authorUsername]" class="author-name">{{ art.authorDisplayName }}</a>
-                    @if (user.activeTag; as activeTag) {
-                      <span class="user-prestige-tag">{{ activeTag }}</span>
-                    }
-                    <div class="author-badges-inline" style="display: flex; gap: 4px;">
-                      @for (badge of getUserBadges(user); track badge.id) {
-                        <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'" style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blog-primary, #00f0ff); box-shadow: 0 0 5px rgba(0,240,255,0.2);">
-                      }
-                    </div>
-                  </div>
-                  <span class="author-handle">&#64;{{ art.authorUsername }}</span>
-                </div>
-              </div>
-              
-              <div class="date-info" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
-                <span>Publicado em {{ art.createdAt | date:'dd/MM/yyyy \'às\' HH:mm' }}</span>
-                @if (art.updatedAt) {
-                  <span class="edited-date" style="opacity: 0.8; font-style: italic; font-size: 0.85em;">(Editado em {{ art.updatedAt | date:'dd/MM/yyyy \'às\' HH:mm' }})</span>
-                }
-                <span class="reading-time-info" style="color: var(--blog-primary, #00f0ff); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-left: 0.25rem;">
-                  ⏱️ {{ estimatedReadingTime() }} {{ estimatedReadingTime() === 1 ? 'min' : 'mins' }} de leitura
-                </span>
-              </div>
+  <!-- Main Article Container -->
+  <main class="article-detail-container">
+    <article class="custom-card article-view">
+      <!-- Article Cover -->
+      <div class="article-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+
+      <div class="article-body">
+        <!-- Meta Details -->
+        <div class="article-meta">
+          <div class="author-info">
+            <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)"
+              [ngStyle]="db.getFrameStyle(user.activeFrame)">
+              <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName">
             </div>
-
-            <!-- Title -->
-            <h1 class="article-title">{{ art.title }}</h1>
-
-            <!-- Section & Tags -->
-            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
-              @if (art.section) {
-                <span class="section-badge">{{ art.section }}</span>
-              }
-              <div class="article-tags" style="margin-bottom: 0;">
-                @for (tag of art.tags; track tag) {
-                  <span class="tag">#{{ tag }}</span>
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                <a [routerLink]="['/b', art.authorUsername]" class="author-name">{{ art.authorDisplayName }}</a>
+                @if (user.activeTag; as activeTag) {
+                <span class="user-prestige-tag">{{ activeTag }}</span>
                 }
+                <div class="author-badges-inline" style="display: flex; gap: 4px;">
+                  @for (badge of getUserBadges(user); track badge.id) {
+                  <img [src]="badge.iconUrl" [title]="badge.name + ' (' + badge.description + ')'"
+                    style="width: 20px; height: 20px; border-radius: 50%; object-fit: cover; border: 1px solid var(--blog-primary, #00f0ff); box-shadow: 0 0 5px rgba(0,240,255,0.2);">
+                  }
+                </div>
               </div>
-            </div>
-
-            <!-- Divider -->
-            <hr class="section-divider">
-
-            <!-- Body Content -->
-            <div class="article-content" [innerHTML]="formatContent(art.content)"></div>
-
-            <!-- Footer Interaction Bar -->
-            <div class="article-interactions-bar" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-              <button 
-                class="btn like-button" 
-                [class.liked]="db.isLiked(art.id)"
-                (click)="toggleLike()">
-                <span class="icon">⚡</span> 
-                {{ db.isLiked(art.id) ? 'Curtido!' : 'Curtir Matéria' }}
-                <span class="badge">{{ art.likesCount }}</span>
-              </button>
-
-              <!-- Applause (Claps) Button -->
-              <div class="clap-button-wrapper" style="position: relative; display: inline-block;">
-                <button 
-                  class="btn clap-button" 
-                  [class.has-claps]="(art.applauseCount || 0) + localClapIncrement() > 0"
-                  (click)="addClap()">
-                  <span class="icon">👏</span> 
-                  Aplaudir Artigo
-                  <span class="badge">{{ (art.applauseCount || 0) + localClapIncrement() }}</span>
-                </button>
-                @if (showClapFloatingText()) {
-                  <span class="floating-clap-score">+1 Bit</span>
-                }
-              </div>
+              <span class="author-handle">&#64;{{ art.authorUsername }}</span>
             </div>
           </div>
-        </article>
 
-        <!-- Comments Section -->
-        <section class="comments-section custom-card">
-          <h3>Discussão ({{ articleComments().length }})</h3>
+          <div class="date-info" style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+            <span>Publicado em {{ art.createdAt | date:'dd/MM/yyyy \'às\' HH:mm' }}</span>
+            @if (art.updatedAt) {
+            <span class="edited-date" style="opacity: 0.8; font-style: italic; font-size: 0.85em;">(Editado em {{
+              art.updatedAt | date:'dd/MM/yyyy \'às\' HH:mm' }})</span>
+            }
+            <span class="reading-time-info"
+              style="color: var(--blog-primary, #00f0ff); font-weight: 600; display: flex; align-items: center; gap: 4px; margin-left: 0.25rem;">
+              ⏱️ {{ estimatedReadingTime() }} {{ estimatedReadingTime() === 1 ? 'min' : 'mins' }} de leitura
+            </span>
+          </div>
+        </div>
 
-          <!-- Add Comment Form -->
-          @if (db.isAuthenticated() && db.currentUser(); as currentUser) {
-            <form (submit)="submitComment()" class="comment-form">
-              <div class="form-group">
-                <label for="commentInput">Deixe seu comentário como <strong>{{ currentUser.displayName }}</strong></label>
-                <textarea 
-                  id="commentInput" 
-                  name="commentInput" 
-                  [(ngModel)]="newCommentText" 
-                  class="form-control comment-textarea" 
-                  placeholder="Escreva um comentário nerd ou compartilhe sua opinião gamer..." 
-                  required></textarea>
-              </div>
-              <button type="submit" class="btn btn-primary btn-sm">Enviar Comentário</button>
-            </form>
-          } @else {
-            <div class="login-warning" style="text-align: center; padding: 2rem 1.5rem; border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.02);">
-              <p style="margin-bottom: 1rem; color: var(--blog-text-muted); font-size: 0.9rem;">Você precisa entrar na sua conta para comentar e participar do debate.</p>
-              <a routerLink="/auth" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;">
-                ⚡ Entrar / Cadastrar
-              </a>
-            </div>
+        <!-- Title -->
+        <h1 class="article-title">{{ art.title }}</h1>
+
+        <!-- Section & Tags -->
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; margin-bottom: 1.5rem;">
+          @if (art.section) {
+          <span class="section-badge">{{ art.section }}</span>
           }
-
-          <!-- Comments List -->
-          <div class="comments-list">
-            @for (comment of articleComments(); track comment.id) {
-              <div class="comment-item">
-                <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(db.getUserByUsername(comment.authorUsername)?.activeFrame)" [ngStyle]="db.getFrameStyle(db.getUserByUsername(comment.authorUsername)?.activeFrame)">
-                  <img [src]="comment.authorAvatarUrl" [alt]="comment.authorDisplayName">
-                </div>
-                <div class="comment-bubble">
-                  <div class="comment-header">
-                    <span class="comment-author" [routerLink]="['/b', comment.authorUsername]">{{ comment.authorDisplayName }}</span>
-                    @if (db.getUserByUsername(comment.authorUsername)?.activeTag; as activeTag) {
-                      <span class="user-prestige-tag">{{ activeTag }}</span>
-                    }
-                    <span class="comment-handle">&#64;{{ comment.authorUsername }}</span>
-                    <span class="comment-date">{{ comment.createdAt | date:'shortTime' }}</span>
-                  </div>
-                  <p class="comment-text">{{ comment.content }}</p>
-                </div>
-              </div>
-            } @empty {
-              <div class="empty-comments">
-                <p>Ninguém comentou ainda. Seja o primeiro a iniciar o debate!</p>
-              </div>
+          <div class="article-tags" style="margin-bottom: 0;">
+            @for (tag of art.tags; track tag) {
+            <span class="tag">#{{ tag }}</span>
             }
           </div>
-        </section>
-      </main>
+        </div>
 
-      <footer class="blog-footer">
-        <p>© {{ user.blogSettings.title }} - Criado com GuiikHub</p>
-      </footer>
-    </div>
-  }
+        <!-- Divider -->
+        <hr class="section-divider">
+
+        <!-- Body Content -->
+        <div class="article-content" [innerHTML]="formatContent(art.content)"></div>
+
+        <!-- Footer Interaction Bar -->
+        <div class="article-interactions-bar" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+          <button class="btn like-button" [class.liked]="db.isLiked(art.id)" (click)="toggleLike()">
+            <span class="icon">⚡</span>
+            {{ db.isLiked(art.id) ? 'Curtido!' : 'Curtir Matéria' }}
+            <span class="badge">{{ art.likesCount }}</span>
+          </button>
+
+          <!-- Applause (Claps) Button -->
+          <div class="clap-button-wrapper" style="position: relative; display: inline-block;">
+            <button class="btn clap-button" [class.has-claps]="(art.applauseCount || 0) + localClapIncrement() > 0"
+              (click)="addClap()">
+              <span class="icon">👏</span>
+              Aplaudir Artigo
+              <span class="badge">{{ (art.applauseCount || 0) + localClapIncrement() }}</span>
+            </button>
+            @if (showClapFloatingText()) {
+            <span class="floating-clap-score">+1 Bit</span>
+            }
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- Comments Section -->
+    <section class="comments-section custom-card">
+      <h3>Discussão ({{ articleComments().length }})</h3>
+
+      <!-- Add Comment Form -->
+      @if (db.isAuthenticated() && db.currentUser(); as currentUser) {
+      <form (submit)="submitComment()" class="comment-form">
+        <div class="form-group">
+          <label for="commentInput">Deixe seu comentário como <strong>{{ currentUser.displayName }}</strong></label>
+          <textarea id="commentInput" name="commentInput" [(ngModel)]="newCommentText"
+            class="form-control comment-textarea"
+            placeholder="Escreva um comentário nerd ou compartilhe sua opinião gamer..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Enviar Comentário</button>
+      </form>
+      } @else {
+      <div class="login-warning"
+        style="text-align: center; padding: 2rem 1.5rem; border: 1px dashed rgba(255, 255, 255, 0.1); border-radius: 8px; margin-bottom: 1.5rem; background: rgba(255, 255, 255, 0.02);">
+        <p style="margin-bottom: 1rem; color: var(--blog-text-muted); font-size: 0.9rem;">Você precisa entrar na sua
+          conta para comentar e participar do debate.</p>
+        <a routerLink="/auth" class="btn btn-primary btn-sm"
+          style="display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none;">
+          ⚡ Entrar / Cadastrar
+        </a>
+      </div>
+      }
+
+      <!-- Comments List -->
+      <div class="comments-list">
+        <ng-template #commentTemplate let-comment="comment" let-depth="depth">
+          <div class="comment-group" [class.nested-group]="depth > 0">
+            <div [class]="depth === 0 ? 'comment-item' : 'reply-item'">
+              <div class="avatar-wrapper"
+                [class]="(depth === 0 ? 'size-sm ' : 'size-xs ') + db.getFrameClass(db.getUserByUsername(comment.authorUsername)?.activeFrame)"
+                [ngStyle]="db.getFrameStyle(db.getUserByUsername(comment.authorUsername)?.activeFrame)">
+                <img [src]="comment.authorAvatarUrl" [alt]="comment.authorDisplayName">
+              </div>
+              <div [class]="depth === 0 ? 'comment-bubble' : 'reply-bubble'">
+                <div class="comment-header">
+                  <span class="comment-author" [routerLink]="['/b', comment.authorUsername]">{{
+                    comment.authorDisplayName }}</span>
+                  @if (comment.authorId === article()?.authorId) {
+                  <span class="author-badge">Autor</span>
+                  }
+                  @if (db.getUserByUsername(comment.authorUsername)?.activeTag; as activeTag) {
+                  <span class="user-prestige-tag">{{ activeTag }}</span>
+                  }
+                  <span class="comment-divider"></span>
+                  <span class="comment-handle">&#64;{{ comment.authorUsername }}</span>
+                  <span class="comment-divider"></span>
+                  <span class="comment-date">{{ comment.createdAt | date:'shortTime' }}</span>
+                </div>
+                <p class="comment-text">{{ comment.content }}</p>
+
+                @if (db.isAuthenticated()) {
+                <div style="display: flex; justify-content: flex-end; margin-top: 0.25rem;">
+                  <button type="button" class="reply-btn" (click)="startReply(comment.id)">
+                    💬 Responder
+                  </button>
+                </div>
+                }
+              </div>
+            </div>
+
+            <!-- Replies Container -->
+            @if (getCommentReplies(comment.id).length > 0 || activeReplyCommentId === comment.id) {
+            <div class="replies-container" [style.margin-left]="depth >= 4 ? '0' : '1.5rem'"
+              [style.border-left]="depth >= 4 ? 'none' : '1px solid rgba(255, 255, 255, 0.06)'"
+              [style.padding-left]="depth >= 4 ? '0' : '1rem'">
+              <!-- Inline Reply Form -->
+              @if (activeReplyCommentId === comment.id && db.currentUser(); as currentUser) {
+              <form (submit)="submitReply(comment.id)" class="reply-form-inline">
+                <div class="avatar-wrapper size-xs" [class]="db.getFrameClass(currentUser.activeFrame)"
+                  [ngStyle]="db.getFrameStyle(currentUser.activeFrame)">
+                  <img [src]="currentUser.avatarUrl" [alt]="currentUser.displayName">
+                </div>
+                <div class="reply-input-group">
+                  <textarea name="replyText" [(ngModel)]="replyCommentText" class="reply-textarea"
+                    [placeholder]="'Responder para @' + comment.authorUsername + '...'" required></textarea>
+                  <div class="reply-buttons">
+                    <button type="submit" class="btn-xs btn-primary">Enviar</button>
+                    <button type="button" class="btn-xs btn-secondary" (click)="cancelReply()">Cancelar</button>
+                  </div>
+                </div>
+              </form>
+              }
+
+              <!-- Render replies recursively -->
+              @for (reply of getCommentReplies(comment.id); track reply.id) {
+              <ng-container
+                *ngTemplateOutlet="commentTemplate; context: { comment: reply, depth: depth + 1 }"></ng-container>
+              }
+            </div>
+            }
+          </div>
+        </ng-template>
+
+        @for (comment of topLevelComments(); track comment.id) {
+        <ng-container *ngTemplateOutlet="commentTemplate; context: { comment: comment, depth: 0 }"></ng-container>
+        } @empty {
+        <div class="empty-comments">
+          <p>Ninguém comentou ainda. Seja o primeiro a iniciar o debate!</p>
+        </div>
+        }
+      </div>
+    </section>
+  </main>
+
+  <footer class="blog-footer">
+    <p>© {{ user.blogSettings.title }} - Criado com GuiikHub</p>
+  </footer>
+</div>
+}
 } @else {
-  <!-- Fallback: Article not found -->
-  <div class="not-found-container">
-    <div class="not-found-card glass-card">
-      <div class="not-found-icon">👾</div>
-      <h2>Matéria não encontrada</h2>
-      <p>A matéria que você está tentando acessar não existe ou foi removida pelo autor.</p>
-      <a routerLink="/" class="btn btn-primary">Voltar para o Feed</a>
-    </div>
+<!-- Fallback: Article not found -->
+<div class="not-found-container">
+  <div class="not-found-card glass-card">
+    <div class="not-found-icon">👾</div>
+    <h2>Matéria não encontrada</h2>
+    <p>A matéria que você está tentando acessar não existe ou foi removida pelo autor.</p>
+    <a routerLink="/" class="btn btn-primary">Voltar para o Feed</a>
   </div>
+</div>
 }
