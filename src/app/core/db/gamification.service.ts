@@ -380,7 +380,8 @@ export class GamificationService {
     xpAmount: number, 
     reason: string, 
     badgesList: Badge[], 
-    currentUser: User | null
+    currentUser: User | null,
+    articleId?: string
   ): Promise<boolean> {
     try {
       const userRef = doc(this.firestore, `users/${userId}`);
@@ -417,6 +418,9 @@ export class GamificationService {
           description: `Ganhou ${xpAmount} XP por: ${reason}` + (newUnlockedBadgesText ? `. Conquistas desbloqueadas: ${newUnlockedBadgesText}` : ''),
           createdAt: new Date().toISOString()
         };
+        if (articleId) {
+          xpLog.articleId = articleId;
+        }
         transaction.set(logRef, xpLog);
       });
 
@@ -673,7 +677,7 @@ export class GamificationService {
     }
 
     const alreadyRewarded = gamificationLogsList.some(
-      log => log.typeAction === 'earn' && log.description.includes(`Leitura completa do artigo: ${articleId}`)
+      log => log.typeAction === 'earn' && (log.articleId === articleId || log.description.includes(`Leitura completa do artigo: ${articleId}`))
     );
 
     if (alreadyRewarded) {
@@ -682,7 +686,7 @@ export class GamificationService {
     }
 
     rewardedArticlesInMemory.add(articleId);
-    const success = await this.addXpToUser(user.id, 5, `Leitura completa do artigo: ${articleId}`, badgesList, user);
+    const success = await this.addXpToUser(user.id, 5, `Leitura completa do artigo: ${articleTitle}`, badgesList, user, articleId);
     if (success) {
       Swal.fire({
         icon: 'success',

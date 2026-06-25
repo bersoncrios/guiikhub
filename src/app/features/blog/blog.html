@@ -158,7 +158,7 @@
           <!-- Layout: Grid -->
       @if (user.blogSettings.layoutType === 'grid') {
         <div class="layout-grid">
-          @for (art of blogArticles(); track art.id) {
+          @for (art of paginatedArticles(); track art.id) {
             <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
               <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
               <div class="card-body">
@@ -187,7 +187,7 @@
       <!-- Layout: List -->
       @if (user.blogSettings.layoutType === 'list') {
         <div class="layout-list">
-          @for (art of blogArticles(); track art.id) {
+          @for (art of paginatedArticles(); track art.id) {
             <article class="custom-card article-list-item" [routerLink]="['post', art.slug]">
               <div class="list-item-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
               <div class="list-item-body">
@@ -214,7 +214,7 @@
       <!-- Layout: Magazine -->
       @if (user.blogSettings.layoutType === 'magazine') {
         <div class="layout-magazine">
-          @if (blogArticles()[0]; as heroArt) {
+          @if (paginatedArticles()[0]; as heroArt) {
             <!-- Hero Article -->
             <article class="custom-card hero-magazine-article" [routerLink]="['post', heroArt.slug]">
               <div class="magazine-hero-cover" [style.background-image]="'url(' + heroArt.coverUrl + ')'"></div>
@@ -241,7 +241,7 @@
 
           <!-- Grid of other articles -->
           <div class="layout-grid">
-            @for (art of blogArticles().slice(1); track art.id) {
+            @for (art of paginatedArticles().slice(1); track art.id) {
               <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
                 <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
                 <div class="card-body">
@@ -272,6 +272,25 @@
         <div class="custom-card empty-blog-state">
           <h3>Nenhuma publicação encontrada</h3>
           <p>Este criador ainda não publicou matérias no seu blog.</p>
+        </div>
+      }
+
+      <!-- Pagination Controls -->
+      @if (totalPages() > 1) {
+        <div class="cyber-pagination">
+          <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="currentPage.set(currentPage() - 1)">
+            &lt; Anterior
+          </button>
+          <div class="pagination-numbers">
+            @for (p of pageNumbers(); track p) {
+              <button class="pagination-btn" [class.active]="currentPage() === p" (click)="currentPage.set(p)">
+                {{ p }}
+              </button>
+            }
+          </div>
+          <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="currentPage.set(currentPage() + 1)">
+            Próxima &gt;
+          </button>
         </div>
       }
         </main>

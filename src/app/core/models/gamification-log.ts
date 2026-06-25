@@ -5,4 +5,5 @@ export interface GamificationLog {
   amount: number;
   description: string;
   createdAt: string;
+  articleId?: string;
 }

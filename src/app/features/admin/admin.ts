@@ -156,6 +156,66 @@ export class AdminComponent implements OnInit, OnDestroy {
     return this.db.articles().filter(art => (art.blogId || art.authorId) === user.id);
   });
 
+  // ─── Paginação de Matérias do Criador ───
+  readonly postsPage = signal(1);
+  readonly postsPageSize = 8;
+  readonly paginatedMyArticles = computed(() => {
+    const list = this.myArticles();
+    const start = (this.postsPage() - 1) * this.postsPageSize;
+    return list.slice(start, start + this.postsPageSize);
+  });
+  readonly postsTotalPages = computed(() => Math.ceil(this.myArticles().length / this.postsPageSize));
+  readonly postsPageNumbers = computed(() => {
+    const pages: number[] = [];
+    const total = this.postsTotalPages();
+    const current = this.postsPage();
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  });
+
+  // ─── Paginação do Histórico de Gamificação ───
+  readonly logsPage = signal(1);
+  readonly logsPageSize = 10;
+  readonly paginatedGamificationLogs = computed(() => {
+    const list = this.db.gamificationLogs();
+    const start = (this.logsPage() - 1) * this.logsPageSize;
+    return list.slice(start, start + this.logsPageSize);
+  });
+  readonly logsTotalPages = computed(() => Math.ceil(this.db.gamificationLogs().length / this.logsPageSize));
+  readonly logsPageNumbers = computed(() => {
+    const pages: number[] = [];
+    const total = this.logsTotalPages();
+    const current = this.logsPage();
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  });
+
+  // ─── Paginação de Contas de Usuários ───
+  readonly usersPage = signal(1);
+  readonly usersPageSize = 10;
+  readonly paginatedUsers = computed(() => {
+    const list = this.db.users();
+    const start = (this.usersPage() - 1) * this.usersPageSize;
+    return list.slice(start, start + this.usersPageSize);
+  });
+  readonly usersTotalPages = computed(() => Math.ceil(this.db.users().length / this.usersPageSize));
+  readonly usersPageNumbers = computed(() => {
+    const pages: number[] = [];
+    const total = this.usersTotalPages();
+    const current = this.usersPage();
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  });
+
   // Collaborators
   newCollabUsername = '';
 
@@ -178,6 +238,15 @@ export class AdminComponent implements OnInit, OnDestroy {
   });
 
   constructor(public db: DbService) {
+    // Reset pages back to 1 on tab / subtab navigation
+    effect(() => {
+      this.activeTab();
+      this.sysAdminSubTab();
+      this.postsPage.set(1);
+      this.logsPage.set(1);
+      this.usersPage.set(1);
+    });
+
     // Re-initialize forms when the active user changes
     effect(() => {
       const user = this.db.currentUser();

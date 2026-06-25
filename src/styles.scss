@@ -1079,5 +1079,68 @@ textarea.form-control {
   font-family: var(--font-mono) !important;
 }
 
+/* Cyberpunk/Glassmorphic Pagination Styling */
+.cyber-pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  background: rgba(17, 19, 30, 0.4);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
+  box-shadow: var(--shadow-sm);
+
+  .pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 40px;
+    height: 40px;
+    padding: 0 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    user-select: none;
+
+    &:hover:not(:disabled) {
+      color: var(--blog-text, var(--text-main));
+      background: rgba(157, 78, 221, 0.15);
+      border-color: var(--blog-primary, var(--primary));
+      box-shadow: 0 0 10px rgba(157, 78, 221, 0.2);
+    }
+
+    &.active {
+      color: #08090d;
+      background: var(--blog-primary, var(--primary));
+      border-color: var(--blog-primary, var(--primary));
+      box-shadow: var(--blog-glow, var(--glow-primary));
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .pagination-numbers {
+    display: flex;
+    gap: 0.25rem;
+  }
+}
+
 
 

@@ -265,7 +265,7 @@
           <a routerLink="/auth" class="btn btn-primary">⚡ Entrar / Cadastrar</a>
         </div>
       } @else {
-        @for (article of filteredArticles(); track article.id) {
+        @for (article of paginatedArticles(); track article.id) {
           <article class="glass-card article-card" [routerLink]="['/b', article.authorUsername, 'post', article.slug]">
             <div class="article-cover" [style.background-image]="'url(' + article.coverUrl + ')'">
               <div class="article-category-badge">
@@ -334,6 +334,25 @@
         }
       }
     </div>
+
+    <!-- Pagination Controls -->
+    @if (totalPages() > 1) {
+      <div class="cyber-pagination">
+        <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="currentPage.set(currentPage() - 1)">
+          &lt; Anterior
+        </button>
+        <div class="pagination-numbers">
+          @for (p of pageNumbers(); track p) {
+            <button class="pagination-btn" [class.active]="currentPage() === p" (click)="currentPage.set(p)">
+              {{ p }}
+            </button>
+          }
+        </div>
+        <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="currentPage.set(currentPage() + 1)">
+          Próxima &gt;
+        </button>
+      </div>
+    }
   </section>
 
   <!-- Right Sidebar (Recommended Creators) -->

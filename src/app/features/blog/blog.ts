@@ -68,6 +68,29 @@ export class BlogComponent {
     });
   });
 
+  // Pagination State
+  readonly currentPage = signal(1);
+  readonly pageSize = 6;
+
+  readonly paginatedArticles = computed(() => {
+    const list = this.blogArticles();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
+  });
+
+  readonly totalPages = computed(() => Math.ceil(this.blogArticles().length / this.pageSize));
+
+  readonly pageNumbers = computed(() => {
+    const pages: number[] = [];
+    const total = this.totalPages();
+    const current = this.currentPage();
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  });
+
   readonly activeStatus = computed(() => {
     const user = this.blogUser();
     if (!user) return null;
@@ -127,6 +150,12 @@ export class BlogComponent {
   private viewRegisteredForUserId = '';
 
   constructor() {
+    // Reset page to 1 on section or articles changes
+    effect(() => {
+      this.blogArticles();
+      this.currentPage.set(1);
+    });
+
     // Update browser tab title and meta tags when blog user loads
     effect(() => {
       const user = this.blogUser();

@@ -191,7 +191,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (art of myArticles(); track art.id) {
+            @for (art of paginatedMyArticles(); track art.id) {
             <tr>
               <td class="col-title" data-label="Título">
                 <div class="post-title-cell">
@@ -256,6 +256,25 @@
           </tbody>
         </table>
       </div>
+
+      <!-- Pagination Controls for Creator's Articles -->
+      @if (postsTotalPages() > 1) {
+        <div class="cyber-pagination">
+          <button class="pagination-btn" [disabled]="postsPage() === 1" (click)="postsPage.set(postsPage() - 1)">
+            &lt; Anterior
+          </button>
+          <div class="pagination-numbers">
+            @for (p of postsPageNumbers(); track p) {
+              <button class="pagination-btn" [class.active]="postsPage() === p" (click)="postsPage.set(p)">
+                {{ p }}
+              </button>
+            }
+          </div>
+          <button class="pagination-btn" [disabled]="postsPage() === postsTotalPages()" (click)="postsPage.set(postsPage() + 1)">
+            Próxima &gt;
+          </button>
+        </div>
+      }
     </div>
     }
 
@@ -1352,7 +1371,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (log of db.gamificationLogs(); track log.id) {
+                @for (log of paginatedGamificationLogs(); track log.id) {
                 <tr>
                   <td class="col-date">{{ log.createdAt | date:'short' }}</td>
                   <td class="col-action">
@@ -1375,6 +1394,25 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination Controls for Gamification Logs -->
+          @if (logsTotalPages() > 1) {
+            <div class="cyber-pagination">
+              <button class="pagination-btn" [disabled]="logsPage() === 1" (click)="logsPage.set(logsPage() - 1)">
+                &lt; Anterior
+              </button>
+              <div class="pagination-numbers">
+                @for (p of logsPageNumbers(); track p) {
+                  <button class="pagination-btn" [class.active]="logsPage() === p" (click)="logsPage.set(p)">
+                    {{ p }}
+                  </button>
+                }
+              </div>
+              <button class="pagination-btn" [disabled]="logsPage() === logsTotalPages()" (click)="logsPage.set(logsPage() + 1)">
+                Próxima &gt;
+              </button>
+            </div>
+          }
         </div>
       </div>
     </div>
@@ -1623,7 +1661,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (user of db.users(); track user.id) {
+                @for (user of paginatedUsers(); track user.id) {
                 <tr>
                   <td class="col-title">
                     <div class="post-title-cell">
@@ -1677,6 +1715,25 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination Controls for System Users -->
+          @if (usersTotalPages() > 1) {
+            <div class="cyber-pagination">
+              <button class="pagination-btn" [disabled]="usersPage() === 1" (click)="usersPage.set(usersPage() - 1)">
+                &lt; Anterior
+              </button>
+              <div class="pagination-numbers">
+                @for (p of usersPageNumbers(); track p) {
+                  <button class="pagination-btn" [class.active]="usersPage() === p" (click)="usersPage.set(p)">
+                    {{ p }}
+                  </button>
+                }
+              </div>
+              <button class="pagination-btn" [disabled]="usersPage() === usersTotalPages()" (click)="usersPage.set(usersPage() + 1)">
+                Próxima &gt;
+              </button>
+            </div>
+          }
         </div>
       }
 

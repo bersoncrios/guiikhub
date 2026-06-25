@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
@@ -17,6 +17,29 @@ export class FeedComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly seo = inject(SeoService);
   readonly searchQuery = signal('');
+  
+  // Pagination State
+  readonly currentPage = signal(1);
+  readonly pageSize = 9;
+
+  readonly paginatedArticles = computed(() => {
+    const list = this.filteredArticles();
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return list.slice(start, start + this.pageSize);
+  });
+
+  readonly totalPages = computed(() => Math.ceil(this.filteredArticles().length / this.pageSize));
+
+  readonly pageNumbers = computed(() => {
+    const pages: number[] = [];
+    const total = this.totalPages();
+    const current = this.currentPage();
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, start + 4);
+    if (end - start < 4) start = Math.max(1, end - 4);
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  });
   
   // Spotlight Article computation
   readonly spotlightArticle = computed(() => {
@@ -187,7 +210,13 @@ export class FeedComponent implements OnInit {
       .slice(0, 5);
   });
 
-  constructor(public db: DbService) {}
+  constructor(public db: DbService) {
+    // Reset page to 1 when filters or tabs change
+    effect(() => {
+      this.filteredArticles();
+      this.currentPage.set(1);
+    });
+  }
 
   ngOnInit() {
     this.seo.updateTags({
