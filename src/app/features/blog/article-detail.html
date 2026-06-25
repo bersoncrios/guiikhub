@@ -221,9 +221,7 @@
 
             <!-- Replies Container -->
             @if (getCommentReplies(comment.id).length > 0 || activeReplyCommentId === comment.id) {
-            <div class="replies-container" [style.margin-left]="depth >= 4 ? '0' : '1.5rem'"
-              [style.border-left]="depth >= 4 ? 'none' : '1px solid rgba(255, 255, 255, 0.06)'"
-              [style.padding-left]="depth >= 4 ? '0' : '1rem'">
+            <div class="replies-container depth-{{depth}}" [class.depth-flatten]="depth >= 4">
               <!-- Inline Reply Form -->
               @if (activeReplyCommentId === comment.id && db.currentUser(); as currentUser) {
               <form (submit)="submitReply(comment.id)" class="reply-form-inline">
