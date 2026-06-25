@@ -381,7 +381,8 @@ export class GamificationService {
     reason: string, 
     badgesList: Badge[], 
     currentUser: User | null,
-    articleId?: string
+    articleId?: string,
+    bitsAmount?: number
   ): Promise<boolean> {
     try {
       const userRef = doc(this.firestore, `users/${userId}`);
@@ -401,21 +402,24 @@ export class GamificationService {
         const badgeResult = this.checkAndUnlockBadgesInTransaction(userData, newXp, transaction, userRef, badgesList, currentUser);
         const newUnlockedBadgesText = badgeResult.unlockedBadgesText;
 
+        const currentBits = userData.bits_balance || 0;
         const updates: any = {
           xp_points: newXp
         };
-        if (badgeResult.rewardBits > 0) {
-          updates.bits_balance = (userData.bits_balance || 0) + badgeResult.rewardBits;
+        let totalBitsEarned = (bitsAmount || 0) + badgeResult.rewardBits;
+        if (totalBitsEarned > 0) {
+          updates.bits_balance = currentBits + totalBitsEarned;
         }
 
         transaction.update(userRef, updates);
 
+        const bitsText = bitsAmount && bitsAmount > 0 ? ` e ${bitsAmount} Bits` : '';
         const xpLog: GamificationLog = {
           id: logId,
           userId,
           typeAction: 'earn',
           amount: xpAmount,
-          description: `Ganhou ${xpAmount} XP por: ${reason}` + (newUnlockedBadgesText ? `. Conquistas desbloqueadas: ${newUnlockedBadgesText}` : ''),
+          description: `Ganhou ${xpAmount} XP${bitsText} por: ${reason}` + (newUnlockedBadgesText ? `. Conquistas desbloqueadas: ${newUnlockedBadgesText}` : ''),
           createdAt: new Date().toISOString()
         };
         if (articleId) {
@@ -686,12 +690,12 @@ export class GamificationService {
     }
 
     rewardedArticlesInMemory.add(articleId);
-    const success = await this.addXpToUser(user.id, 5, `Leitura completa do artigo: ${articleTitle}`, badgesList, user, articleId);
+    const success = await this.addXpToUser(user.id, 5, `Leitura completa do artigo: ${articleTitle}`, badgesList, user, articleId, 5);
     if (success) {
       Swal.fire({
         icon: 'success',
         title: '⚡ CONHECIMENTO ADQUIRIDO!',
-        html: `Você ganhou <b style="color: #ff007f;">+5 XP</b> por concluir a leitura de: <b>"${articleTitle}"</b>!`,
+        html: `Você ganhou <b style="color: #ff007f;">+5 XP</b> e <b style="color: #ffd700;">+5 Bits</b> por concluir a leitura de: <b>"${articleTitle}"</b>!`,
         background: '#121420',
         color: '#f1f5f9',
         timer: 3000,
