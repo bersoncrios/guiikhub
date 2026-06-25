@@ -694,3 +694,61 @@
     background: rgba(255, 255, 255, 0.08);
   }
 }
+
+/* Badges Section Styles */
+.blog-badges-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  width: 100%;
+}
+
+.badge-card-item {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-md, 12px);
+  transition: all var(--transition-normal, 0.3s ease);
+  border: 1px solid var(--blog-border, rgba(255, 255, 255, 0.08));
+  
+  &:hover {
+    transform: translateY(-4px);
+    border-color: var(--blog-primary);
+    box-shadow: var(--blog-glow);
+  }
+
+  .badge-icon {
+    width: 64px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid var(--blog-primary);
+    box-shadow: var(--blog-glow);
+    padding: 2px;
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .badge-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+
+    .badge-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--blog-text, #f1f5f9);
+      font-family: var(--blog-font-family);
+      margin: 0;
+    }
+
+    .badge-desc {
+      font-size: 0.85rem;
+      color: var(--blog-text-muted, #94a3b8);
+      margin: 0;
+      line-height: 1.4;
+    }
+  }
+}

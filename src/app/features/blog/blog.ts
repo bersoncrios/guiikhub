@@ -91,6 +91,14 @@ export class BlogComponent {
     return pages;
   });
 
+  // Get badges unlocked by the blog owner
+  readonly blogUserBadges = computed(() => {
+    const user = this.blogUser();
+    const unlocked = user?.unlockedBadges;
+    if (!unlocked) return [];
+    return this.db.badges().filter(b => unlocked.includes(b.id));
+  });
+
   readonly activeStatus = computed(() => {
     const user = this.blogUser();
     if (!user) return null;

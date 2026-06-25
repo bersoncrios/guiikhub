@@ -136,163 +136,187 @@
         <!-- Articles Feed Section -->
         <main class="blog-articles-container">
           <!-- Section Filter Tabs -->
-          @if (blogSections().length > 0) {
-            <div class="blog-sections-nav">
+          <div class="blog-sections-nav">
+            <button 
+              class="section-nav-btn" 
+              [class.active]="selectedSection() === 'Tudo'" 
+              (click)="selectedSection.set('Tudo')">
+              Tudo
+            </button>
+            @for (sec of blogSections(); track sec) {
               <button 
                 class="section-nav-btn" 
-                [class.active]="selectedSection() === 'Tudo'" 
-                (click)="selectedSection.set('Tudo')">
-                Tudo
+                [class.active]="selectedSection() === sec" 
+                (click)="selectedSection.set(sec)">
+                {{ sec }}
               </button>
-              @for (sec of blogSections(); track sec) {
-                <button 
-                  class="section-nav-btn" 
-                  [class.active]="selectedSection() === sec" 
-                  (click)="selectedSection.set(sec)">
-                  {{ sec }}
+            }
+            <button 
+              class="section-nav-btn" 
+              [class.active]="selectedSection() === 'Conquistas'" 
+              (click)="selectedSection.set('Conquistas')">
+              🏅 Conquistas
+            </button>
+          </div>
+
+          @if (selectedSection() !== 'Conquistas') {
+            <!-- Layout: Grid -->
+            @if (user.blogSettings.layoutType === 'grid') {
+              <div class="layout-grid">
+                @for (art of paginatedArticles(); track art.id) {
+                  <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
+                    <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+                    <div class="card-body">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                        @if (art.section) {
+                          <span class="section-badge">{{ art.section }}</span>
+                        }
+                      </div>
+                      <h3 class="card-title">{{ art.title }}</h3>
+                      <p class="card-summary">{{ art.summary }}</p>
+                      <div class="card-footer">
+                        <div class="card-tags">
+                          @for (tag of art.tags.slice(0, 2); track tag) {
+                            <span class="tag">#{{ tag }}</span>
+                          }
+                        </div>
+                        <span class="likes-count">⚡ {{ art.likesCount }}</span>
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+
+            <!-- Layout: List -->
+            @if (user.blogSettings.layoutType === 'list') {
+              <div class="layout-list">
+                @for (art of paginatedArticles(); track art.id) {
+                  <article class="custom-card article-list-item" [routerLink]="['post', art.slug]">
+                    <div class="list-item-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+                    <div class="list-item-body">
+                      <div class="list-item-meta">
+                        <span>{{ art.createdAt | date:'mediumDate' }}</span>
+                        @if (art.section) {
+                          <span class="section-badge" style="margin-left: auto; margin-right: 1rem;">{{ art.section }}</span>
+                        }
+                        <span class="likes-count">⚡ {{ art.likesCount }}</span>
+                      </div>
+                      <h3 class="card-title">{{ art.title }}</h3>
+                      <p class="card-summary">{{ art.summary }}</p>
+                      <div class="card-tags">
+                        @for (tag of art.tags; track tag) {
+                          <span class="tag">#{{ tag }}</span>
+                        }
+                      </div>
+                    </div>
+                  </article>
+                }
+              </div>
+            }
+
+            <!-- Layout: Magazine -->
+            @if (user.blogSettings.layoutType === 'magazine') {
+              <div class="layout-magazine">
+                @if (paginatedArticles()[0]; as heroArt) {
+                  <!-- Hero Article -->
+                  <article class="custom-card hero-magazine-article" [routerLink]="['post', heroArt.slug]">
+                    <div class="magazine-hero-cover" [style.background-image]="'url(' + heroArt.coverUrl + ')'"></div>
+                    <div class="magazine-hero-body">
+                      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                        <span class="card-date">{{ heroArt.createdAt | date:'longDate' }}</span>
+                        @if (heroArt.section) {
+                          <span class="section-badge">{{ heroArt.section }}</span>
+                        }
+                      </div>
+                      <h2 class="hero-title">{{ heroArt.title }}</h2>
+                      <p class="hero-summary">{{ heroArt.summary }}</p>
+                      <div class="card-footer">
+                        <div class="card-tags">
+                          @for (tag of heroArt.tags; track tag) {
+                            <span class="tag">#{{ tag }}</span>
+                          }
+                        </div>
+                        <span class="likes-count">⚡ {{ heroArt.likesCount }} curtidas</span>
+                      </div>
+                    </div>
+                  </article>
+                }
+
+                <!-- Grid of other articles -->
+                <div class="layout-grid">
+                  @for (art of paginatedArticles().slice(1); track art.id) {
+                    <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
+                      <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
+                      <div class="card-body">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                          <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
+                          @if (art.section) {
+                            <span class="section-badge">{{ art.section }}</span>
+                          }
+                        </div>
+                        <h3 class="card-title">{{ art.title }}</h3>
+                        <p class="card-summary">{{ art.summary }}</p>
+                        <div class="card-footer">
+                          <div class="card-tags">
+                            @for (tag of art.tags.slice(0, 2); track tag) {
+                              <span class="tag">#{{ tag }}</span>
+                            }
+                          </div>
+                          <span class="likes-count">⚡ {{ art.likesCount }}</span>
+                        </div>
+                      </div>
+                    </article>
+                  }
+                </div>
+              </div>
+            }
+
+            @if (blogArticles().length === 0) {
+              <div class="custom-card empty-blog-state">
+                <h3>Nenhuma publicação encontrada</h3>
+                <p>Este criador ainda não publicou matérias no seu blog.</p>
+              </div>
+            }
+
+            <!-- Pagination Controls -->
+            @if (totalPages() > 1) {
+              <div class="cyber-pagination">
+                <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="currentPage.set(currentPage() - 1)">
+                  &lt; Anterior
                 </button>
+                <div class="pagination-numbers">
+                  @for (p of pageNumbers(); track p) {
+                    <button class="pagination-btn" [class.active]="currentPage() === p" (click)="currentPage.set(p)">
+                      {{ p }}
+                    </button>
+                  }
+                </div>
+                <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="currentPage.set(currentPage() + 1)">
+                  Próxima &gt;
+                </button>
+              </div>
+            }
+          } @else {
+            <!-- Badges Grid View -->
+            <div class="blog-badges-grid">
+              @for (badge of blogUserBadges(); track badge.id) {
+                <div class="custom-card badge-card-item">
+                  <img [src]="badge.iconUrl" [alt]="badge.name" class="badge-icon">
+                  <div class="badge-info">
+                    <h4 class="badge-name">{{ badge.name }}</h4>
+                    <p class="badge-desc">{{ badge.description }}</p>
+                  </div>
+                </div>
+              } @empty {
+                <div class="custom-card empty-blog-state" style="width: 100%; grid-column: 1 / -1;">
+                  <h3>Nenhum emblema desbloqueado</h3>
+                  <p>Este criador ainda não conquistou emblemas no GuiikHub.</p>
+                </div>
               }
             </div>
           }
-
-          <!-- Layout: Grid -->
-      @if (user.blogSettings.layoutType === 'grid') {
-        <div class="layout-grid">
-          @for (art of paginatedArticles(); track art.id) {
-            <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
-              <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
-              <div class="card-body">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                  <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
-                  @if (art.section) {
-                    <span class="section-badge">{{ art.section }}</span>
-                  }
-                </div>
-                <h3 class="card-title">{{ art.title }}</h3>
-                <p class="card-summary">{{ art.summary }}</p>
-                <div class="card-footer">
-                  <div class="card-tags">
-                    @for (tag of art.tags.slice(0, 2); track tag) {
-                      <span class="tag">#{{ tag }}</span>
-                    }
-                  </div>
-                  <span class="likes-count">⚡ {{ art.likesCount }}</span>
-                </div>
-              </div>
-            </article>
-          }
-        </div>
-      }
-
-      <!-- Layout: List -->
-      @if (user.blogSettings.layoutType === 'list') {
-        <div class="layout-list">
-          @for (art of paginatedArticles(); track art.id) {
-            <article class="custom-card article-list-item" [routerLink]="['post', art.slug]">
-              <div class="list-item-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
-              <div class="list-item-body">
-                <div class="list-item-meta">
-                  <span>{{ art.createdAt | date:'mediumDate' }}</span>
-                  @if (art.section) {
-                    <span class="section-badge" style="margin-left: auto; margin-right: 1rem;">{{ art.section }}</span>
-                  }
-                  <span class="likes-count">⚡ {{ art.likesCount }}</span>
-                </div>
-                <h3 class="card-title">{{ art.title }}</h3>
-                <p class="card-summary">{{ art.summary }}</p>
-                <div class="card-tags">
-                  @for (tag of art.tags; track tag) {
-                    <span class="tag">#{{ tag }}</span>
-                  }
-                </div>
-              </div>
-            </article>
-          }
-        </div>
-      }
-
-      <!-- Layout: Magazine -->
-      @if (user.blogSettings.layoutType === 'magazine') {
-        <div class="layout-magazine">
-          @if (paginatedArticles()[0]; as heroArt) {
-            <!-- Hero Article -->
-            <article class="custom-card hero-magazine-article" [routerLink]="['post', heroArt.slug]">
-              <div class="magazine-hero-cover" [style.background-image]="'url(' + heroArt.coverUrl + ')'"></div>
-              <div class="magazine-hero-body">
-                <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                  <span class="card-date">{{ heroArt.createdAt | date:'longDate' }}</span>
-                  @if (heroArt.section) {
-                    <span class="section-badge">{{ heroArt.section }}</span>
-                  }
-                </div>
-                <h2 class="hero-title">{{ heroArt.title }}</h2>
-                <p class="hero-summary">{{ heroArt.summary }}</p>
-                <div class="card-footer">
-                  <div class="card-tags">
-                    @for (tag of heroArt.tags; track tag) {
-                      <span class="tag">#{{ tag }}</span>
-                    }
-                  </div>
-                  <span class="likes-count">⚡ {{ heroArt.likesCount }} curtidas</span>
-                </div>
-              </div>
-            </article>
-          }
-
-          <!-- Grid of other articles -->
-          <div class="layout-grid">
-            @for (art of paginatedArticles().slice(1); track art.id) {
-              <article class="custom-card article-card-item" [routerLink]="['post', art.slug]">
-                <div class="card-cover" [style.background-image]="'url(' + art.coverUrl + ')'"></div>
-                <div class="card-body">
-                  <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                    <span class="card-date">{{ art.createdAt | date:'mediumDate' }}</span>
-                    @if (art.section) {
-                      <span class="section-badge">{{ art.section }}</span>
-                    }
-                  </div>
-                  <h3 class="card-title">{{ art.title }}</h3>
-                  <p class="card-summary">{{ art.summary }}</p>
-                  <div class="card-footer">
-                    <div class="card-tags">
-                      @for (tag of art.tags.slice(0, 2); track tag) {
-                        <span class="tag">#{{ tag }}</span>
-                      }
-                    </div>
-                    <span class="likes-count">⚡ {{ art.likesCount }}</span>
-                  </div>
-                </div>
-              </article>
-            }
-          </div>
-        </div>
-      }
-
-      @if (blogArticles().length === 0) {
-        <div class="custom-card empty-blog-state">
-          <h3>Nenhuma publicação encontrada</h3>
-          <p>Este criador ainda não publicou matérias no seu blog.</p>
-        </div>
-      }
-
-      <!-- Pagination Controls -->
-      @if (totalPages() > 1) {
-        <div class="cyber-pagination">
-          <button class="pagination-btn" [disabled]="currentPage() === 1" (click)="currentPage.set(currentPage() - 1)">
-            &lt; Anterior
-          </button>
-          <div class="pagination-numbers">
-            @for (p of pageNumbers(); track p) {
-              <button class="pagination-btn" [class.active]="currentPage() === p" (click)="currentPage.set(p)">
-                {{ p }}
-              </button>
-            }
-          </div>
-          <button class="pagination-btn" [disabled]="currentPage() === totalPages()" (click)="currentPage.set(currentPage() + 1)">
-            Próxima &gt;
-          </button>
-        </div>
-      }
         </main>
       </div>
     </div>
