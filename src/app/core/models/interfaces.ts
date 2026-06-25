@@ -10,3 +10,5 @@ export * from './leilao-dia';
 export * from './configuracao-holofote';
 export * from './badge';
 export * from './shop-item';
+export * from './banned-word';
+

@@ -20,7 +20,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   // Navigation
   readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop'>('gamification');
-  readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop'>('overview');
+  readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop' | 'blacklist'>('overview');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
   closeMobileNav()  { this.mobileNavOpen.set(false); }
@@ -35,6 +35,18 @@ export class AdminComponent implements OnInit, OnDestroy {
   sysAdminGrantUserId = '';
   sysAdminGrantAmount = 10;
   sysAdminGrantDescription = 'Bonificação administrativa';
+
+  // Blacklist moderation variables
+  newBannedWord = '';
+  isSavingBannedWord = false;
+  bannedWordSearchQuery = signal<string>('');
+
+  readonly filteredBannedWords = computed(() => {
+    const list = this.db.bannedWords();
+    const query = this.bannedWordSearchQuery().toLowerCase().trim();
+    if (!query) return list;
+    return list.filter(item => item.word.toLowerCase().includes(query));
+  });
 
   // Dynamic Badge variables
   badgeName = '';
@@ -777,6 +789,60 @@ export class AdminComponent implements OnInit, OnDestroy {
         buttonsStyling: false
       });
       return;
+    }
+
+    if (!isDraft) {
+      const bannedWordsList = this.db.bannedWords();
+      if (bannedWordsList && bannedWordsList.length > 0) {
+        const normalizeText = (text: string): string => {
+          return text
+            .toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '');
+        };
+
+        const plainContent = this.newPostContent.replace(/<[^>]*>/g, ' ');
+        const titleNorm = normalizeText(this.newPostTitle || '');
+        const contentNorm = normalizeText(plainContent);
+        const summaryNorm = normalizeText(this.newPostSummary || '');
+        const tagsNorm = normalizeText(this.newPostTags || '');
+
+        const triggered: string[] = [];
+
+        for (const item of bannedWordsList) {
+          const bannedNorm = normalizeText(item.word);
+          if (bannedNorm) {
+            if (
+              titleNorm.includes(bannedNorm) ||
+              contentNorm.includes(bannedNorm) ||
+              summaryNorm.includes(bannedNorm) ||
+              tagsNorm.includes(bannedNorm)
+            ) {
+              triggered.push(item.word);
+            }
+          }
+        }
+
+        if (triggered.length > 0) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Conteúdo Bloqueado',
+            html: `Sua postagem contém termos restritos/sensíveis proibidos pela moderação do sistema:<br><br><span style="color: #ff3333; font-weight: bold; font-size: 1.1rem; border: 1px dashed rgba(255, 50, 50, 0.3); padding: 0.5rem; display: block; border-radius: 6px; background: rgba(255, 50, 50, 0.05);">${triggered.join(', ')}</span><br>Por favor, remova ou edite estes termos para poder publicar a matéria.`,
+            background: '#121420',
+            color: '#f1f5f9',
+            confirmButtonText: 'Revisar Conteúdo',
+            customClass: {
+              popup: 'guiik-swal-popup',
+              title: 'guiik-swal-title',
+              htmlContainer: 'guiik-swal-html',
+              confirmButton: 'guiik-swal-confirm-btn'
+            },
+            buttonsStyling: false
+          });
+          return;
+        }
+      }
     }
 
     const tags = this.newPostTags
@@ -1759,6 +1825,99 @@ export class AdminComponent implements OnInit, OnDestroy {
           background: '#121420',
           color: '#f1f5f9'
         });
+      }
+    });
+  }
+
+  async addBannedWord() {
+    const wordClean = this.newBannedWord.trim();
+    if (!wordClean) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Entrada Inválida',
+        text: 'A palavra proibida não pode estar vazia.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
+    const exists = this.db.bannedWords().some(
+      item => item.word.toLowerCase() === wordClean.toLowerCase()
+    );
+    if (exists) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Palavra Duplicada',
+        text: 'Esta palavra já existe na lista negra.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
+    this.isSavingBannedWord = true;
+    try {
+      await this.db.addBannedWord(wordClean);
+      Swal.fire({
+        icon: 'success',
+        title: 'Palavra Adicionada!',
+        text: `"${wordClean}" foi registrada na lista negra de moderação.`,
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      this.newBannedWord = '';
+    } catch (err) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro',
+        text: 'Não foi possível salvar a palavra proibida.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } finally {
+      this.isSavingBannedWord = false;
+    }
+  }
+
+  async deleteBannedWord(id: string) {
+    const item = this.db.bannedWords().find(w => w.id === id);
+    if (!item) return;
+
+    Swal.fire({
+      title: 'Excluir da Lista Negra?',
+      text: `Deseja realmente permitir novamente a palavra "${item.word}" nas postagens?`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Excluir',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        cancelButton: 'guiik-swal-confirm-btn'
+      },
+      buttonsStyling: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await this.db.deleteBannedWord(id);
+          Swal.fire({
+            icon: 'success',
+            title: 'Palavra Excluída!',
+            text: `A palavra "${item.word}" foi removida da lista negra com sucesso.`,
+            background: '#121420',
+            color: '#f1f5f9'
+          });
+        } catch (err) {
+          console.error(err);
+          Swal.fire('Erro', 'Não foi possível excluir a palavra.', 'error');
+        }
       }
     });
   }

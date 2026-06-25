@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord } from '../models/interfaces';
 import { 
   Firestore, 
   collection, 
@@ -11,7 +11,8 @@ import {
   updateDoc, 
   query, 
   orderBy,
-  where
+  where,
+  deleteDoc
 } from '@angular/fire/firestore';
 import { Auth, authState } from '@angular/fire/auth';
 
@@ -58,6 +59,7 @@ export class DbService {
   readonly gamificationLogs = signal<GamificationLog[]>([]);
   readonly badges = signal<Badge[]>([]);
   readonly shopItems = signal<ShopItem[]>([]);
+  readonly bannedWords = signal<BannedWord[]>([]);
 
   readonly currentUserLevel = computed(() => {
     const user = this.currentUser();
@@ -331,6 +333,13 @@ export class DbService {
     collectionData(collection(this.firestore, 'badges'), { idField: 'id' }).subscribe(data => {
       if (data) {
         this.badges.set(data as Badge[]);
+      }
+    });
+
+    // 13. Sync Banned Words Collection
+    collectionData(collection(this.firestore, 'banned_words'), { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.bannedWords.set(data as BannedWord[]);
       }
     });
   }
@@ -761,5 +770,20 @@ export class DbService {
       this.currentUser.update(curr => curr ? { ...curr, featuredBadge: badgeId || undefined } : null);
     }
     return success;
+  }
+
+  async addBannedWord(word: string): Promise<void> {
+    const docRef = doc(collection(this.firestore, 'banned_words'));
+    const bannedWord: BannedWord = {
+      id: docRef.id,
+      word: word.trim(),
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(docRef, bannedWord);
+  }
+
+  async deleteBannedWord(id: string): Promise<void> {
+    const docRef = doc(this.firestore, `banned_words/${id}`);
+    await deleteDoc(docRef);
   }
 }
