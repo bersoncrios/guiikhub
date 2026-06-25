@@ -755,6 +755,30 @@ export class AdminComponent implements OnInit, OnDestroy {
       return;
     }
 
+    // Validate minimum character length (500 chars excluding whitespace and HTML tags) for publications
+    const plainText = this.newPostContent.replace(/<[^>]*>/g, '');
+    const cleanText = plainText.replace(/\s/g, '');
+    const charCount = cleanText.length;
+
+    if (!isDraft && charCount < 500) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Matéria Muito Curta',
+        html: `O conteúdo da matéria deve ter pelo menos <b>500 caracteres</b> (sem contar espaços) para ser publicado.<br>Seu texto atual possui <b>${charCount} caracteres</b>.`,
+        background: '#121420',
+        color: '#f1f5f9',
+        confirmButtonText: 'Continuar Escrevendo',
+        customClass: {
+          popup: 'guiik-swal-popup',
+          title: 'guiik-swal-title',
+          htmlContainer: 'guiik-swal-html',
+          confirmButton: 'guiik-swal-confirm-btn'
+        },
+        buttonsStyling: false
+      });
+      return;
+    }
+
     const tags = this.newPostTags
       .split(',')
       .map(t => t.trim())
