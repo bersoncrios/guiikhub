@@ -72,22 +72,8 @@
     @if (db.currentUser(); as user) {
     <div class="mobile-user-section">
       <div class="mobile-user-info">
-        <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)">
-          <img [src]="user.avatarUrl" [alt]="user.displayName">
-          @if (user.featuredBadge; as badgeId) {
-            <img [src]="db.getBadgeIconById(badgeId)" class="avatar-featured-badge" [title]="db.getBadgeNameById(badgeId)">
-          }
-        </div>
-        <span class="mobile-user-name">
-          {{ user.displayName }}
-          @if (user.activeTag; as activeTag) {
-            <span class="user-prestige-tag">{{ activeTag }}</span>
-          }
-        </span>
-      </div>
-      <div class="mobile-user-stats" style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0.5rem; padding-left: 0.5rem;">
-        <span>🚀 Nv. {{ db.currentUserLevel() }}</span>
-        <span>🪙 {{ user.bits_balance || 0 }} Bits</span>
+        <img [src]="user.avatarUrl" [alt]="user.displayName" class="avatar-sm">
+        <span class="mobile-user-name">{{ user.displayName }}</span>
       </div>
       <button class="btn btn-danger btn-xs" (click)="db.logout(); closeMobileNav()">Sair</button>
     </div>
@@ -1758,7 +1744,8 @@
       <!-- Tab: Overview & Commands -->
       @if (sysAdminSubTab() === 'overview') {
         <!-- Quick Admin Commands -->
-        <div class="admin-commands-grid">
+        <div class="admin-commands-grid"
+          style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-top: 1rem;">
           <div class="stat-box"
             style="border-left: 4px solid #ef4444; background: rgba(239, 68, 68, 0.02); padding: 1.5rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.75rem;">
             <span class="box-tag" style="color: #ef4444;">CONSOLIDAÇÃO DE LEILÃO</span>
@@ -2113,7 +2100,7 @@
 
             <!-- Custom Frame Creator Fields -->
             @if (useCustomStyling && newItemCategory === 'frame') {
-              <div class="form-row-3">
+              <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group">
                   <label for="frameColor1Input">Cor Inicial do Gradiente</label>
                   <input type="color" id="frameColor1Input" name="frameColor1Input" [(ngModel)]="frameColor1" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
@@ -2151,7 +2138,7 @@
 
             <!-- Custom Theme Creator Fields -->
             @if (useCustomStyling && newItemCategory === 'theme') {
-              <div class="form-row-3">
+              <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group">
                   <label for="themePrimaryColorInput">Cor Principal (Accents/Botões)</label>
                   <input type="color" id="themePrimaryColorInput" name="themePrimaryColorInput" [(ngModel)]="themePrimaryColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">
@@ -2166,7 +2153,7 @@
                 </div>
               </div>
               
-              <div class="form-row-3">
+              <div class="form-row-3" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                 <div class="form-group">
                   <label for="themeTextColorInput">Cor do Texto</label>
                   <input type="color" id="themeTextColorInput" name="themeTextColorInput" [(ngModel)]="themeTextColor" class="form-control" style="height: 38px; padding: 4px; cursor: pointer;">

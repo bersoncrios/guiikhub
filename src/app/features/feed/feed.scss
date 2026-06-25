@@ -183,20 +183,19 @@
     .search-input {
       width: 100%;
       padding: 0.9rem 1rem 0.9rem 2.8rem;
-      background: rgba(13, 16, 28, 0.4);
+      background: rgba(17, 19, 30, 0.8);
       border: 1px solid var(--border-color);
       border-radius: var(--radius-md);
       color: var(--text-main);
       font-size: 0.95rem;
       transition: var(--transition-normal);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(8px);
 
       &:focus {
         outline: none;
         border-color: var(--secondary);
-        box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
-        background: rgba(13, 16, 28, 0.65);
+        box-shadow: var(--glow-secondary);
+        background: rgba(17, 19, 30, 0.95);
       }
     }
 
@@ -282,9 +281,8 @@
       position: absolute;
       top: 1rem;
       left: 1rem;
-      background: rgba(13, 16, 28, 0.65);
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      background: rgba(13, 15, 24, 0.8);
+      backdrop-filter: blur(4px);
       border: 1px solid var(--border-color);
       color: var(--secondary);
       font-size: 0.7rem;
@@ -682,16 +680,15 @@
   cursor: pointer;
   position: relative;
   border-radius: var(--radius-md);
-  padding: 1.5px;
-  background: linear-gradient(90deg, rgba(34, 211, 238, 0.5), rgba(167, 139, 250, 0.5));
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  padding: 2px;
+  background: linear-gradient(90deg, #00f0ff, #ff007f);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.25), 0 0 40px rgba(255, 0, 127, 0.15);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
   margin-bottom: 1.5rem;
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.4), 0 0 25px rgba(167, 139, 250, 0.15);
-    background: linear-gradient(90deg, rgba(34, 211, 238, 0.8), rgba(167, 139, 250, 0.8));
+    box-shadow: 0 0 30px rgba(0, 240, 255, 0.4), 0 0 60px rgba(255, 0, 127, 0.25);
   }
 
   .spotlight-tag {
@@ -699,7 +696,7 @@
     top: -12px;
     left: 1.5rem;
     z-index: 10;
-    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    background: linear-gradient(90deg, #ff007f, #00f0ff);
     color: #fff;
     font-size: 0.7rem;
     font-weight: 800;
@@ -707,7 +704,7 @@
     padding: 0.25rem 0.75rem;
     border-radius: var(--radius-sm);
     letter-spacing: 1px;
-    box-shadow: 0 4px 12px rgba(167, 139, 250, 0.3);
+    box-shadow: 0 2px 10px rgba(255, 0, 127, 0.5);
   }
 }
 
@@ -725,7 +722,7 @@
   .spotlight-overlay {
     position: absolute;
     inset: 0;
-    background: linear-gradient(to top, rgba(7, 8, 15, 0.9) 0%, rgba(7, 8, 15, 0.5) 60%, rgba(7, 8, 15, 0.1) 100%);
+    background: linear-gradient(to top, rgba(8, 9, 13, 0.95) 0%, rgba(8, 9, 13, 0.5) 60%, rgba(8, 9, 13, 0.1) 100%);
     z-index: 1;
   }
 
@@ -756,7 +753,7 @@
         height: 22px;
         border-radius: 50%;
         object-fit: cover;
-        border: 1.5px solid var(--secondary);
+        border: 1.5px solid #00f0ff;
       }
     }
 
@@ -779,10 +776,6 @@
     margin: 0;
     font-family: var(--font-display);
     text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
-
-    @media (max-width: 480px) {
-      font-size: 1.2rem;
-    }
   }
 
   .spotlight-summary {
@@ -793,55 +786,6 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-  }
-}
-
-/* Mobile Tag Cloud */
-.mobile-tag-cloud-card {
-  display: none;
-  margin-bottom: 1rem;
-  
-  @media (max-width: 768px) {
-    display: block;
-  }
-}
-
-.tags-container-horizontal {
-  display: flex;
-  gap: 0.5rem;
-  overflow-x: auto;
-  padding: 0.5rem 0.25rem;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-  
-  &::-webkit-scrollbar {
-    display: none; /* Hide scrollbars for mobile design */
-  }
-  
-  .tag-pill {
-    flex-shrink: 0;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    padding: 0.4rem 0.8rem;
-    font-size: 0.75rem;
-    border-radius: var(--radius-full);
-    cursor: pointer;
-    transition: var(--transition-fast);
-    font-family: var(--font-display);
-
-    &:hover, &.active {
-      background: rgba(167, 139, 250, 0.1);
-      border-color: var(--primary);
-      color: var(--primary);
-    }
-    
-    &.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-      box-shadow: 0 4px 15px rgba(167, 139, 250, 0.25);
-    }
   }
 }
 

@@ -8,11 +8,6 @@
   flex-direction: column;
   gap: 2rem;
   flex-grow: 1;
-
-  @media (max-width: 640px) {
-    padding: 2rem 1rem;
-    gap: 1.5rem;
-  }
 }
 
 .article-view {
@@ -303,28 +298,26 @@
       flex-shrink: 0;
     }
 
-      .comment-bubble {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: var(--radius-md);
-        padding: 1rem;
-        flex-grow: 1;
-        backdrop-filter: blur(10px);
-        -webkit-backdrop-filter: blur(10px);
-        transition: border-color 0.3s ease, box-shadow 0.3s ease;
+    .comment-bubble {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--blog-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      flex-grow: 1;
+      transition: border-color 0.3s ease, box-shadow 0.3s ease;
 
-        &:hover {
-          border-color: rgba(255, 255, 255, 0.15);
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        }
-
-        .comment-text {
-          font-size: 0.9rem;
-          line-height: 1.5;
-          color: var(--blog-text);
-          opacity: 0.95;
-        }
+      &:hover {
+        border-color: rgba(255, 255, 255, 0.12);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
       }
+
+      .comment-text {
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: var(--blog-text);
+        opacity: 0.95;
+      }
+    }
   }
 
   .comment-header {
@@ -647,56 +640,26 @@
   transition: border-color 0.3s ease, opacity 0.3s ease;
   opacity: 0.75;
 
-  /* Standard Flattening for deep nesting on desktop */
-  &.depth-flatten {
-    margin-left: 0 !important;
-    padding-left: 0 !important;
-    border-left: none !important;
-    
-    .reply-item::before {
-      display: none !important; /* Hide line connector since they are flattened */
-    }
-  }
-
-  /* Responsive Comment Tree Flattening */
   @media (max-width: 640px) {
-    margin-left: 1rem;
-    padding-left: 0.5rem;
-    
-    /* Flatten earlier on mobile: level >= 2 is flattened */
-    &.depth-1, &.depth-2, &.depth-3, &.depth-4, &.depth-5 {
-      margin-left: 0.5rem;
-      padding-left: 0.25rem;
-    }
-    
-    &.depth-2, &.depth-3, &.depth-4, &.depth-5 {
-      margin-left: 0 !important;
-      padding-left: 0 !important;
-      border-left: none !important;
-      
-      .reply-item::before {
-        display: none !important;
-      }
-    }
+    margin-left: 1.25rem;
+    padding-left: 0.75rem;
   }
 }
 
 .reply-form-inline {
-  background: rgba(13, 16, 28, 0.3) !important;
+  background: rgba(0, 0, 0, 0.25) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   border-radius: var(--radius-md, 8px);
   padding: 1rem;
   display: flex;
   gap: 0.75rem;
   align-items: start;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
   animation: slideDownReply 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 
   &:focus-within {
-    border-color: var(--blog-primary) !important;
-    box-shadow: 0 0 15px rgba(167, 139, 250, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    border-color: var(--blog-primary, #00f0ff) !important;
+    box-shadow: 0 0 15px rgba(0, 240, 255, 0.15), 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
   .reply-input-group {
@@ -800,19 +763,17 @@
   }
 
   .reply-bubble {
-    background: rgba(255, 255, 255, 0.01) !important;
+    background: rgba(255, 255, 255, 0.005) !important;
     border: 1px solid rgba(255, 255, 255, 0.04) !important;
     border-radius: var(--radius-md, 8px);
     padding: 0.8rem 1.1rem;
     flex-grow: 1;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     transition: all 0.3s ease;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.02) !important;
-      border-color: rgba(255, 255, 255, 0.1) !important;
-      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
+      background: rgba(255, 255, 255, 0.015) !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
 
     .comment-text {

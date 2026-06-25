@@ -94,10 +94,6 @@
               }
             </span>
           </div>
-          <div class="mobile-user-stats" style="display: flex; gap: 1rem; font-size: 0.8rem; color: var(--text-muted); margin-top: 0.5rem; margin-bottom: 0.5rem; padding-left: 0.5rem;">
-            <span>🚀 Nv. {{ db.currentUserLevel() }}</span>
-            <span>🪙 {{ user.bits_balance || 0 }} Bits</span>
-          </div>
           <button class="btn btn-danger btn-xs" (click)="db.logout(); closeMobileNav()">Sair</button>
         </div>
       }
@@ -268,26 +264,6 @@
           <button class="remove-filter" (click)="selectTag(null)">✕</button>
         </div>
       }
-    </div>
-
-    <!-- Mobile Tag Cloud (Horizontal Scrollable) -->
-    <div class="mobile-tag-cloud-card">
-      <div class="tags-container-horizontal">
-        <button 
-          class="tag-pill" 
-          [class.active]="selectedTag() === null" 
-          (click)="selectTag(null)">
-          # Tudo
-        </button>
-        @for (tag of allTags(); track tag) {
-          <button 
-            class="tag-pill" 
-            [class.active]="selectedTag() === tag" 
-            (click)="selectTag(tag)">
-            # {{ tag }}
-          </button>
-        }
-      </div>
     </div>
 
     <!-- Articles List -->
