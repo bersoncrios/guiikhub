@@ -993,6 +993,39 @@
           }
         </div>
 
+        <!-- Featured Badge Customize in Profile Editor -->
+        <div class="form-group" style="margin-top: 1.5rem; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 1.5rem; margin-bottom: 1.5rem;">
+          <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">🏆 Emblema em Destaque</label>
+          <p class="form-help" style="margin-bottom: 0.75rem; font-size: 0.8rem; opacity: 0.85;">Selecione um dos seus emblemas conquistados para exibir no canto superior direito da sua foto de perfil.</p>
+          
+          <div style="display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.5rem;">
+            <!-- Option: No Badge -->
+            <div class="glass-card" 
+              style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; min-width: 140px; position: relative;"
+              [style.border-color]="!db.currentUser()?.featuredBadge ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+              (click)="selectFeaturedBadge('')">
+              <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">Sem Emblema</span>
+            </div>
+
+            <!-- Loop unlocked badges -->
+            @for (badge of getUserBadges(db.currentUser()); track badge.id) {
+              <div class="glass-card" 
+                style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px; padding: 0.75rem; display: flex; align-items: center; gap: 0.75rem; cursor: pointer; min-width: 140px; position: relative;"
+                [style.border-color]="db.currentUser()?.featuredBadge === badge.id ? '#00f0ff' : 'rgba(255,255,255,0.05)'"
+                (click)="selectFeaturedBadge(badge.id)">
+                <img [src]="badge.iconUrl" style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover;">
+                <span style="font-size: 0.8rem; font-weight: bold; color: #fff;">{{ badge.name }}</span>
+              </div>
+            }
+          </div>
+
+          @if (getUserBadges(db.currentUser()).length === 0) {
+            <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem; font-style: italic;">
+              Você ainda não conquistou nenhum emblema. Continue interagindo e lendo matérias no GuiikHub para desbloquear conquistas!
+            </p>
+          }
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">Salvar Perfil</button>
           <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>

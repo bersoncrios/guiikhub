@@ -20,4 +20,5 @@ export interface User {
   activeFrame?: string;
   activeTag?: string;
   activeTheme?: string;
+  featuredBadge?: string;
 }

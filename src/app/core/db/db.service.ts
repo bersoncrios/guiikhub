@@ -742,4 +742,24 @@ export class DbService {
       return '🎨';
     }
   }
+
+  getBadgeIconById(badgeId: string): string {
+    const b = this.badges().find(badge => badge.id === badgeId);
+    return b ? b.iconUrl : '';
+  }
+
+  getBadgeNameById(badgeId: string): string {
+    const b = this.badges().find(badge => badge.id === badgeId);
+    return b ? b.name : '';
+  }
+
+  async selectFeaturedBadge(badgeId: string): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user) return false;
+    const success = await this.gamificationService.selectFeaturedBadge(user.id, badgeId);
+    if (success) {
+      this.currentUser.update(curr => curr ? { ...curr, featuredBadge: badgeId || undefined } : null);
+    }
+    return success;
+  }
 }

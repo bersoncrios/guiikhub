@@ -50,6 +50,9 @@
         <div class="creator-badge">
           <div class="avatar-wrapper size-lg" [class]="db.getFrameClass(user.activeFrame)" [ngStyle]="db.getFrameStyle(user.activeFrame)" style="width: 90px; height: 90px;">
             <img [src]="user.avatarUrl" [alt]="user.displayName" class="creator-avatar" style="width: 100%; height: 100%; border: none; box-shadow: none;">
+            @if (user.featuredBadge; as badgeId) {
+              <img [src]="db.getBadgeIconById(badgeId)" class="avatar-featured-badge" [title]="db.getBadgeNameById(badgeId)">
+            }
           </div>
           <div class="creator-text">
             <h1>{{ user.blogSettings.title }}</h1>

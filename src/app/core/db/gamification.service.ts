@@ -1023,9 +1023,34 @@ export class GamificationService {
         position: 'top-end'
       });
       return true;
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao equipar cosmético:', err);
-      Swal.fire('Erro', 'Não foi possível equipar o cosmético.', 'error');
+      Swal.fire('Erro', 'Não foi possível equipar o item.', 'error');
+      return false;
+    }
+  }
+
+  async selectFeaturedBadge(userId: string, badgeId: string): Promise<boolean> {
+    try {
+      const userRef = doc(this.firestore, `users/${userId}`);
+      await updateDoc(userRef, {
+        featuredBadge: badgeId || null
+      });
+      
+      Swal.fire({
+        icon: 'success',
+        title: badgeId ? 'Emblema Destacado!' : 'Emblema Removido!',
+        text: badgeId ? 'O emblema selecionado agora será exibido no seu avatar.' : 'O destaque do emblema foi removido.',
+        background: '#121420',
+        color: '#f1f5f9',
+        timer: 1500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+      });
+      return true;
+    } catch (err: any) {
+      console.error('Erro ao destacar emblema:', err);
       return false;
     }
   }

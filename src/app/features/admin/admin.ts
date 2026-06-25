@@ -2039,6 +2039,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     await this.db.updateActiveCosmetic(user.id, category, itemValue);
   }
 
+  async selectFeaturedBadge(badgeId: string) {
+    await this.db.selectFeaturedBadge(badgeId);
+  }
+
   isEquipped(category: 'frame' | 'tag' | 'theme', itemValue: string): boolean {
     const user = this.db.currentUser();
     if (!user) return false;

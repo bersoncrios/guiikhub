@@ -1142,5 +1142,51 @@ textarea.form-control {
   }
 }
 
+/* Featured Badge Overlay on Avatar */
+.avatar-featured-badge {
+  position: absolute !important;
+  top: -4px !important;
+  right: -4px !important;
+  width: 22px !important;
+  height: 22px !important;
+  border-radius: 50% !important;
+  border: 1.5px solid #08090d !important;
+  background: #11131e !important;
+  box-shadow: 0 0 6px rgba(0, 240, 255, 0.4) !important;
+  z-index: 10 !important;
+  object-fit: cover !important;
+  padding: 1px !important;
+}
+
+/* Adjust sizes for smaller avatar components */
+.size-xs .avatar-featured-badge {
+  width: 11px !important;
+  height: 11px !important;
+  top: -2px !important;
+  right: -2px !important;
+  border-width: 0.5px !important;
+}
+.size-sm .avatar-featured-badge {
+  width: 14px !important;
+  height: 14px !important;
+  top: -3px !important;
+  right: -3px !important;
+  border-width: 1px !important;
+}
+.size-md .avatar-featured-badge {
+  width: 16px !important;
+  height: 16px !important;
+  top: -3px !important;
+  right: -3px !important;
+  border-width: 1px !important;
+}
+.size-lg .avatar-featured-badge {
+  width: 26px !important;
+  height: 26px !important;
+  top: -4px !important;
+  right: -4px !important;
+  border-width: 2px !important;
+}
+
 
 

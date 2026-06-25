@@ -53,6 +53,9 @@
             <div class="avatar-wrapper size-sm" [class]="db.getFrameClass(user.activeFrame)"
               [ngStyle]="db.getFrameStyle(user.activeFrame)">
               <img [src]="art.authorAvatarUrl" [alt]="art.authorDisplayName">
+              @if (user.featuredBadge; as badgeId) {
+                <img [src]="db.getBadgeIconById(badgeId)" class="avatar-featured-badge" [title]="db.getBadgeNameById(badgeId)">
+              }
             </div>
             <div>
               <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
@@ -165,6 +168,9 @@
                 [class]="(depth === 0 ? 'size-sm ' : 'size-xs ') + db.getFrameClass(db.getUserByUsername(comment.authorUsername)?.activeFrame)"
                 [ngStyle]="db.getFrameStyle(db.getUserByUsername(comment.authorUsername)?.activeFrame)">
                 <img [src]="comment.authorAvatarUrl" [alt]="comment.authorDisplayName">
+                @if (db.getUserByUsername(comment.authorUsername)?.featuredBadge; as badgeId) {
+                  <img [src]="db.getBadgeIconById(badgeId)" class="avatar-featured-badge" [title]="db.getBadgeNameById(badgeId)">
+                }
               </div>
               <div [class]="depth === 0 ? 'comment-bubble' : 'reply-bubble'">
                 <div class="comment-header">
@@ -204,6 +210,9 @@
                 <div class="avatar-wrapper size-xs" [class]="db.getFrameClass(currentUser.activeFrame)"
                   [ngStyle]="db.getFrameStyle(currentUser.activeFrame)">
                   <img [src]="currentUser.avatarUrl" [alt]="currentUser.displayName">
+                  @if (currentUser.featuredBadge; as badgeId) {
+                    <img [src]="db.getBadgeIconById(badgeId)" class="avatar-featured-badge" [title]="db.getBadgeNameById(badgeId)">
+                  }
                 </div>
                 <div class="reply-input-group">
                   <textarea name="replyText" [(ngModel)]="replyCommentText" class="reply-textarea"
