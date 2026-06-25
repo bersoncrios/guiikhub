@@ -392,4 +392,10 @@ export class ArticleDetailComponent implements OnDestroy {
     if (!user || !user.unlockedBadges) return [];
     return this.db.badges().filter(b => user.unlockedBadges.includes(b.id));
   }
+
+  getLinkedContract(articleId: string) {
+    return this.db.pautaContracts().find(
+      c => c.publishedArticleId === articleId && c.status === 'published'
+    ) || null;
+  }
 }

@@ -5,6 +5,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
 import { SeoService } from '../../core/services/seo.service';
+import Swal from 'sweetalert2';
 
 @Component({
   selector: 'app-blog',
@@ -14,6 +15,7 @@ import { SeoService } from '../../core/services/seo.service';
   styleUrl: './blog.scss'
 })
 export class BlogComponent {
+  protected readonly Math = Math;
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly titleService = inject(Title);
@@ -99,6 +101,13 @@ export class BlogComponent {
     return this.db.badges().filter(b => unlocked.includes(b.id));
   });
 
+  // Get crowdfunding contracts of the user's blog
+  readonly blogContracts = computed(() => {
+    const user = this.blogUser();
+    if (!user) return [];
+    return this.db.pautaContracts().filter(c => c.creatorId === user.id);
+  });
+
   readonly activeStatus = computed(() => {
     const user = this.blogUser();
     if (!user) return null;
@@ -168,6 +177,7 @@ export class BlogComponent {
     effect(() => {
       const user = this.blogUser();
       if (user) {
+        this.selectedSection.set('Tudo');
         if (this.viewRegisteredForUserId !== user.id) {
           this.db.registerBlogView(user.id);
           this.viewRegisteredForUserId = user.id;
@@ -203,5 +213,35 @@ export class BlogComponent {
     if (user) {
       this.db.toggleFollow(user.id);
     }
+  }
+
+  async investInContract(contractId: string, amountVal: any) {
+    const amount = typeof amountVal === 'number' ? amountVal : parseInt(amountVal, 10);
+    if (isNaN(amount) || amount <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Valor Inválido',
+        text: 'Por favor, insira uma quantidade de Bits maior que zero.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+    const success = await this.db.investInPautaContract(contractId, amount);
+    if (success) {
+      Swal.fire({
+        icon: 'success',
+        title: 'Investimento Concluído!',
+        text: `Você apoiou a pauta com +${amount} Bits.`,
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    }
+  }
+
+  getArticleSlug(articleId: string): string {
+    return this.db.articles().find(a => a.id === articleId)?.slug || '';
   }
 }

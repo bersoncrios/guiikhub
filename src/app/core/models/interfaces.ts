@@ -11,4 +11,6 @@ export * from './configuracao-holofote';
 export * from './badge';
 export * from './shop-item';
 export * from './banned-word';
+export * from './pauta-contract';
+
 

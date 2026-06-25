@@ -1,20 +1,22 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord } from '../models/interfaces';
-import { 
-  Firestore, 
-  collection, 
-  collectionData, 
-  doc, 
-  docData, 
-  setDoc, 
-  updateDoc, 
-  query, 
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord, PautaContract } from '../models/interfaces';
+import {
+  Firestore,
+  collection,
+  collectionData,
+  doc,
+  docData,
+  setDoc,
+  updateDoc,
+  query,
   orderBy,
   where,
-  deleteDoc
+  deleteDoc,
+  runTransaction
 } from '@angular/fire/firestore';
 import { Auth, authState } from '@angular/fire/auth';
+import Swal from 'sweetalert2';
 
 import { AuthService } from './auth.service';
 import { ArticleService } from './article.service';
@@ -60,6 +62,7 @@ export class DbService {
   readonly badges = signal<Badge[]>([]);
   readonly shopItems = signal<ShopItem[]>([]);
   readonly bannedWords = signal<BannedWord[]>([]);
+  readonly pautaContracts = signal<PautaContract[]>([]);
 
   readonly currentUserLevel = computed(() => {
     const user = this.currentUser();
@@ -121,7 +124,7 @@ export class DbService {
         const currentXp = user.xp_points || 0;
         const unlocked = user.unlockedBadges || [];
         const eligibleButLocked = badgesList.filter(b => (!b.type || b.type === 'xp') && b.xpRequirement <= currentXp && !unlocked.includes(b.id));
-        
+
         if (eligibleButLocked.length > 0) {
           this.unlockBadgesRetroactively(user.id, eligibleButLocked);
         }
@@ -167,13 +170,13 @@ export class DbService {
               const u = userData as User;
               let hasChanges = false;
               const updates: any = {};
-              
+
               if (!u.email && fbUser.email) {
                 updates.email = fbUser.email;
                 u.email = fbUser.email;
                 hasChanges = true;
               }
-              
+
               if (u.bits_balance === undefined) {
                 updates.bits_balance = 0;
                 u.bits_balance = 0;
@@ -196,7 +199,7 @@ export class DbService {
               const month = String(now.getMonth() + 1).padStart(2, '0');
               const day = String(now.getDate()).padStart(2, '0');
               const todayStr = `${year}-${month}-${day}`;
-              
+
               // Check/Assign event badges for today
               this.checkAndAssignEventBadges(u.id, todayStr);
 
@@ -342,6 +345,13 @@ export class DbService {
         this.bannedWords.set(data as BannedWord[]);
       }
     });
+
+    // 14. Sync Pauta Contracts Collection
+    collectionData(collection(this.firestore, 'pauta_contracts'), { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.pautaContracts.set(data as PautaContract[]);
+      }
+    });
   }
 
   // --- AUTH SERVICE DELEGATES ---
@@ -365,13 +375,13 @@ export class DbService {
   // --- ARTICLE SERVICE DELEGATES ---
 
   async addArticle(
-    title: string, 
-    summary: string, 
-    content: string, 
-    coverUrl: string, 
-    tags: string[], 
-    targetBlogId?: string, 
-    saveAsDraft: boolean = false, 
+    title: string,
+    summary: string,
+    content: string,
+    coverUrl: string,
+    tags: string[],
+    targetBlogId?: string,
+    saveAsDraft: boolean = false,
     section?: string,
     scheduledAt?: string | null,
     scheduledNewsletter?: boolean
@@ -535,9 +545,9 @@ export class DbService {
   }
 
   async createBadge(
-    name: string, 
-    description: string, 
-    xpRequirement: number, 
+    name: string,
+    description: string,
+    xpRequirement: number,
     iconUrl: string,
     type?: 'xp' | 'event' | 'special' | 'staff' | 'milestone' | 'custom',
     targetDate?: string,
@@ -659,7 +669,7 @@ export class DbService {
       const glowColor = config.glowColor || '#00f0ff';
       const shape = config.shape || 'circle';
       const animType = config.animation || 'pulse';
-      
+
       let animation = 'none';
       if (animType === 'pulse') animation = 'frame-pulse 2s infinite alternate';
       else if (animType === 'rotate') animation = 'matrix-rotate 4s linear infinite';
@@ -785,5 +795,164 @@ export class DbService {
   async deleteBannedWord(id: string): Promise<void> {
     const docRef = doc(this.firestore, `banned_words/${id}`);
     await deleteDoc(docRef);
+  }
+
+  async createPautaContract(title: string, description: string, goalBits: number): Promise<void> {
+    const user = this.currentUser();
+    if (!user) throw new Error('Usuário não autenticado.');
+
+    const docRef = doc(collection(this.firestore, 'pauta_contracts'));
+    const contract: PautaContract = {
+      id: docRef.id,
+      title: title.trim(),
+      description: description.trim(),
+      creatorId: user.id,
+      creatorName: user.displayName || user.username,
+      goalBits: goalBits,
+      currentBits: 0,
+      status: 'active',
+      createdAt: new Date().toISOString(),
+      investors: []
+    };
+
+    await setDoc(docRef, contract);
+  }
+
+  async investInPautaContract(contractId: string, amount: number): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user) return false;
+
+    const userRef = doc(this.firestore, `users/${user.id}`);
+    const contractRef = doc(this.firestore, `pauta_contracts/${contractId}`);
+    const logId = 'glog_' + Date.now() + '_invest_' + Math.random().toString(36).substring(2, 7);
+    const logRef = doc(this.firestore, `gamification_logs/${logId}`);
+
+    try {
+      await runTransaction(this.firestore, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+        const contractDoc = await transaction.get(contractRef);
+
+        if (!userDoc.exists() || !contractDoc.exists()) {
+          throw new Error('Usuário ou contrato não encontrado.');
+        }
+
+        const userData = userDoc.data() as User;
+        const contractData = contractDoc.data() as PautaContract;
+
+        if (contractData.status !== 'active') {
+          throw new Error('Este contrato não está mais aceitando investimentos.');
+        }
+
+        const balance = userData.bits_balance || 0;
+        if (balance < amount) {
+          throw new Error(`Saldo insuficiente. Você tem ${balance} Bits.`);
+        }
+
+        transaction.update(userRef, {
+          bits_balance: balance - amount
+        });
+
+        const investors = contractData.investors || [];
+        const existingInvestorIndex = investors.findIndex(inv => inv.userId === user.id);
+
+        if (existingInvestorIndex > -1) {
+          investors[existingInvestorIndex].bitsContributed += amount;
+        } else {
+          investors.push({
+            userId: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            bitsContributed: amount
+          });
+        }
+
+        const newCurrentBits = (contractData.currentBits || 0) + amount;
+        const isFunded = newCurrentBits >= contractData.goalBits;
+
+        transaction.update(contractRef, {
+          currentBits: newCurrentBits,
+          investors: investors,
+          status: isFunded ? 'funded' : 'active'
+        });
+
+        const spendLog: GamificationLog = {
+          id: logId,
+          userId: user.id,
+          typeAction: 'spend',
+          amount: amount,
+          description: `Apoiou a pauta "${contractData.title}" com ${amount} Bits`,
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(logRef, spendLog);
+      });
+      return true;
+    } catch (error: any) {
+      console.error('Error investing in pauta contract:', error);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro no Investimento',
+        text: error.message || 'Erro ao realizar investimento.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return false;
+    }
+  }
+
+  async publishPautaArticle(contractId: string, articleId: string): Promise<void> {
+    const contractRef = doc(this.firestore, `pauta_contracts/${contractId}`);
+
+    await runTransaction(this.firestore, async (transaction) => {
+      const contractDoc = await transaction.get(contractRef);
+      if (!contractDoc.exists()) {
+        throw new Error('Contrato de pauta não encontrado.');
+      }
+
+      const contractData = contractDoc.data() as PautaContract;
+      if (contractData.status !== 'funded') {
+        throw new Error('Este contrato ainda não foi financiado ou já foi publicado.');
+      }
+
+      // 1. Perform all reads first (fetch all investors' documents)
+      const investors = contractData.investors || [];
+      const investorProfiles: Array<{ userRef: any; userDoc: any; backer: any }> = [];
+
+      for (const backer of investors) {
+        const userRef = doc(this.firestore, `users/${backer.userId}`);
+        const userDoc = await transaction.get(userRef);
+        investorProfiles.push({ userRef, userDoc, backer });
+      }
+
+      // 2. Perform all writes after reads have completed
+      transaction.update(contractRef, {
+        status: 'published',
+        publishedArticleId: articleId
+      });
+
+      for (const { userRef, userDoc, backer } of investorProfiles) {
+        if (userDoc.exists()) {
+          const userData = userDoc.data() as User;
+          const currentXp = userData.xp_points || 0;
+          const xpBonus = backer.bitsContributed * 2;
+
+          transaction.update(userRef, {
+            xp_points: currentXp + xpBonus
+          });
+
+          const rewardLogId = 'glog_' + Date.now() + '_reward_' + backer.userId.substring(0, 5) + '_' + Math.random().toString(36).substring(2, 7);
+          const rewardLogRef = doc(this.firestore, `gamification_logs/${rewardLogId}`);
+
+          const rewardLog: GamificationLog = {
+            id: rewardLogId,
+            userId: backer.userId,
+            typeAction: 'earn',
+            amount: xpBonus,
+            description: `Bônus por apoiar a pauta "${contractData.title}": +${xpBonus} XP`,
+            createdAt: new Date().toISOString()
+          };
+          transaction.set(rewardLogRef, rewardLog);
+        }
+      }
+    });
   }
 }

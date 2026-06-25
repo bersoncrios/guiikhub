@@ -6,7 +6,7 @@ import { environment } from '../../../environments/environment';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router, ActivatedRoute } from '@angular/router';
 import { DbService } from '../../core/db/db.service';
-import { BlogSettings, ShopItem } from '../../core/models/interfaces';
+import { BlogSettings, ShopItem, PautaContract } from '../../core/models/interfaces';
 
 @Component({
   selector: 'app-admin',
@@ -46,6 +46,26 @@ export class AdminComponent implements OnInit, OnDestroy {
     const query = this.bannedWordSearchQuery().toLowerCase().trim();
     if (!query) return list;
     return list.filter(item => item.word.toLowerCase().includes(query));
+  });
+
+  // Crowdfunding Pauta variables
+  newContractTitle = '';
+  newContractDescription = '';
+  newContractGoal = 100;
+  isSavingContract = false;
+  selectedContractIdForPost = signal<string | null>(null);
+  readonly monetizationSubTab = signal<'sponsors' | 'crowdfunding'>('sponsors');
+
+  readonly fundedContracts = computed(() => {
+    const me = this.db.currentUser();
+    if (!me) return [];
+    return this.db.pautaContracts().filter(c => c.creatorId === me.id && c.status === 'funded');
+  });
+
+  readonly myContracts = computed(() => {
+    const me = this.db.currentUser();
+    if (!me) return [];
+    return this.db.pautaContracts().filter(c => c.creatorId === me.id);
   });
 
   // Dynamic Badge variables
@@ -892,6 +912,11 @@ export class AdminComponent implements OnInit, OnDestroy {
         scheduledNewsletter
       });
 
+      const linkedContractId = this.selectedContractIdForPost();
+      if (!isDraft && linkedContractId) {
+        await this.db.publishPautaArticle(linkedContractId, editId);
+      }
+
       // Dispara imediatamente se for publicação imediata (não agendada ou agendamento expirado)
       const isPostReleasedNow = !scheduledAt || new Date(scheduledAt).getTime() <= Date.now();
       if (this.sendNewsletter && status === 'published' && isPostReleasedNow && !this.editingArticle()?.newsletterSent) {
@@ -924,6 +949,11 @@ export class AdminComponent implements OnInit, OnDestroy {
       const isPostReleasedNow = !scheduledAt || new Date(scheduledAt).getTime() <= Date.now();
       if (createdArticle && this.sendNewsletter && !isDraft && isPostReleasedNow) {
         await this.db.sendNewsletter(createdArticle.id, createdArticle.blogId || createdArticle.authorId);
+      }
+
+      const linkedContractId = this.selectedContractIdForPost();
+      if (createdArticle && !isDraft && linkedContractId) {
+        await this.db.publishPautaArticle(linkedContractId, createdArticle.id);
       }
 
       if (createdArticle && createdArticle.status === 'pending') {
@@ -978,6 +1008,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.targetBlogId = '';
     this.isScheduled = false;
     this.scheduledDateTime = '';
+    this.selectedContractIdForPost.set(null);
     this.clearEditorContent();
     this.editingArticleId.set(null);
     
@@ -1920,6 +1951,55 @@ export class AdminComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  async createContract() {
+    const title = this.newContractTitle.trim();
+    const description = this.newContractDescription.trim();
+    const goal = this.newContractGoal;
+
+    if (!title || !description || goal <= 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Dados Incompletos',
+        text: 'Por favor, preencha todos os campos do contrato.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
+    this.isSavingContract = true;
+    try {
+      await this.db.createPautaContract(title, description, goal);
+      Swal.fire({
+        icon: 'success',
+        title: 'Pauta Aberta!',
+        text: `O contrato "${title}" foi aberto para financiamento coletivo com sucesso.`,
+        timer: 1500,
+        showConfirmButton: false,
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      this.newContractTitle = '';
+      this.newContractDescription = '';
+      this.newContractGoal = 100;
+    } catch (err: any) {
+      console.error(err);
+      Swal.fire({
+        icon: 'error',
+        title: 'Erro',
+        text: err.message || 'Não foi possível criar o contrato de pauta.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+    } finally {
+      this.isSavingContract = false;
+    }
+  }
+
+  getContractById(id: string): PautaContract | null {
+    return this.db.pautaContracts().find(c => c.id === id) || null;
   }
 
   getArticleTitle(id: string): string {

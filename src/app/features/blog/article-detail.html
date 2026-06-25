@@ -108,6 +108,26 @@
         <!-- Body Content -->
         <div class="article-content" [innerHTML]="formatContent(art.content)"></div>
 
+        <!-- Honorable Mentions for Crowdfunded Post -->
+        @if (getLinkedContract(art.id); as contract) {
+          <div class="crowdfund-credits-banner" 
+            style="background: rgba(0, 240, 255, 0.03); border: 1px dashed rgba(0, 240, 255, 0.25); border-radius: 8px; padding: 1.25rem; margin-top: 1.5rem; margin-bottom: 1.5rem; font-family: 'Space Grotesk', sans-serif;">
+            <div style="font-weight: 700; color: #00f0ff; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; font-size: 0.95rem; letter-spacing: 0.5px;">
+              <span>🤝</span> POSTAGEM FINANCIADA COLETIVAMENTE
+            </div>
+            <p style="font-size: 0.8rem; color: var(--blog-text-muted, #94a3b8); margin: 0 0 0.75rem 0; line-height: 1.45;">
+              Esta pauta foi viabilizada graças ao apoio e financiamento coletivo em Bits dos leitores. Um agradecimento especial a todos os investidores:
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+              @for (backer of contract.investors; track backer.userId) {
+                <span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                  ⭐ {{ backer.displayName }} <span style="color: #ffd700;">(🪙 {{ backer.bitsContributed }})</span>
+                </span>
+              }
+            </div>
+          </div>
+        }
+
         <!-- Footer Interaction Bar -->
         <div class="article-interactions-bar" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
           <button class="btn like-button" [class.liked]="db.isLiked(art.id)" (click)="toggleLike()">

@@ -307,6 +307,37 @@
             </div>
             }
 
+            <!-- Link to Crowdfunding Pauta -->
+            @if (fundedContracts().length > 0 || selectedContractIdForPost()) {
+              <div class="form-group" style="background: rgba(0, 240, 255, 0.03); border: 1px dashed rgba(0, 240, 255, 0.25); padding: 1rem; border-radius: 8px; margin-bottom: 1.25rem;">
+                <label for="postContractLink" style="font-weight: 700; color: #00f0ff; display: flex; align-items: center; gap: 0.35rem;">
+                  <span>🤝</span> Vincular a um Contrato de Pauta Co-Financiado
+                </label>
+                <select id="postContractLink" name="postContractLink" 
+                  [ngModel]="selectedContractIdForPost()" (ngModelChange)="selectedContractIdForPost.set($event)"
+                  class="form-control" style="margin-top: 0.5rem; background: rgba(0,0,0,0.25); border-color: rgba(0,240,255,0.15); color: #fff;">
+                  <option [value]="null">Nenhum contrato vinculado</option>
+                  @if (selectedContractIdForPost(); as currentId) {
+                    @if (getContractById(currentId); as currentContract) {
+                      <option [value]="currentContract.id" selected>
+                        📌 Vinculado: {{ currentContract.title }} (🪙 {{ currentContract.goalBits }} Bits)
+                      </option>
+                    }
+                  }
+                  @for (contract of fundedContracts(); track contract.id) {
+                    @if (contract.id !== selectedContractIdForPost()) {
+                      <option [value]="contract.id">
+                        ⭐ {{ contract.title }} (Meta: 🪙 {{ contract.goalBits }} Bits)
+                      </option>
+                    }
+                  }
+                </select>
+                <small style="display: block; margin-top: 0.5rem; color: var(--text-muted); font-size: 0.72rem; line-height: 1.4;">
+                  Ao vincular a matéria a esta pauta e <b>publicar</b>, todos os apoiadores receberão automaticamente o bônus de <b>XP em dobro</b> pelas contribuições deles, e um banner de agradecimento será renderizado no post!
+                </small>
+              </div>
+            }
+
             <div class="form-group">
               <label for="postTitle">Título da Matéria</label>
               <input type="text" id="postTitle" name="postTitle" [(ngModel)]="newPostTitle" class="form-control"
@@ -1097,6 +1128,17 @@
         <button class="btn btn-secondary btn-sm" (click)="resetForms()">Resetar</button>
       </div>
 
+      <!-- Sub-tabs Navigation for Monetization -->
+      <div class="studio-tabs" style="border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 0.5rem; margin-top: 1rem; margin-bottom: 1.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+        <button class="tab-btn" [class.active]="monetizationSubTab() === 'sponsors'" (click)="monetizationSubTab.set('sponsors')">
+          📢 Banners de Patrocínio
+        </button>
+        <button class="tab-btn" [class.active]="monetizationSubTab() === 'crowdfunding'" (click)="monetizationSubTab.set('crowdfunding')">
+          🤝 Financiamento de Pautas
+        </button>
+      </div>
+
+      @if (monetizationSubTab() === 'sponsors') {
       <form (submit)="saveBlogSettings()" class="studio-form">
         <div class="color-picker-grid" style="margin-top: 1rem;">
           <p class="form-help" style="margin-bottom: 1.5rem;">Adicione banners de patrocinadores ao seu blog para gerar
@@ -1162,6 +1204,97 @@
           <button type="button" class="btn btn-secondary" (click)="setTab('posts')">Cancelar</button>
         </div>
       </form>
+      }
+
+      @if (monetizationSubTab() === 'crowdfunding') {
+        <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+          
+          <!-- Open Contract Form -->
+          <div class="grant-balance-card" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px;">
+            <h3 style="margin-top: 0; color: #fff; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+              <span>➕</span> Criar Novo Contrato de Pauta (Crowdfunding)
+            </h3>
+            <p class="form-help" style="margin-bottom: 1.25rem;">Proponha um tema planejado para que seus leitores o financiem coletivamente em Bits. Assim que atingir a meta, você poderá escrever e publicar a matéria correspondente.</p>
+            
+            <form (submit)="createContract(); $event.preventDefault()" class="studio-form">
+              <div class="form-group">
+                <label for="pautaTitleInput">Título Provisório da Pauta</label>
+                <input type="text" id="pautaTitleInput" name="pautaTitleInput" [(ngModel)]="newContractTitle" class="form-control"
+                  placeholder="Ex: Análise Completa de Cyberpunk 2077 com Ray Tracing Overdrive" required>
+              </div>
+
+              <div class="form-row-2">
+                <div class="form-group">
+                  <label for="pautaGoalInput">Meta de Financiamento (em Bits)</label>
+                  <input type="number" id="pautaGoalInput" name="pautaGoalInput" [(ngModel)]="newContractGoal" class="form-control"
+                    min="10" required>
+                </div>
+                <div class="form-group">
+                  <label>Bônus de XP Estimado para Apoiadores</label>
+                  <div style="background: rgba(0,240,255,0.05); border: 1px solid rgba(0,240,255,0.15); padding: 0.5rem 0.75rem; border-radius: 6px; color: #00f0ff; font-weight: 700; font-size: 0.85rem; height: 38px; display: flex; align-items: center; gap: 0.35rem;">
+                    <span>⚡</span> +{{ newContractGoal * 2 }} XP Total (distribuído proporcionalmente: 2 XP por Bit)
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="pautaDescInput">Descrição / Sumário do que será escrito</label>
+                <textarea id="pautaDescInput" name="pautaDescInput" [(ngModel)]="newContractDescription" class="form-control"
+                  placeholder="Descreva em detalhes o que você irá abordar na pauta, por que ela é interessante para a comunidade e quais tópicos pretende cobrir..." required style="min-height: 80px;"></textarea>
+              </div>
+
+              <div class="form-actions" style="margin-top: 0.75rem; border-top: none; padding-top: 0;">
+                <button type="submit" class="btn btn-primary" [disabled]="!newContractTitle || !newContractDescription || newContractGoal <= 0 || isSavingContract">
+                  🚀 Abrir Captação de Recursos
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- List of creator's pautas -->
+          <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 1.5rem;">
+            <h3 style="color: #fff; margin-top: 0; margin-bottom: 1rem;">Meus Contratos de Pautas</h3>
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              @for (contract of myContracts(); track contract.id) {
+                <div style="display: flex; flex-direction: column; gap: 0.75rem; background: rgba(0,0,0,0.15); padding: 1rem 1.25rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05);">
+                  <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+                    <div>
+                      <strong style="font-size: 1rem; color: #fff;">{{ contract.title }}</strong>
+                      <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; margin-left: 0.5rem; font-weight: 600; text-transform: uppercase;"
+                        [style.background]="contract.status === 'active' ? 'rgba(251,133,0,0.15)' : contract.status === 'funded' ? 'rgba(0,240,255,0.15)' : 'rgba(0,255,127,0.15)'"
+                        [style.color]="contract.status === 'active' ? '#fb8500' : contract.status === 'funded' ? '#00f0ff' : '#00ff7f'">
+                        {{ contract.status === 'active' ? '⚡ Em captação' : contract.status === 'funded' ? '✨ Meta Batida (Pronta)' : '📖 Publicada' }}
+                      </span>
+                    </div>
+                    
+                    <div style="font-size: 0.78rem; font-weight: bold; color: #fff; font-family: 'Space Grotesk', sans-serif;">
+                      🪙 {{ contract.currentBits }} / {{ contract.goalBits }} Bits
+                    </div>
+                  </div>
+
+                  <p style="font-size: 0.8rem; color: var(--text-muted); margin: 0; line-height: 1.4;">{{ contract.description }}</p>
+
+                  <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 0.25rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid rgba(255,255,255,0.04); padding-top: 0.5rem;">
+                    <span>Apoiadores: <b>{{ contract.investors.length }} apoios</b></span>
+                    @if (contract.status === 'funded') {
+                      <button type="button" class="btn btn-primary btn-xs" (click)="selectedContractIdForPost.set(contract.id); setTab('new-post')"
+                        style="background: linear-gradient(135deg, #00f0ff, #0077ff); border: none; font-weight: bold;">
+                        ✍️ Escrever Matéria
+                      </button>
+                    } @else if (contract.status === 'published' && contract.publishedArticleId) {
+                      <span style="color: #00ff7f;">Matéria vinculada: <b>#{{ contract.publishedArticleId.substring(0, 8) }}</b></span>
+                    }
+                  </div>
+                </div>
+              } @empty {
+                <p style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin: 0; text-align: center; padding: 2rem; background: rgba(255,255,255,0.01); border: 1px dashed rgba(255,255,255,0.05); border-radius: 8px;">
+                  Você não criou nenhuma pauta de financiamento coletivo ainda. Crie uma acima!
+                </p>
+              }
+            </div>
+          </div>
+        </div>
+      }
     </div>
     }
     
