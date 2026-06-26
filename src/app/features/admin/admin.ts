@@ -763,7 +763,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.blogText = '#1e293b';
       this.blogFont = 'Outfit';
       this.blogLayout = 'grid';
-      this.blogBannerUrl = '/images/cyberpunk_cover.png';
+      this.blogBannerUrl = '/images/frostbite_cover.png';
     } else if (presetType === 'rosequartz') {
       this.blogPrimary = '#ff4785';
       this.blogAccent = '#ff8cae';
@@ -772,7 +772,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.blogText = '#331f26';
       this.blogFont = 'Space Grotesk';
       this.blogLayout = 'magazine';
-      this.blogBannerUrl = '/images/retro_cover.png';
+      this.blogBannerUrl = '/images/rosequartz_cover.png';
     } else if (presetType === 'aurora') {
       this.blogPrimary = '#10b981';
       this.blogAccent = '#34d399';
@@ -781,7 +781,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.blogText = '#064e3b';
       this.blogFont = 'Outfit';
       this.blogLayout = 'list';
-      this.blogBannerUrl = '/images/tabletop_cover.png';
+      this.blogBannerUrl = '/images/aurora_cover.png';
     }
     // Fallbacks just in case
     else if (presetType === 'cyberpunk') {
