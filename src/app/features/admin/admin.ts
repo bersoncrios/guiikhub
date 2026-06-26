@@ -112,7 +112,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   newPostTitle = '';
   newPostSummary = '';
   newPostContent = '';
-  newPostCoverUrl = '/images/cyberpunk_cover.png';
+  newPostCoverUrl = '/images/frostbite_cover.png';
   isUploadingCover = false;
   newPostTags = 'Gamer, Geek, Tech';
   newPostSection = '';
@@ -374,6 +374,9 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.blogFont = s.fontFamily;
     this.blogLayout = s.layoutType;
     this.blogBannerUrl = s.bannerUrl || '';
+    if (this.newPostCoverUrl === '/images/frostbite_cover.png') {
+      this.newPostCoverUrl = this.blogBannerUrl || '/images/frostbite_cover.png';
+    }
     this.blogSections = s.sections ? [...s.sections] : ['Geral', 'Tech', 'Quadrinhos'];
 
     this.blogSponsorUrl1 = s.sponsorBannerUrl1 || '';
@@ -459,7 +462,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.newPostPaywallRequiredBadgeId = '';
       this.targetBlogId = '';
       this.newPostSummary = '';
-      this.newPostCoverUrl = '/images/cyberpunk_cover.png';
+      this.newPostCoverUrl = this.blogBannerUrl || '/images/frostbite_cover.png';
       this.newPostTags = 'Gamer, Geek, Tech';
       this.newPostSection = '';
       this.targetBlogId = '';
@@ -728,7 +731,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       textColor: this.blogText,
       fontFamily: this.blogFont,
       layoutType: this.blogLayout,
-      bannerUrl: this.blogBannerUrl || '/images/cyberpunk_cover.png',
+      bannerUrl: this.blogBannerUrl || '/images/frostbite_cover.png',
       sponsorBannerUrl1: this.blogSponsorUrl1,
       sponsorBannerLink1: this.blogSponsorLink1,
       sponsorBannerUrl2: this.blogSponsorUrl2,
@@ -1065,7 +1068,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.newPostTitle = '';
     this.newPostSummary = '';
     this.newPostContent = '';
-    this.newPostCoverUrl = '/images/cyberpunk_cover.png';
+    this.newPostCoverUrl = this.blogBannerUrl || '/images/frostbite_cover.png';
     this.newPostTags = 'Gamer, Geek, Tech';
     this.newPostSection = '';
     this.sendNewsletter = false;
