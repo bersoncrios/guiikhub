@@ -754,34 +754,43 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.setTab('posts');
   }
 
-  applyPreset(presetType: 'cyberpunk' | 'retro' | 'tabletop') {
-    if (presetType === 'cyberpunk') {
+  applyPreset(presetType: 'cyberpunk' | 'retro' | 'tabletop' | 'frostbite' | 'rosequartz' | 'aurora') {
+    if (presetType === 'frostbite') {
+      this.blogPrimary = '#00f0ff';
+      this.blogAccent = '#0077ff';
+      this.blogBg = '#f0f8ff';
+      this.blogCardBg = 'rgba(255, 255, 255, 0.75)';
+      this.blogText = '#1e293b';
+      this.blogFont = 'Outfit';
+      this.blogLayout = 'grid';
+      this.blogBannerUrl = '/images/cyberpunk_cover.png';
+    } else if (presetType === 'rosequartz') {
+      this.blogPrimary = '#ff4785';
+      this.blogAccent = '#ff8cae';
+      this.blogBg = '#fff0f5';
+      this.blogCardBg = 'rgba(255, 255, 255, 0.75)';
+      this.blogText = '#331f26';
+      this.blogFont = 'Space Grotesk';
+      this.blogLayout = 'magazine';
+      this.blogBannerUrl = '/images/retro_cover.png';
+    } else if (presetType === 'aurora') {
+      this.blogPrimary = '#10b981';
+      this.blogAccent = '#34d399';
+      this.blogBg = '#f0fdf4';
+      this.blogCardBg = 'rgba(255, 255, 255, 0.75)';
+      this.blogText = '#064e3b';
+      this.blogFont = 'Outfit';
+      this.blogLayout = 'list';
+      this.blogBannerUrl = '/images/tabletop_cover.png';
+    }
+    // Fallbacks just in case
+    else if (presetType === 'cyberpunk') {
       this.blogPrimary = '#00f0ff';
       this.blogAccent = '#ff007f';
       this.blogBg = '#08090d';
       this.blogCardBg = '#121420';
       this.blogText = '#f1f5f9';
       this.blogFont = 'Space Grotesk';
-      this.blogLayout = 'grid';
-      this.blogBannerUrl = '/images/cyberpunk_cover.png';
-    } else if (presetType === 'retro') {
-      this.blogPrimary = '#39ff14';
-      this.blogAccent = '#ffff00';
-      this.blogBg = '#0a0d0a';
-      this.blogCardBg = '#141a14';
-      this.blogText = '#e2f0d9';
-      this.blogFont = 'Fira Code';
-      this.blogLayout = 'list';
-      this.blogBannerUrl = '/images/retro_cover.png';
-    } else if (presetType === 'tabletop') {
-      this.blogPrimary = '#ffb703';
-      this.blogAccent = '#fb8500';
-      this.blogBg = '#0f0c08';
-      this.blogCardBg = '#1d1912';
-      this.blogText = '#eae0d5';
-      this.blogFont = 'Outfit';
-      this.blogLayout = 'magazine';
-      this.blogBannerUrl = '/images/tabletop_cover.png';
     }
   }
 
