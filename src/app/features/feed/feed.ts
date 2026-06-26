@@ -41,10 +41,12 @@ export class FeedComponent implements OnInit {
     return pages;
   });
   
-  // Spotlight Article computation
+  // Spotlight Article computation — only shows if dataDestaque is today
   readonly spotlightArticle = computed(() => {
     const spotlight = this.db.holofoteAtivo();
     if (!spotlight || !spotlight.postDestaqueId) return null;
+    const todayStr = new Date().toISOString().split('T')[0];
+    if (spotlight.dataDestaque !== todayStr) return null;
     return this.db.articles().find(art => art.id === spotlight.postDestaqueId) || null;
   });
   readonly selectedTag = signal<string | null>(null);
