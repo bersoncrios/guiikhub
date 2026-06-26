@@ -18,12 +18,15 @@ import { BlogSettings, ShopItem, PautaContract } from '../../core/models/interfa
 export class AdminComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+
   // Navigation
   readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop'>('gamification');
   readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop' | 'blacklist'>('overview');
+  readonly monetizationSubTab = signal<'sponsors' | 'crowdfunding'>('sponsors');
+  readonly shopSubTab = signal<'frames' | 'tags' | 'themes'>('frames');
   readonly mobileNavOpen = signal(false);
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
-  closeMobileNav()  { this.mobileNavOpen.set(false); }
+  closeMobileNav() { this.mobileNavOpen.set(false); }
 
   // Spotlight Bidding variables
   selectedArticleForSpotlightId = '';
@@ -54,7 +57,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   newContractGoal = 100;
   isSavingContract = false;
   selectedContractIdForPost = signal<string | null>(null);
-  readonly monetizationSubTab = signal<'sponsors' | 'crowdfunding'>('sponsors');
+
 
   readonly fundedContracts = computed(() => {
     const me = this.db.currentUser();
@@ -127,7 +130,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   // Rich Text Editor
   @ViewChild('richEditor') richEditorRef!: ElementRef<HTMLDivElement>;
   readonly editorHasContent = signal(false);
-  
+
   // Post Editing
   readonly editingArticleId = signal<string | null>(null);
 
@@ -169,7 +172,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   blogSponsorUrl1 = '';
   blogSponsorLink1 = '';
   isUploadingSponsor1 = false;
-  
+
   blogSponsorUrl2 = '';
   blogSponsorLink2 = '';
   isUploadingSponsor2 = false;
@@ -190,7 +193,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   // ─── Paginação de Matérias do Criador ───
   readonly postsPage = signal(1);
-  readonly postsPageSize = 8;
+  readonly postsPageSize = 4;
   readonly paginatedMyArticles = computed(() => {
     const list = this.myArticles();
     const start = (this.postsPage() - 1) * this.postsPageSize;
@@ -210,7 +213,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   // ─── Paginação do Histórico de Gamificação ───
   readonly logsPage = signal(1);
-  readonly logsPageSize = 10;
+  readonly logsPageSize = 5;
   readonly paginatedGamificationLogs = computed(() => {
     const list = this.db.gamificationLogs();
     const start = (this.logsPage() - 1) * this.logsPageSize;
@@ -230,7 +233,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   // ─── Paginação de Contas de Usuários ───
   readonly usersPage = signal(1);
-  readonly usersPageSize = 10;
+  readonly usersPageSize = 5;
   readonly paginatedUsers = computed(() => {
     const list = this.db.users();
     const start = (this.usersPage() - 1) * this.usersPageSize;
@@ -298,12 +301,12 @@ export class AdminComponent implements OnInit, OnDestroy {
     effect(() => {
       const articles = this.myArticles();
       if (articles.length === 0) return;
-      
+
       const now = Date.now();
-      const pendingScheduled = articles.filter(art => 
-        art.scheduledAt && 
-        new Date(art.scheduledAt).getTime() <= now && 
-        art.scheduledNewsletter === true && 
+      const pendingScheduled = articles.filter(art =>
+        art.scheduledAt &&
+        new Date(art.scheduledAt).getTime() <= now &&
+        art.scheduledNewsletter === true &&
         art.newsletterSent !== true
       );
 
@@ -365,7 +368,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.blogLayout = s.layoutType;
     this.blogBannerUrl = s.bannerUrl || '';
     this.blogSections = s.sections ? [...s.sections] : ['Geral', 'Tech', 'Quadrinhos'];
-    
+
     this.blogSponsorUrl1 = s.sponsorBannerUrl1 || '';
     this.blogSponsorLink1 = s.sponsorBannerLink1 || '';
     this.blogSponsorUrl2 = s.sponsorBannerUrl2 || '';
@@ -399,8 +402,8 @@ export class AdminComponent implements OnInit, OnDestroy {
     const currentId = this.editingArticleId();
     const list = this.myArticles().filter(art => art.id !== currentId && (!art.status || art.status === 'published'));
     if (!query) return list;
-    return list.filter(art => 
-      art.title.toLowerCase().includes(query) || 
+    return list.filter(art =>
+      art.title.toLowerCase().includes(query) ||
       art.summary.toLowerCase().includes(query)
     );
   });
@@ -507,7 +510,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
-    
+
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
       return;
@@ -540,7 +543,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     if (!id) return;
     const article = this.db.articles().find(a => a.id === id);
     if (!article) return;
-    
+
     // Create an updated mock article to save current editor state
     const currentArticleState = {
       ...article,
@@ -579,13 +582,13 @@ export class AdminComponent implements OnInit, OnDestroy {
         this.newPostContent = version.content;
         this.newPostCoverUrl = version.coverUrl;
         this.newPostTags = version.tags ? version.tags.join(', ') : '';
-        
+
         // Update DOM editor
         if (this.richEditorRef?.nativeElement) {
           this.richEditorRef.nativeElement.innerHTML = this.newPostContent;
           this.editorHasContent.set(this.newPostContent.trim().length > 0);
         }
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Restaurado!',
@@ -869,10 +872,10 @@ export class AdminComponent implements OnInit, OnDestroy {
       .split(',')
       .map(t => t.trim())
       .filter(t => t.length > 0);
-      
+
     const user = this.db.currentUser();
     if (!user) return;
-    
+
     const isCollaboratorPost = this.targetBlogId && this.targetBlogId !== user.id;
     let status: 'published' | 'pending' | 'draft' = 'published';
     if (isDraft) {
@@ -922,7 +925,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       if (this.sendNewsletter && status === 'published' && isPostReleasedNow && !this.editingArticle()?.newsletterSent) {
         await this.db.sendNewsletter(editId, this.targetBlogId || user.id);
       }
-      
+
       Swal.fire({
         icon: 'success',
         title: isDraft ? 'Rascunho Atualizado!' : (scheduledAt ? 'Postagem Agendada!' : 'Alterações Publicadas!'),
@@ -970,8 +973,8 @@ export class AdminComponent implements OnInit, OnDestroy {
         const result = await Swal.fire({
           icon: 'success',
           title: scheduledAt ? 'Matéria Agendada!' : 'Matéria Publicada!',
-          text: scheduledAt 
-            ? 'Sua postagem foi agendada e será lançada no horário configurado.' 
+          text: scheduledAt
+            ? 'Sua postagem foi agendada e será lançada no horário configurado.'
             : 'Sua matéria foi postada no seu blog e enviada para o feed do GuiikHub!',
           showCancelButton: true,
           confirmButtonText: 'Ver meu Blog',
@@ -996,7 +999,7 @@ export class AdminComponent implements OnInit, OnDestroy {
         }
       }
     }
-    
+
     // Clear post form
     this.newPostTitle = '';
     this.newPostSummary = '';
@@ -1011,10 +1014,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.selectedContractIdForPost.set(null);
     this.clearEditorContent();
     this.editingArticleId.set(null);
-    
+
     this.setTab('posts');
   }
-  
+
   editPost(art: any) {
     this.editingArticleId.set(art.id);
     this.newPostTitle = art.title;
@@ -1024,7 +1027,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.newPostTags = art.tags.join(', ');
     this.newPostSection = art.section || '';
     this.targetBlogId = art.blogId !== art.authorId ? art.blogId : '';
-    
+
     if (art.scheduledAt) {
       this.isScheduled = new Date(art.scheduledAt).getTime() > Date.now();
       const date = new Date(art.scheduledAt);
@@ -1039,7 +1042,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.sendNewsletter = art.scheduledNewsletter || art.newsletterSent || false;
 
     this.setTab('new-post');
-    
+
     // Set editor content
     setTimeout(() => {
       if (this.richEditorRef?.nativeElement) {
@@ -1057,7 +1060,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   async triggerScheduledNewsletter(art: any) {
     // Evitar disparos repetidos marcando localmente
     art.newsletterSent = true;
-    
+
     Swal.fire({
       title: 'Disparando Newsletter Agendada',
       text: `O post agendado "${art.title}" já está público. Enviando newsletter aos seguidores...`,
@@ -1092,10 +1095,10 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.showLinkSelector = false;
       return;
     }
-    
+
     const editorEl = this.richEditorRef.nativeElement;
     const cursorRange = selection.getRangeAt(0);
-    
+
     // Garantir que a seleção está dentro do editor
     if (!editorEl.contains(cursorRange.commonAncestorContainer)) {
       this.showLinkSelector = false;
@@ -1110,10 +1113,10 @@ export class AdminComponent implements OnInit, OnDestroy {
         blockNode = blockNode.parentNode;
       }
       preCaretRange.setStart(blockNode, 0);
-      
+
       const textBeforeCursor = preCaretRange.toString();
       const index = textBeforeCursor.lastIndexOf('[[');
-      
+
       if (index !== -1) {
         const queryText = textBeforeCursor.substring(index + 2);
         // O gatilho fecha se houver um fecho ']]' no meio ou quebra de linha
@@ -1169,7 +1172,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     } catch (err) {
       console.error('Erro ao calcular gatilho de linkagem:', err);
     }
-    
+
     this.showLinkSelector = false;
   }
 
@@ -1201,21 +1204,21 @@ export class AdminComponent implements OnInit, OnDestroy {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
     const range = selection.getRangeAt(0);
-    
+
     const textNode = range.startContainer;
     if (textNode.nodeType !== Node.TEXT_NODE) return;
-    
+
     const textContent = textNode.textContent || '';
     const cursorOffset = range.startOffset;
     const textBeforeCursor = textContent.substring(0, cursorOffset);
-    
+
     const index = textBeforeCursor.lastIndexOf('[[');
     if (index !== -1) {
       // Definir a seleção do início do [[ até o cursor
       range.setStart(textNode, index);
       range.setEnd(textNode, cursorOffset);
       range.deleteContents();
-      
+
       // Criar nó do link
       const link = document.createElement('a');
       link.href = `/b/${art.authorUsername}/post/${art.slug}`;
@@ -1225,24 +1228,24 @@ export class AdminComponent implements OnInit, OnDestroy {
       link.style.color = '#00f0ff';
       link.style.textDecoration = 'underline';
       link.style.fontWeight = 'bold';
-      
+
       range.insertNode(link);
-      
+
       // Inserir espaço pós link
       const space = document.createTextNode('\u00A0');
       range.collapse(false);
       range.insertNode(space);
-      
+
       // Colocar o cursor depois do espaço
       const newRange = document.createRange();
       newRange.setStartAfter(space);
       newRange.setEndAfter(space);
       selection.removeAllRanges();
       selection.addRange(newRange);
-      
+
       this.syncEditorContent();
     }
-    
+
     this.showLinkSelector = false;
     this.linkSearchQuery.set('');
     this.richEditorRef.nativeElement.focus();
@@ -1252,7 +1255,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
-    
+
     // File size validation (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
@@ -1340,7 +1343,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
-    
+
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
       return;
@@ -1371,7 +1374,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
-    
+
     if (file.size > 2 * 1024 * 1024) {
       Swal.fire('Arquivo muito grande', 'O banner deve ter no máximo 2MB.', 'error');
       return;
@@ -1407,7 +1410,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
-    
+
     if (file.size > 5 * 1024 * 1024) {
       Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
       return;
@@ -1468,10 +1471,10 @@ export class AdminComponent implements OnInit, OnDestroy {
       });
       return;
     }
-    
+
     await this.db.addBlogStatus(this.newStatusContent, this.statusTargetBlogId || undefined);
     this.newStatusContent = '';
-    
+
     Swal.fire({
       icon: 'success',
       title: 'Status Publicado!',
@@ -1490,7 +1493,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   async urlToBase64(url: string | undefined): Promise<string> {
     if (!url) return '';
     if (url.startsWith('data:')) return url;
-    
+
     let targetUrl = url;
     if (url.startsWith('/')) {
       targetUrl = window.location.origin + url;
@@ -1510,7 +1513,7 @@ export class AdminComponent implements OnInit, OnDestroy {
         if (!response.ok) continue;
         const blob = await response.blob();
         if (!blob.type.startsWith('image/')) continue;
-        
+
         return await new Promise((resolve) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
@@ -1520,7 +1523,7 @@ export class AdminComponent implements OnInit, OnDestroy {
         continue;
       }
     }
-    
+
     return url; // Se tudo falhar (improvável), retorna a original
   }
 
@@ -1552,14 +1555,14 @@ export class AdminComponent implements OnInit, OnDestroy {
     }
 
     const isFeed = formatChoice.isDenied;
-    
+
     Swal.fire({ title: 'Preparando Arte...', text: 'Baixando imagens diretamente na memória...', showConfirmButton: false, allowOutsideClick: false, background: '#121420', color: '#f1f5f9' });
     Swal.showLoading();
 
     // Buscar Base64 absoluto de forma blindada
     const coverBase64 = await this.urlToBase64(article.coverUrl);
     const authorAvatarBase64 = await this.urlToBase64(article.authorAvatarUrl);
-    
+
     const currentUser = this.db.currentUser();
     const blogAvatarBase64 = await this.urlToBase64(currentUser?.avatarUrl);
 
@@ -1568,16 +1571,16 @@ export class AdminComponent implements OnInit, OnDestroy {
       ...article,
       _blogName: currentUser?.blogSettings?.title || currentUser?.displayName
     });
-    
+
     // Give Angular a tick to render the off-screen template text
     setTimeout(async () => {
       const templateId = isFeed ? 'feed-template' : 'story-template';
       const element = document.getElementById(templateId);
       if (!element) return;
-      
+
       try {
         Swal.update({ title: 'Injetando pixels...' });
-        
+
         // Injeção manual no DOM para burlar sanitizadores do Angular e falhas do html2canvas
         const prefix = isFeed ? 'feed' : 'story';
         const bgLayer = element.querySelector(`#${prefix}-bg-layer`) as HTMLElement;
@@ -1587,7 +1590,7 @@ export class AdminComponent implements OnInit, OnDestroy {
         if (bgLayer) bgLayer.style.backgroundImage = `url(${coverBase64})`;
         if (blogAvatarLayer) blogAvatarLayer.src = blogAvatarBase64;
         if (authorAvatarLayer) authorAvatarLayer.src = authorAvatarBase64;
-        
+
         // Espera explícita para garantir que as tags img injetadas concluíram o carregamento do base64
         const images = Array.from(element.querySelectorAll('img'));
         await Promise.all(images.map(img => {
@@ -1607,15 +1610,15 @@ export class AdminComponent implements OnInit, OnDestroy {
           backgroundColor: '#0d0e15',
           logging: false
         });
-        
+
         const link = document.createElement('a');
         link.download = `${prefix}-${article.slug || 'post'}.png`;
         link.href = canvas.toDataURL('image/png', 0.95);
         link.click();
-        
+
         this.storyPreviewArticle.set(null);
         Swal.close();
-        
+
         Swal.fire({
           icon: 'success',
           title: 'Arte Pronta!',
@@ -1635,7 +1638,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   ngOnInit() {
     this.startCountdownTimer();
-    
+
     // Check for active tab in query parameters
     this.route.queryParams.subscribe(params => {
       const tab = params['tab'];
@@ -1653,22 +1656,22 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   private startCountdownTimer() {
     if (typeof window === 'undefined') return;
-    
+
     const updateTimer = () => {
       const now = new Date();
       const midnight = new Date();
       midnight.setHours(24, 0, 0, 0);
-      
+
       const diffMs = midnight.getTime() - now.getTime();
       if (diffMs <= 0) {
         this.timeLeftString = '00:00:00';
         return;
       }
-      
+
       const hours = Math.floor(diffMs / (1000 * 60 * 60));
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
       const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
-      
+
       const pad = (n: number) => n.toString().padStart(2, '0');
       this.timeLeftString = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
     };
@@ -1716,7 +1719,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
     const currentHighest = this.db.leilaoDiaAtual()?.maiorLanceAtual || 0;
     const minRequired = currentHighest === 0 ? 10 : currentHighest + 10;
-    
+
     if (this.spotlightBidAmount < minRequired) {
       Swal.fire({
         icon: 'warning',
@@ -1785,7 +1788,7 @@ export class AdminComponent implements OnInit, OnDestroy {
       Swal.fire('Erro', 'Configuração de holofote não disponível.', 'error');
       return;
     }
-    
+
     Swal.fire({
       title: 'Consolidar Leilão?',
       text: `Esta ação fechará o leilão da data ${active.dataDestaque} e atualizará o holofote do feed. Deseja continuar?`,
@@ -2010,7 +2013,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
     const file = input.files[0];
-    
+
     if (file.size > 2 * 1024 * 1024) {
       Swal.fire('Arquivo muito grande', 'A imagem do emblema deve ter no máximo 2MB.', 'error');
       return;
@@ -2105,7 +2108,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   async assignBadgeToUser(userId: string, badgeId: string) {
     if (!userId || !badgeId) return;
-    
+
     Swal.fire({
       title: 'Atribuindo Emblema...',
       allowOutsideClick: false,
@@ -2184,7 +2187,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   async saveShopItem() {
     let finalValue = this.newItemValue;
-    
+
     if (this.useCustomStyling) {
       if (this.newItemCategory === 'frame') {
         finalValue = JSON.stringify({
@@ -2298,7 +2301,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   getPurchasedThemes(): ShopItem[] {
     const user = this.db.currentUser();
     if (!user) return [];
-    return this.db.shopItems().filter(item => 
+    return this.db.shopItems().filter(item =>
       item.category === 'theme' && user.purchasedItems?.includes(item.id)
     );
   }
@@ -2306,7 +2309,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   getPurchasedFrames(): ShopItem[] {
     const user = this.db.currentUser();
     if (!user) return [];
-    return this.db.shopItems().filter(item => 
+    return this.db.shopItems().filter(item =>
       item.category === 'frame' && user.purchasedItems?.includes(item.id)
     );
   }
@@ -2314,7 +2317,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   getPurchasedTags(): ShopItem[] {
     const user = this.db.currentUser();
     if (!user) return [];
-    return this.db.shopItems().filter(item => 
+    return this.db.shopItems().filter(item =>
       item.category === 'tag' && user.purchasedItems?.includes(item.id)
     );
   }

@@ -17,10 +17,10 @@ export class FeedComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly seo = inject(SeoService);
   readonly searchQuery = signal('');
-  
+
   // Pagination State
   readonly currentPage = signal(1);
-  readonly pageSize = 9;
+  readonly pageSize = 3;
 
   readonly paginatedArticles = computed(() => {
     const list = this.filteredArticles();
@@ -40,7 +40,7 @@ export class FeedComponent implements OnInit {
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   });
-  
+
   // Spotlight Article computation — only shows if dataDestaque is today
   readonly spotlightArticle = computed(() => {
     const spotlight = this.db.holofoteAtivo();
@@ -53,29 +53,29 @@ export class FeedComponent implements OnInit {
   readonly mobileNavOpen = signal(false);
 
   toggleMobileNav() { this.mobileNavOpen.update(v => !v); }
-  closeMobileNav()  { this.mobileNavOpen.set(false); }
+  closeMobileNav() { this.mobileNavOpen.set(false); }
 
   readonly activeFeedTab = signal<'discover' | 'following'>('discover');
 
   // Recommendation algorithm for "Descobrir" feed
   readonly discoverArticles = computed(() => {
     const me = this.db.currentUser();
-    const allArticles = this.db.articles().filter(art => 
-      (!art.status || art.status === 'published') && 
+    const allArticles = this.db.articles().filter(art =>
+      (!art.status || art.status === 'published') &&
       (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
     );
-    
+
     if (!me) {
       // Guest users: sort by popularity and time decay
       return [...allArticles].sort((a, b) => {
         const scoreA = (a.likesCount * 2 + a.commentsCount * 3);
         const hoursA = (Date.now() - new Date(a.createdAt).getTime()) / (1000 * 60 * 60);
         const finalScoreA = scoreA / (1 + hoursA * 0.05);
-        
+
         const scoreB = (b.likesCount * 2 + b.commentsCount * 3);
         const hoursB = (Date.now() - new Date(b.createdAt).getTime()) / (1000 * 60 * 60);
         const finalScoreB = scoreB / (1 + hoursB * 0.05);
-        
+
         return finalScoreB - finalScoreA;
       });
     }
@@ -102,7 +102,7 @@ export class FeedComponent implements OnInit {
 
       const isOwnPost = (art.blogId || art.authorId) === me.id;
       const isFollowed = this.db.isFollowing(art.blogId || art.authorId);
-      
+
       let creatorBoost = 0;
       if (!isOwnPost && !isFollowed) {
         creatorBoost = 15;
@@ -110,7 +110,7 @@ export class FeedComponent implements OnInit {
 
       const popularity = art.likesCount * 2 + art.commentsCount * 3;
       const hours = (Date.now() - new Date(art.createdAt).getTime()) / (1000 * 60 * 60);
-      
+
       const rawScore = tagScore + creatorBoost + popularity + 10;
       const finalScore = rawScore / (1 + hours * 0.02);
 
@@ -127,7 +127,7 @@ export class FeedComponent implements OnInit {
     const me = this.db.currentUser();
     if (!me) return [];
     return this.db.articles().filter(art => {
-      const isPublished = (!art.status || art.status === 'published') && 
+      const isPublished = (!art.status || art.status === 'published') &&
         (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now());
       const isFollowed = this.db.isFollowing(art.blogId || art.authorId);
       return isPublished && isFollowed;
@@ -141,8 +141,8 @@ export class FeedComponent implements OnInit {
     const tag = this.selectedTag();
 
     if (query) {
-      list = list.filter(art => 
-        art.title.toLowerCase().includes(query) || 
+      list = list.filter(art =>
+        art.title.toLowerCase().includes(query) ||
         art.summary.toLowerCase().includes(query) ||
         art.tags.some(t => t.toLowerCase().includes(query))
       );
@@ -159,8 +159,8 @@ export class FeedComponent implements OnInit {
   readonly allTags = computed(() => {
     const tags = new Set<string>();
     this.db.articles()
-      .filter(art => 
-        (!art.status || art.status === 'published') && 
+      .filter(art =>
+        (!art.status || art.status === 'published') &&
         (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
       )
       .forEach(art => {
@@ -173,8 +173,8 @@ export class FeedComponent implements OnInit {
   readonly recommendedCreators = computed(() => {
     const me = this.db.currentUser();
     const allUsers = this.db.users();
-    const allArticles = this.db.articles().filter(art => 
-      (!art.status || art.status === 'published') && 
+    const allArticles = this.db.articles().filter(art =>
+      (!art.status || art.status === 'published') &&
       (!art.scheduledAt || new Date(art.scheduledAt).getTime() <= Date.now())
     );
 

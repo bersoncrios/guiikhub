@@ -1311,10 +1311,24 @@
         </div>
       </div>
 
+      <!-- Sub-tabs Navigation for Shop -->
+      <div class="studio-tabs" style="border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 0.5rem; margin-top: 1rem; overflow-x: auto; padding-bottom: 0.5rem;">
+        <button class="tab-btn" [class.active]="shopSubTab() === 'frames'" (click)="shopSubTab.set('frames')">
+          🖼️ Molduras
+        </button>
+        <button class="tab-btn" [class.active]="shopSubTab() === 'tags'" (click)="shopSubTab.set('tags')">
+          🏷️ Títulos (Tags)
+        </button>
+        <button class="tab-btn" [class.active]="shopSubTab() === 'themes'" (click)="shopSubTab.set('themes')">
+          🎨 Temas Dinâmicos
+        </button>
+      </div>
+
       <!-- Shop Categories Grid -->
       <div style="display: flex; flex-direction: column; gap: 2rem;">
         
         <!-- Category: Frames -->
+        @if (shopSubTab() === 'frames') {
         <div>
           <h3 style="color: #00f0ff; margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>🖼️</span> Molduras de Avatar (Neon Frames)
@@ -1359,8 +1373,10 @@
             }
           </div>
         </div>
+        }
 
         <!-- Category: Tags -->
+        @if (shopSubTab() === 'tags') {
         <div>
           <h3 style="color: #ff007f; margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>🏷️</span> Títulos de Prestígio (Tags)
@@ -1405,8 +1421,10 @@
             }
           </div>
         </div>
+        }
 
         <!-- Category: Themes -->
+        @if (shopSubTab() === 'themes') {
         <div>
           <h3 style="color: #39ff14; margin-bottom: 1rem; font-family: var(--font-display); font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
             <span>🎨</span> Temas Dinâmicos de Blog (Fundo)
@@ -1453,6 +1471,7 @@
             }
           </div>
         </div>
+        }
 
       </div>
     </div>
