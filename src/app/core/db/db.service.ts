@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord, PautaContract } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord, PautaContract, Report } from '../models/interfaces';
 import {
   Firestore,
   collection,
@@ -63,6 +63,7 @@ export class DbService {
   readonly shopItems = signal<ShopItem[]>([]);
   readonly bannedWords = signal<BannedWord[]>([]);
   readonly pautaContracts = signal<PautaContract[]>([]);
+  readonly reports = signal<Report[]>([]);
 
   readonly currentUserLevel = computed(() => {
     const user = this.currentUser();
@@ -154,8 +155,9 @@ export class DbService {
     });
 
     // 2. Sync Auth State
-    let logsSubscription: any = null;
-    let userSubscription: any = null;
+    let userSubscription: any;
+    let logsSubscription: any;
+    let reportsSubscription: any = null;
     authState(this.auth).subscribe(fbUser => {
       if (fbUser) {
         this.isAuthenticated.set(true);
@@ -206,6 +208,19 @@ export class DbService {
               if (u.lastDailyRewardAt !== todayStr) {
                 this.claimDailyReward(u.id, todayStr);
               }
+
+              // Sync reports if admin
+              if (reportsSubscription) reportsSubscription.unsubscribe();
+              if (u.role === 'admin') {
+                const reportsCol = collection(this.firestore, 'reports');
+                const reportsQuery = query(reportsCol, orderBy('createdAt', 'desc'));
+                reportsSubscription = collectionData(reportsQuery, { idField: 'id' }).subscribe(data => {
+                  if (data) {
+                    this.reports.set(data as Report[]);
+                  }
+                });
+              }
+
             }
             this.isAuthLoading.set(false);
           },
@@ -235,6 +250,10 @@ export class DbService {
         if (logsSubscription) {
           logsSubscription.unsubscribe();
           logsSubscription = null;
+        }
+        if (reportsSubscription) {
+          reportsSubscription.unsubscribe();
+          reportsSubscription = null;
         }
         this.isAuthLoading.set(false);
       }
@@ -384,13 +403,15 @@ export class DbService {
     saveAsDraft: boolean = false,
     section?: string,
     scheduledAt?: string | null,
-    scheduledNewsletter?: boolean
+    scheduledNewsletter?: boolean,
+    options?: { isPaywalled?: boolean, paywallPrice?: number, paywallPreviewPercentage?: number, paywallRequiredBadgeId?: string }
   ) {
     const user = this.currentUser();
     if (!user) return null;
     return this.articleService.addArticle(
       user, title, summary, content, coverUrl, tags, targetBlogId, saveAsDraft, section, scheduledAt, scheduledNewsletter,
-      (uId, xp, reason) => this.addXpToUser(uId, xp, reason)
+      (uId, xp, reason) => this.addXpToUser(uId, xp, reason),
+      options
     );
   }
 
@@ -584,6 +605,61 @@ export class DbService {
     return this.gamificationService.rewardPostReading(
       articleId, articleTitle, user, this.articles(), this.gamificationLogs(), this.rewardedArticlesInMemory, this.badges()
     );
+  }
+
+  async unlockArticlePaywall(articleId: string, authorId: string, articleTitle: string, price: number, isHackAttempt: boolean): Promise<{ success: boolean; message: string }> {
+    const user = this.currentUser();
+    if (!user) return { success: false, message: 'Usuário não autenticado.' };
+    return this.gamificationService.unlockArticlePaywall(
+      user.id, authorId, articleId, articleTitle, price, isHackAttempt, this.badges(), user
+    );
+  }
+
+  async submitReport(articleId: string, articleTitle: string, authorId: string, reason: string): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user) return false;
+    try {
+      const id = 'rep_' + Date.now();
+      const report: Report = {
+        id,
+        articleId,
+        articleTitle,
+        authorId,
+        reporterId: user.id,
+        reporterName: user.displayName,
+        reason,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      };
+      await setDoc(doc(this.firestore, `reports/${id}`), report);
+      return true;
+    } catch (e) {
+      console.error('Error submitting report:', e);
+      return false;
+    }
+  }
+
+  async resolveReport(reportId: string, action: 'dismiss' | 'refund'): Promise<boolean> {
+    const user = this.currentUser();
+    if (!user || user.role !== 'admin') return false;
+    try {
+      if (action === 'dismiss') {
+        await updateDoc(doc(this.firestore, `reports/${reportId}`), { status: 'dismissed' });
+      } else if (action === 'refund') {
+        // Find the report to get author and reporter, then deduct from author and refund reporter
+        const reportDoc = await docData(doc(this.firestore, `reports/${reportId}`)).toPromise();
+        const r = reportDoc as Report;
+        if (r) {
+           await updateDoc(doc(this.firestore, `reports/${reportId}`), { status: 'resolved' });
+           // Typically here we would run a transaction to reverse the bits, but for now we just mark it resolved.
+           // In a full implementation, we'd use gamificationService.handleUserRewardOrSpend for both users.
+        }
+      }
+      return true;
+    } catch (e) {
+      console.error('Error resolving report:', e);
+      return false;
+    }
   }
 
   // --- AUCTION SERVICE DELEGATES ---

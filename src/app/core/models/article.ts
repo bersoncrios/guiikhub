@@ -21,4 +21,8 @@ export interface Article {
   scheduledAt?: string | null;
   scheduledNewsletter?: boolean;
   applauseCount?: number;
+  isPaywalled?: boolean;
+  paywallPrice?: number;
+  paywallPreviewPercentage?: number;
+  paywallRequiredBadgeId?: string;
 }

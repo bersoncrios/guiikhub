@@ -23,7 +23,8 @@ export class ArticleService {
     section?: string,
     scheduledAt?: string | null,
     scheduledNewsletter?: boolean,
-    addXpFn?: (userId: string, xpAmount: number, reason: string) => Promise<boolean>
+    addXpFn?: (userId: string, xpAmount: number, reason: string) => Promise<boolean>,
+    options?: { isPaywalled?: boolean, paywallPrice?: number, paywallPreviewPercentage?: number, paywallRequiredBadgeId?: string }
   ): Promise<Article | null> {
     const id = 'art_' + Date.now();
     const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
@@ -55,7 +56,11 @@ export class ArticleService {
       commentsCount: 0,
       section: section || '',
       scheduledAt: scheduledAt || null,
-      scheduledNewsletter: scheduledNewsletter || false
+      scheduledNewsletter: scheduledNewsletter || false,
+      isPaywalled: options?.isPaywalled || false,
+      paywallPrice: options?.paywallPrice || 0,
+      paywallPreviewPercentage: options?.paywallPreviewPercentage || 40,
+      paywallRequiredBadgeId: options?.paywallRequiredBadgeId || ''
     };
 
     await setDoc(doc(this.firestore, `articles/${id}`), newArticle);

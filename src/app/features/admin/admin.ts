@@ -21,7 +21,7 @@ export class AdminComponent implements OnInit, OnDestroy {
 
   // Navigation
   readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop'>('gamification');
-  readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop' | 'blacklist'>('overview');
+  readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop' | 'blacklist' | 'reports'>('overview');
   readonly monetizationSubTab = signal<'sponsors' | 'crowdfunding'>('sponsors');
   readonly shopSubTab = signal<'frames' | 'tags' | 'themes'>('frames');
   readonly mobileNavOpen = signal(false);
@@ -117,6 +117,13 @@ export class AdminComponent implements OnInit, OnDestroy {
   newPostTags = 'Gamer, Geek, Tech';
   newPostSection = '';
   sendNewsletter = false;
+  
+  // Data Paywall
+  newPostIsPaywalled = false;
+  newPostPaywallPrice = 2;
+  newPostPaywallPreviewPercentage = 40;
+  newPostPaywallRequiredBadgeId = '';
+  
   targetBlogId = '';
   isScheduled = false;
   scheduledDateTime = '';
@@ -443,6 +450,15 @@ export class AdminComponent implements OnInit, OnDestroy {
       this.clearEditorContent();
       this.newPostTitle = '';
       this.newPostSummary = '';
+      this.newPostContent = '';
+      this.newPostTags = 'Gamer, Geek, Tech';
+      this.newPostSection = '';
+      this.newPostIsPaywalled = false;
+      this.newPostPaywallPrice = 2;
+      this.newPostPaywallPreviewPercentage = 40;
+      this.newPostPaywallRequiredBadgeId = '';
+      this.targetBlogId = '';
+      this.newPostSummary = '';
       this.newPostCoverUrl = '/images/cyberpunk_cover.png';
       this.newPostTags = 'Gamer, Geek, Tech';
       this.newPostSection = '';
@@ -581,7 +597,11 @@ export class AdminComponent implements OnInit, OnDestroy {
         this.newPostSummary = version.summary;
         this.newPostContent = version.content;
         this.newPostCoverUrl = version.coverUrl;
-        this.newPostTags = version.tags ? version.tags.join(', ') : '';
+        this.newPostTags = (version.tags || []).join(', ');
+        this.newPostIsPaywalled = version.isPaywalled ?? false;
+        this.newPostPaywallPrice = version.paywallPrice ?? 2;
+        this.newPostPaywallPreviewPercentage = version.paywallPreviewPercentage ?? 40;
+        this.newPostPaywallRequiredBadgeId = version.paywallRequiredBadgeId ?? '';
 
         // Update DOM editor
         if (this.richEditorRef?.nativeElement) {
@@ -778,16 +798,38 @@ export class AdminComponent implements OnInit, OnDestroy {
         text: 'Por favor, preencha o título e o conteúdo da matéria.',
         background: '#121420',
         color: '#f1f5f9',
-        confirmButtonText: 'Preencher',
-        customClass: {
-          popup: 'guiik-swal-popup',
-          title: 'guiik-swal-title',
-          htmlContainer: 'guiik-swal-html',
-          confirmButton: 'guiik-swal-confirm-btn'
-        },
         buttonsStyling: false
       });
       return;
+    }
+
+    if (this.newPostIsPaywalled) {
+      // Strip HTML tags for length check
+      const textContent = this.newPostContent.replace(/<[^>]*>?/gm, '').trim();
+      if (textContent.length < 1500) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Conteúdo Insuficiente',
+          text: `Para usar o Terminal Criptografado (Paywall), a matéria precisa ter pelo menos 1.500 caracteres (Atualmente: ${textContent.length}).`,
+          background: '#121420',
+          color: '#f1f5f9',
+          confirmButtonText: 'Entendido'
+        });
+        return;
+      }
+
+      const maxPrice = this.db.currentUserLevel() * 5;
+      if (this.newPostPaywallPrice > maxPrice) {
+        Swal.fire({
+          icon: 'error',
+          title: 'Preço Acima do Limite',
+          text: `Seu nível atual (${this.db.currentUserLevel()}) permite cobrar no máximo ${maxPrice} Bits.`,
+          background: '#121420',
+          color: '#f1f5f9',
+          confirmButtonText: 'Ajustar'
+        });
+        return;
+      }
     }
 
     // Validate minimum character length (500 chars excluding whitespace and HTML tags) for publications
@@ -912,7 +954,11 @@ export class AdminComponent implements OnInit, OnDestroy {
         updatedAt: new Date().toISOString(),
         section: this.newPostSection || '',
         scheduledAt: scheduledAt || null,
-        scheduledNewsletter
+        scheduledNewsletter,
+        isPaywalled: this.newPostIsPaywalled,
+        paywallPrice: this.newPostPaywallPrice,
+        paywallPreviewPercentage: this.newPostPaywallPreviewPercentage,
+        paywallRequiredBadgeId: this.newPostPaywallRequiredBadgeId
       });
 
       const linkedContractId = this.selectedContractIdForPost();
@@ -945,7 +991,13 @@ export class AdminComponent implements OnInit, OnDestroy {
         isDraft,
         this.newPostSection || '',
         scheduledAt,
-        scheduledNewsletter
+        scheduledNewsletter,
+        {
+          isPaywalled: this.newPostIsPaywalled,
+          paywallPrice: this.newPostPaywallPrice,
+          paywallPreviewPercentage: this.newPostPaywallPreviewPercentage,
+          paywallRequiredBadgeId: this.newPostPaywallRequiredBadgeId
+        }
       );
 
       // Dispara imediatamente se for publicação imediata
@@ -1008,6 +1060,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.newPostTags = 'Gamer, Geek, Tech';
     this.newPostSection = '';
     this.sendNewsletter = false;
+    this.newPostIsPaywalled = false;
+    this.newPostPaywallPrice = 2;
+    this.newPostPaywallPreviewPercentage = 40;
+    this.newPostPaywallRequiredBadgeId = '';
     this.targetBlogId = '';
     this.isScheduled = false;
     this.scheduledDateTime = '';
@@ -1026,6 +1082,10 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.newPostCoverUrl = art.coverUrl;
     this.newPostTags = art.tags.join(', ');
     this.newPostSection = art.section || '';
+    this.newPostIsPaywalled = art.isPaywalled || false;
+    this.newPostPaywallPrice = art.paywallPrice || 2;
+    this.newPostPaywallPreviewPercentage = art.paywallPreviewPercentage || 40;
+    this.newPostPaywallRequiredBadgeId = art.paywallRequiredBadgeId || '';
     this.targetBlogId = art.blogId !== art.authorId ? art.blogId : '';
 
     if (art.scheduledAt) {
@@ -2320,5 +2380,29 @@ export class AdminComponent implements OnInit, OnDestroy {
     return this.db.shopItems().filter(item =>
       item.category === 'tag' && user.purchasedItems?.includes(item.id)
     );
+  }
+
+  // --- REPORT MANAGEMENT ---
+  async resolveReport(reportId: string, action: 'dismiss' | 'refund') {
+    const actionText = action === 'dismiss' ? 'Descartar Denúncia' : 'Estornar Bits e Penalizar';
+    const confirm = await Swal.fire({
+      title: actionText,
+      text: 'Tem certeza que deseja aplicar esta resolução?',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9'
+    });
+
+    if (confirm.isConfirmed) {
+      const success = await this.db.resolveReport(reportId, action);
+      if (success) {
+        Swal.fire('Sucesso', 'Ação aplicada.', 'success');
+      } else {
+        Swal.fire('Erro', 'Falha ao processar.', 'error');
+      }
+    }
   }
 }

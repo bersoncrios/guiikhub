@@ -97,6 +97,117 @@ export class GamificationService {
       return false;
     }
   }
+  async unlockArticlePaywall(
+    userId: string,
+    authorId: string,
+    articleId: string,
+    articleTitle: string,
+    price: number,
+    isHackAttempt: boolean,
+    badgesList: Badge[],
+    currentUser: User | null
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      const buyerRef = doc(this.firestore, `users/${userId}`);
+      const authorRef = doc(this.firestore, `users/${authorId}`);
+      
+      const buyerLogId = 'glog_' + Date.now() + '_buy_' + Math.random().toString(36).substring(2, 7);
+      const authorLogId = 'glog_' + Date.now() + '_earn_' + Math.random().toString(36).substring(2, 7);
+      
+      const buyerLogRef = doc(this.firestore, `gamification_logs/${buyerLogId}`);
+      const authorLogRef = doc(this.firestore, `gamification_logs/${authorLogId}`);
+
+      let hackSuccess = false;
+
+      await runTransaction(this.firestore, async (transaction) => {
+        const buyerDoc = await transaction.get(buyerRef);
+        const authorDoc = await transaction.get(authorRef);
+        
+        if (!buyerDoc.exists() || !authorDoc.exists()) {
+          throw new Error('Usuário não encontrado');
+        }
+
+        const buyerData = buyerDoc.data() as User;
+        const authorData = authorDoc.data() as User;
+        
+        const cost = isHackAttempt ? 2 : price;
+        const buyerBalance = buyerData.bits_balance || 0;
+
+        if (buyerBalance < cost) {
+          throw new Error('Saldo insuficiente de Bits');
+        }
+
+        // Deduct from buyer
+        const newBuyerBalance = buyerBalance - cost;
+        const unlockedArticles = buyerData.unlockedArticles || [];
+        
+        // Execute Hack RNG (35% success chance)
+        hackSuccess = isHackAttempt ? (Math.random() < 0.35) : true;
+        
+        let authorEarnings = 0;
+        let buyerLogDesc = '';
+        
+        if (hackSuccess) {
+          if (!unlockedArticles.includes(articleId)) {
+            unlockedArticles.push(articleId);
+          }
+          
+          authorEarnings = Math.floor(price * 0.9); // 10% burn rate
+          const newAuthorBalance = (authorData.bits_balance || 0) + authorEarnings;
+          const newAuthorXp = (authorData.xp_points || 0) + authorEarnings;
+          
+          buyerLogDesc = isHackAttempt 
+            ? `Quebrou o firewall da matéria "${articleTitle}" com sucesso!` 
+            : `Descriptografou a matéria "${articleTitle}".`;
+            
+          transaction.update(authorRef, {
+            bits_balance: newAuthorBalance,
+            xp_points: newAuthorXp
+          });
+          
+          // Log for Author
+          const authorLog: GamificationLog = {
+            id: authorLogId,
+            userId: authorId,
+            typeAction: 'earn',
+            amount: authorEarnings,
+            description: `Renda do Data Paywall (Matéria: "${articleTitle}")`,
+            createdAt: new Date().toISOString()
+          };
+          transaction.set(authorLogRef, authorLog);
+        } else {
+          buyerLogDesc = `Tentativa de hack falhou no firewall da matéria "${articleTitle}".`;
+        }
+        
+        transaction.update(buyerRef, {
+          bits_balance: newBuyerBalance,
+          unlockedArticles: unlockedArticles
+        });
+        
+        // Log for Buyer
+        const buyerLog: GamificationLog = {
+          id: buyerLogId,
+          userId: userId,
+          typeAction: 'spend',
+          amount: cost,
+          description: buyerLogDesc,
+          createdAt: new Date().toISOString()
+        };
+        transaction.set(buyerLogRef, buyerLog);
+      });
+
+      return {
+        success: hackSuccess,
+        message: hackSuccess 
+          ? (isHackAttempt ? 'Hack realizado com sucesso! Arquivo descriptografado.' : 'Arquivo descriptografado com sucesso.')
+          : 'Acesso negado. O Firewall repeliu seu ataque e você perdeu 2 Bits.'
+      };
+    } catch (err: any) {
+      console.error('Erro na transação de paywall:', err);
+      return { success: false, message: err.message || 'Erro de conexão no terminal.' };
+    }
+  }
+
 
   async runGamificationMigration(usersList: User[], badgesList: Badge[]): Promise<void> {
     for (const u of usersList) {

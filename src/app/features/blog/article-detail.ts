@@ -117,6 +117,147 @@ export class ArticleDetailComponent implements OnDestroy {
     return art;
   });
 
+  // --- Paywall Logic ---
+  readonly isPaywallLocked = computed(() => {
+    const art = this.article();
+    if (!art || !art.isPaywalled) return false;
+    
+    const user = this.db.currentUser();
+    
+    // Author or Sys-Admin always has access
+    if (user && (art.authorId === user.id || user.role === 'admin')) return false;
+    
+    // Check if user purchased/unlocked it
+    if (user && user.unlockedArticles?.includes(art.id)) return false;
+    
+    // Check if user has required VIP badge
+    if (user && art.paywallRequiredBadgeId && user.unlockedBadges?.includes(art.paywallRequiredBadgeId)) return false;
+
+    return true;
+  });
+
+  readonly renderedArticleContent = computed(() => {
+    const art = this.article();
+    if (!art) return '';
+    
+    if (!this.isPaywallLocked()) {
+      return art.content;
+    }
+
+    // Article is locked, slice it based on preview percentage
+    const htmlContent = art.content || '';
+    const percentage = art.paywallPreviewPercentage || 40;
+    
+    // Simple slice for preview (Warning: can break HTML tags if cut in the middle, but works for PoC)
+    // A better approach for real production is parsing the DOM tree, but we use a robust substring here.
+    const sliceIndex = Math.floor(htmlContent.length * (percentage / 100));
+    
+    return htmlContent.substring(0, sliceIndex) + '... <div class="fade-out-overlay"></div>';
+  });
+
+  async purchaseArticle(isHackAttempt: boolean) {
+    const art = this.article();
+    const user = this.db.currentUser();
+    
+    if (!user) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Login Necessário',
+        text: 'Você precisa estar logado para acessar o Terminal.',
+        background: '#121420', color: '#f1f5f9'
+      });
+      return;
+    }
+    
+    if (!art || !art.isPaywalled) return;
+    
+    const cost = isHackAttempt ? 2 : (art.paywallPrice || 0);
+    const balance = user.bits_balance || 0;
+    
+    if (balance < cost) {
+      Swal.fire({
+        icon: 'error',
+        title: 'Bits Insuficientes',
+        text: `Você precisa de ${cost} Bits, mas possui apenas ${balance}.`,
+        background: '#121420', color: '#f1f5f9'
+      });
+      return;
+    }
+
+    const actionText = isHackAttempt 
+      ? 'Atenção: Você está apostando 2 Bits. Há apenas 35% de chance de sucesso. Continuar?' 
+      : `Deseja transferir ${cost} Bits para descriptografar este arquivo?`;
+
+    const confirm = await Swal.fire({
+      title: isHackAttempt ? '👾 Iniciar Hack?' : '🔓 Autorizar Pagamento?',
+      text: actionText,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Executar',
+      cancelButtonText: 'Abortar',
+      background: '#121420', color: '#f1f5f9'
+    });
+
+    if (confirm.isConfirmed) {
+      const result = await this.db.unlockArticlePaywall(art.id, art.authorId, art.title, art.paywallPrice || 0, isHackAttempt);
+      
+      if (result.success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Acesso Concedido',
+          text: result.message,
+          background: '#121420', color: '#4ade80'
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Acesso Negado',
+          text: result.message,
+          background: '#121420', color: '#ef4444'
+        });
+      }
+    }
+  }
+
+  async reportPaywallContent() {
+    const art = this.article();
+    if (!art) return;
+    
+    const { value: reason } = await Swal.fire({
+      title: 'Acionar Garantia do Comprador',
+      input: 'textarea',
+      inputLabel: 'Qual o problema com esta matéria paga?',
+      inputPlaceholder: 'Ex: Conteúdo falso, plágio, não entrega o que promete...',
+      showCancelButton: true,
+      confirmButtonText: 'Enviar Denúncia',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9'
+    });
+
+    if (reason) {
+      const success = await this.db.submitReport(art.id, art.title, art.authorId, reason);
+      if (success) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Denúncia Recebida',
+          text: 'Nossos Sys-Admins analisarão o caso. Se a fraude for confirmada, seus Bits serão estornados e o criador perderá Reputação.',
+          background: '#121420',
+          color: '#4ade80'
+        });
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro',
+          text: 'Não foi possível enviar a denúncia. Tente novamente mais tarde.',
+          background: '#121420',
+          color: '#ef4444'
+        });
+      }
+    }
+  }
+
+
   // Get comments for this article
   readonly articleComments = computed(() => {
     const art = this.article();

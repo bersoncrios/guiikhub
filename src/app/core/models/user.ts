@@ -21,4 +21,5 @@ export interface User {
   activeTag?: string;
   activeTheme?: string;
   featuredBadge?: string;
+  unlockedArticles?: string[];
 }
