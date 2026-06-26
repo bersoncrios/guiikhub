@@ -120,7 +120,7 @@
             </p>
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
               @for (backer of contract.investors; track backer.userId) {
-                <span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: #fff; font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
+                <span style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; padding: 4px 10px; font-size: 0.78rem; color: var(--text-main); font-weight: 600; display: inline-flex; align-items: center; gap: 0.25rem;">
                   ⭐ {{ backer.displayName }} <span style="color: #ffd700;">(🪙 {{ backer.bitsContributed }})</span>
                 </span>
               }

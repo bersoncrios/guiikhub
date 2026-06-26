@@ -736,9 +736,9 @@ export class DbService {
         'border': `1.5px solid ${config.primaryColor || '#00f0ff'}`,
         '--accent-green': config.primaryColor || '#39ff14',
         '--blog-primary': config.primaryColor || '#39ff14',
-        '--blog-bg': config.bgColor || '#121420',
-        '--blog-card-bg': config.cardBgColor || 'rgba(255,255,255,0.02)',
-        '--blog-text': config.textColor || '#fff'
+        '--blog-bg': config.bgColor || '#f8fafc',
+        '--blog-card-bg': config.cardBgColor || 'rgba(255,255,255,0.4)',
+        '--blog-text': config.textColor || '#1e293b'
       };
     } catch (e) {
       return {};
