@@ -257,6 +257,50 @@ export class ArticleDetailComponent implements OnDestroy {
     }
   }
 
+  async openAddToPodModal() {
+    const art = this.article();
+    const user = this.db.currentUser();
+    if (!art || !user) {
+      Swal.fire('Faça login', 'Você precisa estar logado para curar matérias.', 'warning');
+      return;
+    }
+
+    const availablePods = this.db.dataPods().filter(p => p.ownerId === user.id || p.podType === 'open_collab');
+    
+    if (availablePods.length === 0) {
+      Swal.fire('Nenhuma Cápsula', 'Você não tem Cápsulas de Dados. Crie uma no seu Admin Studio primeiro!', 'info');
+      return;
+    }
+
+    const podOptions: Record<string, string> = {};
+    availablePods.forEach(p => {
+      podOptions[p.id] = p.title + (p.podType === 'open_collab' ? ' (Colaborativa)' : '');
+    });
+
+    const { value: selectedPodId } = await Swal.fire({
+      title: 'Adicionar à Cápsula',
+      text: 'Selecione em qual Cápsula de Dados você deseja inserir esta matéria:',
+      input: 'select',
+      inputOptions: podOptions,
+      inputPlaceholder: 'Selecione uma cápsula',
+      showCancelButton: true,
+      confirmButtonText: 'Sintetizar 📦',
+      cancelButtonText: 'Cancelar',
+      customClass: {
+        popup: 'guiik-swal-popup'
+      }
+    });
+
+    if (selectedPodId) {
+      try {
+        await this.db.addArticleToPod(selectedPodId, art.id);
+        Swal.fire('Sucesso!', 'A matéria foi adicionada à cápsula escolhida.', 'success');
+      } catch (err: any) {
+        Swal.fire('Erro', err.message || 'Falha ao adicionar.', 'error');
+      }
+    }
+  }
+
 
   // Get comments for this article
   readonly articleComments = computed(() => {

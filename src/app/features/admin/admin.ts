@@ -20,7 +20,7 @@ export class AdminComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
 
   // Navigation
-  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop'>('gamification');
+  readonly activeTab = signal<'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop' | 'pods'>('gamification');
   readonly sysAdminSubTab = signal<'overview' | 'users' | 'badges' | 'shop' | 'blacklist' | 'reports'>('overview');
   readonly monetizationSubTab = signal<'sponsors' | 'crowdfunding'>('sponsors');
   readonly shopSubTab = signal<'frames' | 'tags' | 'themes'>('frames');
@@ -123,6 +123,14 @@ export class AdminComponent implements OnInit, OnDestroy {
   newPostPaywallPrice = 2;
   newPostPaywallPreviewPercentage = 40;
   newPostPaywallRequiredBadgeId = '';
+  
+  // Data Pods Form
+  newPodTitle = '';
+  newPodDescription = '';
+  newPodCoverUrl = '/images/frostbite_cover.png';
+  newPodType: 'standard' | 'premium' | 'open_collab' = 'standard';
+  newPodPrice = 5;
+  isUploadingPodCover = false;
   
   targetBlogId = '';
   isScheduled = false;
@@ -446,7 +454,7 @@ export class AdminComponent implements OnInit, OnDestroy {
     this.blogSections = this.blogSections.filter(s => s !== name);
   }
 
-  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop') {
+  setTab(tab: 'posts' | 'customize' | 'profile' | 'new-post' | 'collabs' | 'monetization' | 'gamification' | 'spotlight' | 'sys-admin' | 'shop' | 'pods') {
     this.activeTab.set(tab);
     if (tab === 'new-post' && !this.editingArticleId()) {
       // Clear editor when opening the new post tab for a NEW post
@@ -2415,6 +2423,64 @@ export class AdminComponent implements OnInit, OnDestroy {
       } else {
         Swal.fire('Erro', 'Falha ao processar.', 'error');
       }
+    }
+  }
+
+  // --- DATA PODS MANAGEMENT ---
+  async onPodCoverSelected(event: Event) {
+    const input = event.target as HTMLInputElement;
+    if (!input.files?.length) return;
+    const file = input.files[0];
+
+    if (file.size > 5 * 1024 * 1024) {
+      Swal.fire('Arquivo muito grande', 'A imagem deve ter no máximo 5MB.', 'error');
+      return;
+    }
+
+    this.isUploadingPodCover = true;
+    try {
+      const uploadUrl = await this.uploadImageToS3(file, 'pod-cover');
+      this.newPodCoverUrl = uploadUrl;
+    } catch (err) {
+      console.error('Erro ao enviar capa da cápsula:', err);
+      Swal.fire('Erro de Rede', 'Não foi possível enviar a imagem.', 'error');
+    } finally {
+      this.isUploadingPodCover = false;
+      input.value = '';
+    }
+  }
+
+  async createDataPod() {
+    if (!this.newPodTitle || !this.newPodDescription) {
+      Swal.fire('Preencha tudo', 'Dê um nome e descrição para a Cápsula.', 'warning');
+      return;
+    }
+    const user = this.db.currentUser();
+    if (!user) return;
+
+    const podId = 'pod_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7);
+    
+    try {
+      await this.db.createDataPod({
+        id: podId,
+        ownerId: user.id,
+        title: this.newPodTitle,
+        description: this.newPodDescription,
+        coverUrl: this.newPodCoverUrl,
+        podType: this.newPodType,
+        priceBits: this.newPodType === 'premium' ? this.newPodPrice : 0,
+        articles: [],
+        collaboratorIds: [],
+        createdAt: new Date().toISOString()
+      });
+
+      Swal.fire('Sucesso!', 'Sua Cápsula de Dados foi criada.', 'success');
+      this.newPodTitle = '';
+      this.newPodDescription = '';
+      this.newPodCoverUrl = '/images/frostbite_cover.png';
+      this.newPodType = 'standard';
+    } catch (e: any) {
+      Swal.fire('Erro', e.message, 'error');
     }
   }
 }

@@ -13,4 +13,4 @@ export * from './shop-item';
 export * from './banned-word';
 export * from './pauta-contract';
 export * from './report';
-
+export * from './data-pod';

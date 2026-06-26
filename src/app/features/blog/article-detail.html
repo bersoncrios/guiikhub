@@ -176,6 +176,12 @@
             </button>
           }
 
+          @if (db.isAuthenticated()) {
+            <button class="btn" style="background: rgba(0, 240, 255, 0.1); color: #00f0ff; border: 1px solid rgba(0, 240, 255, 0.3); font-size: 0.85rem;" (click)="openAddToPodModal()">
+              <span class="icon">📦</span> Adicionar à Cápsula
+            </button>
+          }
+
           <!-- Applause (Claps) Button -->
           <div class="clap-button-wrapper" style="position: relative; display: inline-block;">
             <button class="btn clap-button" [class.has-claps]="(art.applauseCount || 0) + localClapIncrement() > 0"

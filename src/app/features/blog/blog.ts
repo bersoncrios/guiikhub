@@ -4,6 +4,7 @@ import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Title, Meta } from '@angular/platform-browser';
 import { DbService } from '../../core/db/db.service';
+import { DataPod } from '../../core/models/interfaces';
 import { SeoService } from '../../core/services/seo.service';
 import Swal from 'sweetalert2';
 
@@ -47,6 +48,14 @@ export class BlogComponent {
     if (!user) return [];
     return user.blogSettings?.sections || ['Geral', 'Tech', 'Quadrinhos'];
   });
+
+  readonly blogDataPods = computed(() => {
+    const user = this.blogUser();
+    if (!user) return [];
+    return this.db.dataPods().filter(pod => pod.ownerId === user.id);
+  });
+
+  readonly selectedDataPod = signal<DataPod | null>(null);
 
   // Get articles of the user's blog
   readonly blogArticles = computed(() => {
@@ -92,6 +101,15 @@ export class BlogComponent {
     for (let i = start; i <= end; i++) pages.push(i);
     return pages;
   });
+
+  getArticleInfo(articleId: string) {
+    const art = this.db.articles().find(a => a.id === articleId);
+    if (!art) return null;
+    return {
+      title: art.title,
+      routerLink: ['/b', art.authorUsername, 'post', art.slug]
+    };
+  }
 
   // Get badges unlocked by the blog owner
   readonly blogUserBadges = computed(() => {

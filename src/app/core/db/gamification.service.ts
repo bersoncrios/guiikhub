@@ -105,7 +105,8 @@ export class GamificationService {
     price: number,
     isHackAttempt: boolean,
     badgesList: Badge[],
-    currentUser: User | null
+    currentUser: User | null,
+    referredByPodOwnerId?: string
   ): Promise<{ success: boolean; message: string }> {
     try {
       const buyerRef = doc(this.firestore, `users/${userId}`);
@@ -119,9 +120,18 @@ export class GamificationService {
 
       let hackSuccess = false;
 
+      let curatorRef: any = null;
+      if (referredByPodOwnerId && referredByPodOwnerId !== authorId && referredByPodOwnerId !== userId) {
+        curatorRef = doc(this.firestore, `users/${referredByPodOwnerId}`);
+      }
+
       await runTransaction(this.firestore, async (transaction) => {
         const buyerDoc = await transaction.get(buyerRef);
         const authorDoc = await transaction.get(authorRef);
+        let curatorDoc: any = null;
+        if (curatorRef) {
+          curatorDoc = await transaction.get(curatorRef);
+        }
         
         if (!buyerDoc.exists() || !authorDoc.exists()) {
           throw new Error('Usuário não encontrado');
@@ -152,7 +162,9 @@ export class GamificationService {
             unlockedArticles.push(articleId);
           }
           
-          authorEarnings = Math.floor(price * 0.9); // 10% burn rate
+          authorEarnings = Math.floor(price * 0.9); // 90% author
+          const curatorEarnings = Math.floor(price * 0.02); // 2% curator, 8% burn
+
           const newAuthorBalance = (authorData.bits_balance || 0) + authorEarnings;
           const newAuthorXp = (authorData.xp_points || 0) + authorEarnings;
           
@@ -175,6 +187,24 @@ export class GamificationService {
             createdAt: new Date().toISOString()
           };
           transaction.set(authorLogRef, authorLog);
+
+          // Give curator commision
+          if (curatorDoc && curatorDoc.exists() && curatorEarnings > 0 && !isHackAttempt) {
+            const curatorData = curatorDoc.data() as User;
+            transaction.update(curatorRef, {
+              bits_balance: (curatorData.bits_balance || 0) + curatorEarnings,
+              xp_points: (curatorData.xp_points || 0) + curatorEarnings
+            });
+            const curatorLogId = 'glog_' + Date.now() + '_earn_' + Math.random().toString(36).substring(2, 7);
+            transaction.set(doc(this.firestore, `gamification_logs/${curatorLogId}`), {
+              id: curatorLogId,
+              userId: referredByPodOwnerId,
+              typeAction: 'earn',
+              amount: curatorEarnings,
+              description: `Comissão de Curadoria: Cápsula indicou a matéria "${articleTitle}"`,
+              createdAt: new Date().toISOString()
+            } as GamificationLog);
+          }
         } else {
           buyerLogDesc = `Tentativa de hack falhou no firewall da matéria "${articleTitle}".`;
         }

@@ -137,6 +137,9 @@
       <button class="menu-btn" [class.active]="activeTab() === 'shop'" (click)="setTab('shop')">
         <span class="icon">🛍️</span> Cyber-Shop
       </button>
+      <button class="menu-btn" [class.active]="activeTab() === 'pods'" (click)="setTab('pods')">
+        <span class="icon">📦</span> Cápsulas de Dados
+      </button>
     </div>
   </aside>
 
@@ -1781,6 +1784,78 @@
             </tbody>
           </table>
         </div>
+      </div>
+    </div>
+    }
+
+    <!-- Active Tab: Data Pods -->
+    @if (activeTab() === 'pods') {
+    <div class="glass-card work-card">
+      <div class="card-header">
+        <h2>Cápsulas de Dados (Data Pods)</h2>
+        <span class="header-badge" style="background: rgba(0, 240, 255, 0.1); border-color: rgba(0, 240, 255, 0.3); color: #00f0ff;">
+          📦 Curadoria Premium
+        </span>
+      </div>
+
+      <div class="card-body">
+        <p class="section-desc">
+          Crie "Esferas de Conhecimento" reunindo matérias fantásticas. Você pode cobrar pelo acesso (Premium Pod) e ainda receber 2% de comissão caso leitores comprem matérias Paywall de terceiros a partir da sua cápsula!
+        </p>
+
+        <form (submit)="createDataPod(); $event.preventDefault();" class="studio-form" style="margin-top: 1.5rem;">
+          
+          <div class="form-row-2">
+            <div class="form-group">
+              <label for="podTitle">Nome da Cápsula</label>
+              <input type="text" id="podTitle" name="podTitle" [(ngModel)]="newPodTitle" class="form-control" placeholder="Ex: Masterclass de Angular Signals" required>
+            </div>
+            <div class="form-group">
+              <label for="podType">Tipo de Cápsula</label>
+              <select id="podType" name="podType" [(ngModel)]="newPodType" class="form-control">
+                <option value="standard">Padrão (Aberta para leitura)</option>
+                <option value="premium">Premium (Cobrar Bits para abrir)</option>
+                <option value="open_collab">Colaborativa (Amigos podem adicionar)</option>
+              </select>
+            </div>
+          </div>
+
+          @if (newPodType === 'premium') {
+            <div class="form-group" style="background: rgba(255, 71, 133, 0.05); padding: 1rem; border-radius: 8px; border: 1px dashed rgba(255, 71, 133, 0.25);">
+              <label style="color: #ff4785; display: flex; align-items: center; gap: 0.4rem;">
+                🪙 Preço do Ingresso (Bits)
+              </label>
+              <input type="number" min="1" max="100" class="form-control" name="podPrice" [(ngModel)]="newPodPrice" style="max-width: 200px; margin-top: 0.5rem;" required>
+              <small style="color: var(--text-muted); display: block; margin-top: 0.4rem;">Leitores deverão pagar este valor uma única vez para abrir e consumir a sua curadoria.</small>
+            </div>
+          }
+
+          <div class="form-group">
+            <label for="podDesc">Resumo da Coleção</label>
+            <textarea id="podDesc" name="podDesc" [(ngModel)]="newPodDescription" class="form-control" rows="3" placeholder="Por que os leitores deveriam explorar essa cápsula?" required></textarea>
+          </div>
+
+          <!-- Pod Cover -->
+          <div class="form-group">
+            <label>Cor/Imagem de Capa (O Gradiente da Esfera)</label>
+            <div style="display: flex; gap: 1rem; align-items: center; margin-top: 0.5rem;">
+              <img [src]="newPodCoverUrl" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(0, 240, 255, 0.3); box-shadow: 0 0 15px rgba(0,240,255,0.1);">
+              <div class="banner-url-input-group" style="flex: 1;">
+                <input type="file" id="podCoverInput" accept="image/*" (change)="onPodCoverSelected($event)" style="display: none;">
+                <label for="podCoverInput" class="btn btn-secondary" style="margin: 0; cursor: pointer;">
+                  @if (isUploadingPodCover) { ⏳ Enviando... } @else { 📁 Alterar Textura da Esfera }
+                </label>
+                <small class="form-help">Envie uma imagem para ditar as cores do gradiente da sua cápsula.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-actions" style="margin-top: 2rem;">
+            <button type="submit" class="btn btn-primary" [disabled]="isUploadingPodCover">
+              🎐 Sintetizar Cápsula de Dados
+            </button>
+          </div>
+        </form>
       </div>
     </div>
     }

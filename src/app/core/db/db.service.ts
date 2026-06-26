@@ -1,6 +1,6 @@
 import { Injectable, signal, computed, inject, effect } from '@angular/core';
 import { Router } from '@angular/router';
-import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord, PautaContract, Report } from '../models/interfaces';
+import { User, Article, Comment, BlogSettings, BlogStatus, ArticleNote, ArticleVersion, GamificationLog, LeilaoDia, ConfiguracaoHolofote, Badge, ShopItem, BannedWord, PautaContract, Report, DataPod } from '../models/interfaces';
 import {
   Firestore,
   collection,
@@ -64,6 +64,7 @@ export class DbService {
   readonly bannedWords = signal<BannedWord[]>([]);
   readonly pautaContracts = signal<PautaContract[]>([]);
   readonly reports = signal<Report[]>([]);
+  readonly dataPods = signal<DataPod[]>([]);
 
   readonly currentUserLevel = computed(() => {
     const user = this.currentUser();
@@ -151,6 +152,13 @@ export class DbService {
     collectionData(collection(this.firestore, 'shop_items'), { idField: 'id' }).subscribe(data => {
       if (data) {
         this.shopItems.set(data as ShopItem[]);
+      }
+    });
+
+    // Sync Data Pods
+    collectionData(collection(this.firestore, 'data_pods'), { idField: 'id' }).subscribe(data => {
+      if (data) {
+        this.dataPods.set(data as DataPod[]);
       }
     });
 
@@ -607,11 +615,11 @@ export class DbService {
     );
   }
 
-  async unlockArticlePaywall(articleId: string, authorId: string, articleTitle: string, price: number, isHackAttempt: boolean): Promise<{ success: boolean; message: string }> {
+  async unlockArticlePaywall(articleId: string, authorId: string, articleTitle: string, price: number, isHackAttempt: boolean, referredByPodOwnerId?: string): Promise<{ success: boolean; message: string }> {
     const user = this.currentUser();
-    if (!user) return { success: false, message: 'Usuário não autenticado.' };
+    if (!user) throw new Error('Não autenticado');
     return this.gamificationService.unlockArticlePaywall(
-      user.id, authorId, articleId, articleTitle, price, isHackAttempt, this.badges(), user
+      user.id, authorId, articleId, articleTitle, price, isHackAttempt, this.badges(), user, referredByPodOwnerId
     );
   }
 
@@ -1029,6 +1037,69 @@ export class DbService {
           transaction.set(rewardLogRef, rewardLog);
         }
       }
+    });
+  }
+
+  // --- Data Pods (Cápsulas de Dados) ---
+  
+  async createDataPod(pod: DataPod) {
+    const user = this.currentUser();
+    if (!user) throw new Error('Não autenticado');
+    const podRef = doc(this.firestore, `data_pods/${pod.id}`);
+    await setDoc(podRef, pod);
+  }
+
+  async addArticleToPod(podId: string, articleId: string) {
+    const user = this.currentUser();
+    if (!user) throw new Error('Não autenticado');
+    
+    const podRef = doc(this.firestore, `data_pods/${podId}`);
+    
+    await runTransaction(this.firestore, async (transaction) => {
+      const podDoc = await transaction.get(podRef);
+      if (!podDoc.exists()) throw new Error('Cápsula não encontrada');
+      
+      const podData = podDoc.data() as DataPod;
+      
+      // Check permissions
+      if (podData.podType !== 'open_collab' && podData.ownerId !== user.id) {
+        throw new Error('Apenas o dono pode adicionar matérias nesta cápsula.');
+      }
+      
+      const articles = podData.articles || [];
+      if (articles.find(a => a.articleId === articleId)) {
+        throw new Error('Matéria já existe nesta cápsula.');
+      }
+      
+      articles.push({
+        articleId,
+        addedBy: user.id,
+        addedAt: new Date().toISOString(),
+        votes: 1 // starts with 1 vote from the person who added it
+      });
+      
+      transaction.update(podRef, { articles });
+    });
+  }
+
+  async voteArticleInPod(podId: string, articleId: string) {
+    const user = this.currentUser();
+    if (!user) throw new Error('Não autenticado');
+    
+    const podRef = doc(this.firestore, `data_pods/${podId}`);
+    
+    await runTransaction(this.firestore, async (transaction) => {
+      const podDoc = await transaction.get(podRef);
+      if (!podDoc.exists()) throw new Error('Cápsula não encontrada');
+      
+      const podData = podDoc.data() as DataPod;
+      const articles = podData.articles || [];
+      const article = articles.find(a => a.articleId === articleId);
+      
+      if (!article) throw new Error('Matéria não encontrada nesta cápsula.');
+      
+      article.votes += 1;
+      transaction.update(podRef, { articles });
     });
   }
 }
