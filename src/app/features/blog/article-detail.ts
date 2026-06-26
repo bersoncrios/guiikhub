@@ -416,12 +416,92 @@ export class ArticleDetailComponent implements OnDestroy {
 
   formatContent(content: string): string {
     if (!content) return '';
-    return content
-      .replace(/### (.*)/g, '<h3>$1</h3>')
-      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-      .replace(/\* ([^*]+)/g, '<li>$1</li>')
-      .replace(/- ([^-]+)/g, '<li>$1</li>')
-      .replace(/\n/g, '<br>');
+    
+    // Process code blocks first to prevent formatting inside them
+    let formatted = content;
+    // Allow optional HTML tags or spaces between ```lang and the code
+    const codeBlockRegex = /```([a-zA-Z0-9-]*)(?:<[^>]+>|\s)*([\s\S]*?)(?:<[^>]+>|\s)*```/g;
+    
+    formatted = formatted.replace(codeBlockRegex, (match, language, code) => {
+      const langName = language ? language.toUpperCase() : 'BASH';
+      
+      // Clean up the HTML from the inner code block
+      // 1. Replace <br> or block tags with newlines
+      let cleanCode = code.replace(/<br\s*\/?>/gi, '\n')
+                          .replace(/<\/p>|<\/div>/gi, '\n')
+                          .replace(/<[^>]+>/g, '') // Strip remaining HTML tags
+                          .replace(/&nbsp;/g, ' '); // Decode non-breaking spaces
+      
+      // Remove excessive newlines
+      cleanCode = cleanCode.replace(/\n{3,}/g, '\n\n').trim();
+
+      const highlightedCode = this.applySyntaxHighlighting(cleanCode);
+      
+      return `
+        <div class="cyber-ide-terminal">
+          <div class="cyber-ide-header">
+            <div class="mac-buttons">
+              <span class="mac-btn close"></span>
+              <span class="mac-btn minimize"></span>
+              <span class="mac-btn expand"></span>
+            </div>
+            <div class="cyber-ide-title">/usr/guiikhub/terminal — ${langName}</div>
+          </div>
+          <div class="cyber-ide-body">
+            <div class="scanlines"></div>
+            <pre><code>${highlightedCode}</code></pre>
+          </div>
+        </div>
+      `;
+    });
+
+    // Split by the terminal blocks so we don't apply regex inside them
+    const parts = formatted.split(/(<div class="cyber-ide-terminal">[\s\S]*?<\/div>\s*<\/div>)/);
+    
+    for (let i = 0; i < parts.length; i++) {
+      if (!parts[i].startsWith('<div class="cyber-ide-terminal">')) {
+        // Apply normal markdown to text
+        parts[i] = parts[i]
+          .replace(/### (.*)/g, '<h3>$1</h3>')
+          .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+          .replace(/\* ([^*]+)/g, '<li>$1</li>')
+          .replace(/- ([^-]+)/g, '<li>$1</li>')
+          .replace(/\n/g, '<br>');
+      }
+    }
+
+    return parts.join('');
+  }
+
+  applySyntaxHighlighting(code: string): string {
+    let highlighted = code
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+      
+    // Comentários (// ou /* */)
+    highlighted = highlighted.replace(/(\/\/.*|\/\*[\s\S]*?\*\/)/g, '<span class="token-comment">$1</span>');
+    
+    // Strings ("texto" ou 'texto' ou `texto`)
+    highlighted = highlighted.replace(/(["'`])(?:(?=(\\?))\2[\s\S])*?\1/g, match => {
+      if (match.startsWith('<span class="token-comment">')) return match;
+      return `<span class="token-string">${match}</span>`;
+    });
+    
+    // Palavras-chave
+    const keywords = ['const', 'let', 'var', 'function', 'return', 'if', 'else', 'for', 'while', 'class', 'import', 'export', 'from', 'await', 'async', 'interface', 'type'];
+    const keywordRegex = new RegExp(`\\b(${keywords.join('|')})\\b`, 'g');
+    highlighted = highlighted.replace(keywordRegex, match => {
+      // Very basic prevention of highlighting inside other spans
+      return `<span class="token-keyword">${match}</span>`;
+    });
+    
+    // Funções/Métodos (nome seguido de parênteses)
+    highlighted = highlighted.replace(/\b([a-zA-Z_$][0-9a-zA-Z_$]*)\s*(?=\()/g, match => {
+      if (keywords.includes(match.trim())) return match;
+      return `<span class="token-function">${match}</span>`;
+    });
+
+    return highlighted;
   }
 
   addClap() {

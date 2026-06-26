@@ -798,3 +798,107 @@
     transform: translateY(0);
   }
 }
+
+/* IDE Cyberpunk / Terminal Styles (injected via innerHTML) */
+::ng-deep {
+  .cyber-ide-terminal {
+    background: rgba(10, 14, 23, 0.85);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 12px;
+    border: 1px solid rgba(var(--blog-primary-rgb, 0, 240, 255), 0.3);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(var(--blog-primary-rgb, 0, 240, 255), 0.15);
+    margin: 2rem 0;
+    overflow: hidden;
+    position: relative;
+    font-family: 'Space Grotesk', monospace;
+    
+    .cyber-ide-header {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      
+      .mac-buttons {
+        display: flex;
+        gap: 6px;
+        margin-right: 1rem;
+        
+        .mac-btn {
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          display: inline-block;
+          
+          &.close { background: #ff5f56; box-shadow: 0 0 5px rgba(255, 95, 86, 0.5); }
+          &.minimize { background: #ffbd2e; box-shadow: 0 0 5px rgba(255, 189, 46, 0.5); }
+          &.expand { background: #27c93f; box-shadow: 0 0 5px rgba(39, 201, 63, 0.5); }
+        }
+      }
+      
+      .cyber-ide-title {
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        flex-grow: 1;
+        text-align: center;
+        margin-right: 50px; /* Balance against mac-buttons */
+      }
+    }
+    
+    .cyber-ide-body {
+      position: relative;
+      padding: 1.25rem;
+      overflow-x: auto;
+      
+      .scanlines {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: linear-gradient(rgba(255, 255, 255, 0), rgba(255, 255, 255, 0) 50%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.1));
+        background-size: 100% 4px;
+        pointer-events: none;
+        z-index: 0;
+      }
+      
+      pre {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: none;
+        position: relative;
+        z-index: 1;
+        
+        code {
+          font-family: 'Fira Code', 'Courier New', monospace;
+          font-size: 0.85rem;
+          line-height: 1.6;
+          color: #e2e8f0;
+          text-shadow: 0 0 2px rgba(255,255,255,0.1);
+          
+          /* Syntax Highlighting Tokens */
+          .token-keyword {
+            color: #ff007f;
+            text-shadow: 0 0 5px rgba(255, 0, 127, 0.4);
+            font-weight: 600;
+          }
+          
+          .token-string {
+            color: #00ff00;
+            text-shadow: 0 0 5px rgba(0, 255, 0, 0.4);
+          }
+          
+          .token-function {
+            color: #00f0ff;
+            text-shadow: 0 0 5px rgba(0, 240, 255, 0.4);
+          }
+          
+          .token-comment {
+            color: #64748b;
+            font-style: italic;
+          }
+        }
+      }
+    }
+  }
+}
