@@ -2107,6 +2107,63 @@ export class AdminComponent implements OnInit, OnDestroy {
     });
   }
 
+  async deleteAllBannedWords() {
+    const list = this.db.bannedWords();
+    if (list.length === 0) {
+      Swal.fire({
+        icon: 'info',
+        title: 'Lista Vazia',
+        text: 'Não há nenhuma palavra na lista negra para ser excluída.',
+        background: '#121420',
+        color: '#f1f5f9'
+      });
+      return;
+    }
+
+    Swal.fire({
+      title: 'Excluir Toda a Lista Negra?',
+      text: `Deseja realmente excluir TODAS as ${list.length} palavras da lista negra de moderação? Esta ação não pode ser desfeita.`,
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonText: 'Sim, Excluir Tudo',
+      cancelButtonText: 'Cancelar',
+      background: '#121420',
+      color: '#f1f5f9',
+      customClass: {
+        popup: 'guiik-swal-popup',
+        title: 'guiik-swal-title',
+        confirmButton: 'guiik-swal-confirm-btn',
+        cancelButton: 'guiik-swal-confirm-btn'
+      },
+      buttonsStyling: false
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        this.isSavingBannedWord = true;
+        try {
+          await Promise.all(list.map(w => this.db.deleteBannedWord(w.id)));
+          Swal.fire({
+            icon: 'success',
+            title: 'Lista Negra Limpa!',
+            text: 'Todas as palavras foram removidas da lista negra com sucesso.',
+            background: '#121420',
+            color: '#f1f5f9'
+          });
+        } catch (err) {
+          console.error(err);
+          Swal.fire({
+            icon: 'error',
+            title: 'Erro',
+            text: 'Não foi possível limpar a lista negra.',
+            background: '#121420',
+            color: '#f1f5f9'
+          });
+        } finally {
+          this.isSavingBannedWord = false;
+        }
+      }
+    });
+  }
+
   async createContract() {
     const title = this.newContractTitle.trim();
     const description = this.newContractDescription.trim();
