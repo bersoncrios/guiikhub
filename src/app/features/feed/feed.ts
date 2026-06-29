@@ -226,6 +226,11 @@ export class FeedComponent implements OnInit {
       description: 'Descubra e crie artigos incríveis sobre tudo o que você ama.',
       route: ''
     });
+    if (this.db.isAuthenticated()) {
+      this.activeFeedTab.set('following');
+    } else {
+      this.activeFeedTab.set('discover');
+    }
   }
 
   selectTag(tag: string | null) {
