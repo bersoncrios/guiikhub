@@ -1944,8 +1944,8 @@ export class AdminComponent implements OnInit, OnDestroy {
   }
 
   async addBannedWord() {
-    const wordClean = this.newBannedWord.trim();
-    if (!wordClean) {
+    const rawInput = this.newBannedWord.trim();
+    if (!rawInput) {
       Swal.fire({
         icon: 'warning',
         title: 'Entrada Inválida',
@@ -1956,44 +1956,115 @@ export class AdminComponent implements OnInit, OnDestroy {
       return;
     }
 
-    const exists = this.db.bannedWords().some(
-      item => item.word.toLowerCase() === wordClean.toLowerCase()
-    );
-    if (exists) {
+    const words = rawInput
+      .split(',')
+      .map(w => w.trim())
+      .filter(w => w.length > 0);
+
+    if (words.length === 0) {
       Swal.fire({
         icon: 'warning',
-        title: 'Palavra Duplicada',
-        text: 'Esta palavra já existe na lista negra.',
+        title: 'Entrada Inválida',
+        text: 'Nenhuma palavra válida foi fornecida.',
         background: '#121420',
         color: '#f1f5f9'
       });
       return;
     }
 
-    this.isSavingBannedWord = true;
-    try {
-      await this.db.addBannedWord(wordClean);
-      Swal.fire({
-        icon: 'success',
-        title: 'Palavra Adicionada!',
-        text: `"${wordClean}" foi registrada na lista negra de moderação.`,
-        timer: 1500,
-        showConfirmButton: false,
-        background: '#121420',
-        color: '#f1f5f9'
-      });
-      this.newBannedWord = '';
-    } catch (err) {
-      console.error(err);
-      Swal.fire({
-        icon: 'error',
-        title: 'Erro',
-        text: 'Não foi possível salvar a palavra proibida.',
-        background: '#121420',
-        color: '#f1f5f9'
-      });
-    } finally {
-      this.isSavingBannedWord = false;
+    const existingWords = this.db.bannedWords();
+
+    if (words.length === 1) {
+      const wordClean = words[0];
+      const exists = existingWords.some(
+        item => item.word.toLowerCase() === wordClean.toLowerCase()
+      );
+      if (exists) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Palavra Duplicada',
+          text: 'Esta palavra já existe na lista negra.',
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+        return;
+      }
+
+      this.isSavingBannedWord = true;
+      try {
+        await this.db.addBannedWord(wordClean);
+        Swal.fire({
+          icon: 'success',
+          title: 'Palavra Adicionada!',
+          text: `"${wordClean}" foi registrada na lista negra de moderação.`,
+          timer: 1500,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+        this.newBannedWord = '';
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro',
+          text: 'Não foi possível salvar a palavra proibida.',
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      } finally {
+        this.isSavingBannedWord = false;
+      }
+    } else {
+      const newWords = words.filter(word => 
+        !existingWords.some(item => item.word.toLowerCase() === word.toLowerCase())
+      );
+
+      if (newWords.length === 0) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Palavras Duplicadas',
+          text: 'Todas as palavras informadas já existem na lista negra.',
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+        return;
+      }
+
+      this.isSavingBannedWord = true;
+      try {
+        await Promise.all(newWords.map(word => this.db.addBannedWord(word)));
+        
+        const addedCount = newWords.length;
+        const skippedCount = words.length - addedCount;
+        
+        let successText = `${addedCount} palavra(s) foram registradas na lista negra de moderação.`;
+        if (skippedCount > 0) {
+          successText += ` (${skippedCount} palavra(s) duplicada(s) ignorada(s))`;
+        }
+
+        Swal.fire({
+          icon: 'success',
+          title: 'Palavras Adicionadas!',
+          text: successText,
+          timer: 2000,
+          showConfirmButton: false,
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+        this.newBannedWord = '';
+      } catch (err) {
+        console.error(err);
+        Swal.fire({
+          icon: 'error',
+          title: 'Erro',
+          text: 'Ocorreu um erro ao salvar algumas ou todas as palavras proibidas.',
+          background: '#121420',
+          color: '#f1f5f9'
+        });
+      } finally {
+        this.isSavingBannedWord = false;
+      }
     }
   }
 

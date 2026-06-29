@@ -2398,10 +2398,10 @@
           <!-- Add Word Form -->
           <form (submit)="addBannedWord(); $event.preventDefault()" class="studio-form" style="display: flex; flex-direction: column; gap: 1rem; margin-top: 0.5rem;">
             <div class="form-group">
-              <label for="newBannedWordInput" style="font-weight: 600; color: #00f0ff;">Nova Palavra Proibida</label>
+              <label for="newBannedWordInput" style="font-weight: 600; color: #00f0ff;">Nova(s) Palavra(s) Proibida(s)</label>
               <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
                 <input type="text" id="newBannedWordInput" name="newBannedWordInput" [(ngModel)]="newBannedWord" 
-                  class="form-control" placeholder="Ex: fake news, palavra_feia, sensivel" required 
+                  class="form-control" placeholder="Ex: fake news, palavra_feia, sensivel (ou separe várias por vírgula)" required 
                   style="flex: 1; background: rgba(0,0,0,0.25); border: 1px solid rgba(0,240,255,0.15); color: var(--text-main); box-shadow: inset 0 2px 4px rgba(0,0,0,0.2); font-family: 'Space Grotesk', sans-serif;">
                 <button type="submit" class="btn btn-primary" [disabled]="!newBannedWord.trim() || isSavingBannedWord"
                   style="white-space: nowrap; font-weight: bold; background: linear-gradient(135deg, #00f0ff, #0077ff); border: none; padding: 0 1.5rem; text-shadow: 0 0 5px rgba(0,240,255,0.5);">
@@ -2409,6 +2409,7 @@
                 </button>
               </div>
               <small style="display: block; margin-top: 0.5rem; color: var(--text-muted); font-size: 0.72rem;">
+                💡 <b>Múltiplos termos:</b> Se quiser cadastrar mais de uma palavra por vez, separe-as por vírgula (ex: <i>palavra1, palavra2, palavra3</i>).<br>
                 ⚠️ <b>Dica de bypass:</b> O filtro automaticamente normaliza o texto. Se você cadastrar "palavra", variações como "p.a.l.a.v.r.a", "PaLaVrA", "p a l a v r a" ou "p-a-l-a-v-r-a" serão bloqueadas automaticamente.
               </small>
             </div>
