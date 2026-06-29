@@ -218,6 +218,16 @@ export class FeedComponent implements OnInit {
       this.filteredArticles();
       this.currentPage.set(1);
     });
+
+    // Auto-set active feed tab when auth state resolves
+    effect(() => {
+      const auth = this.db.isAuthenticated();
+      if (auth) {
+        this.activeFeedTab.set('following');
+      } else {
+        this.activeFeedTab.set('discover');
+      }
+    }, { allowSignalWrites: true });
   }
 
   ngOnInit() {
@@ -226,11 +236,6 @@ export class FeedComponent implements OnInit {
       description: 'Descubra e crie artigos incríveis sobre tudo o que você ama.',
       route: ''
     });
-    if (this.db.isAuthenticated()) {
-      this.activeFeedTab.set('following');
-    } else {
-      this.activeFeedTab.set('discover');
-    }
   }
 
   selectTag(tag: string | null) {
